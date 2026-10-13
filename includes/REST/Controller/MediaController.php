@@ -521,6 +521,7 @@ class MediaController extends WP_REST_Controller {
 		// Privacy filtering via index table: the one listing rule Explore and the
 		// activity feed share, so the three cannot drift apart again.
 		list( $mvs_priv_sql, $mvs_priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->explore_privacy_clause( '', (int) $user_id );
+		list( $mvs_priv_sql, $mvs_priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->group_scope_clause( 'i', absint( $request->get_param( 'group' ) ), (int) $user_id, $mvs_priv_sql, $mvs_priv_params );
 		$where[] = $mvs_priv_sql;
 		$params  = array_merge( $params, $mvs_priv_params );
 
@@ -2638,6 +2639,12 @@ class MediaController extends WP_REST_Controller {
 				'enum'              => array( 'public', 'all', 'self', 'followers' ),
 				'default'           => 'all',
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'group'        => array(
+				'description'       => __( 'Limit to one BuddyPress group\'s media. Group members also get items shared with the group.', 'wpmediaverse' ),
+				'type'              => 'integer',
+				'minimum'           => 1,
+				'sanitize_callback' => 'absint',
 			),
 			'group_covers' => array(
 				'type'              => 'boolean',

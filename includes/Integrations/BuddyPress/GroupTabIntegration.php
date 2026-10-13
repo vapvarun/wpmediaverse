@@ -116,39 +116,19 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 			);
 		}
 
-		global $wpdb;
-		// The index is the joined side of a query this file owns; the repository
-		// supplies the name (Rule 7 — see MediaRepository::index_table()).
-		$index_table = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->index_table();
-		$meta_table  = $wpdb->prefix . 'mvs_media_meta';
-
-		// Viewer-scoped privacy gate, built in SQL so pagination stays honest.
-		// Without it the group tab would list EVERY item with this group_id
-		// regardless of privacy — members/friends/private/group items would leak
-		// to non-members and logged-out visitors. ProfileTab
-		// is covered by query_by_author's pre-filter; this tab has none.
-		$viewer_id       = get_current_user_id();
-		$is_group_member = $viewer_id > 0
-			&& function_exists( 'groups_is_user_member' )
-			&& groups_is_user_member( $viewer_id, (int) $group->id );
-
-		// Core's list rule (public, members, own, followers, friends; moderators
-		// everything but chat files), plus group items for members of THIS group.
-		list( $priv_sql, $priv_params ) = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->explore_privacy_clause( 'mi', $viewer_id );
-		if ( $is_group_member ) {
-			$priv_sql = "( ( {$priv_sql} ) OR mi.privacy = 'group' )";
-		}
-
-		$base_where  = "mm.meta_key = 'group_id' AND mm.meta_value = %s AND mi.status = 'publish' AND mi.moderation_status = 'approved' AND {$priv_sql}";
-		$base_params = array_merge( array( (string) $group->id ), $priv_params );
-
-		$total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE {$base_where}", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...$base_params
-			)
+		// The same group listing as GET /mvs/v1/media?group= (this tab's Load
+		// More): the list privacy rule plus 'group' items for members, one tile
+		// per gallery (MediaRepository::group_scope_clause()).
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$args = array(
+			'group_id'                => (int) $group->id,
+			'privacy'                 => 'explore',
+			'viewer_id'               => get_current_user_id(),
+			'moderation_status'       => 'approved',
+			'exclude_non_cover_group' => true,
 		);
 
+		$total = $repo->query_count( $args );
 		if ( ! $total ) {
 			return array(
 				'ids'   => array(),
@@ -156,15 +136,15 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 			);
 		}
 
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT mi.media_id FROM {$meta_table} mm INNER JOIN {$index_table} mi ON mm.media_id = mi.media_id WHERE {$base_where} ORDER BY mi.created_at DESC, mi.media_id DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				...array_merge( $base_params, array( $per_page, $offset ) )
+		$rows = $repo->query(
+			$args + array(
+				'limit'  => $per_page,
+				'offset' => $offset,
 			)
 		);
 
 		return array(
-			'ids'   => array_map( 'intval', $ids ?: array() ),
+			'ids'   => array_map( 'intval', array_column( $rows, 'media_id' ) ),
 			'total' => $total,
 		);
 	}
@@ -228,9 +208,9 @@ class GroupTabIntegration extends BaseBPTabIntegration {
 	}
 
 	protected function load_more_data_attrs(): array {
-		// Group scope is enforced server-side via meta join — no need to
-		// pass author/scope on the Load More button.
-		return array();
+		return array(
+			'data-group' => (int) ( groups_get_current_group()->id ?? 0 ),
+		);
 	}
 
 	protected function extra_upload_form_fields(): string {

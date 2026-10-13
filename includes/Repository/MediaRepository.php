@@ -4290,6 +4290,42 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Narrow a listing to one BuddyPress group's media.
+	 *
+	 * The group's members also see its 'group' items; everyone else keeps the
+	 * listing's own privacy rule. Used by query() and the GET /media feed, so the
+	 * group tab, its Load More and the app list a group the same way.
+	 *
+	 * @since 2.6.2
+	 *
+	 * @param string            $alias          Media index alias ('m', 'i').
+	 * @param int               $group_id       Group ID; 0 returns the privacy clause unchanged.
+	 * @param int               $viewer_id      Viewer (0 = visitor).
+	 * @param string            $privacy_sql    The listing's privacy clause ('' for none).
+	 * @param array<int,scalar> $privacy_params Its params.
+	 * @return array{0:string,1:array<int,scalar>} Clause replacing the privacy clause, and its params.
+	 */
+	public function group_scope_clause( string $alias, int $group_id, int $viewer_id, string $privacy_sql = '', array $privacy_params = array() ): array {
+		global $wpdb;
+
+		if ( $group_id <= 0 ) {
+			return array( $privacy_sql, array_values( $privacy_params ) );
+		}
+
+		$alias = preg_replace( '/[^a-z_]/i', '', $alias );
+		if ( '' !== $privacy_sql && $viewer_id > 0 && function_exists( 'groups_is_user_member' ) && groups_is_user_member( $viewer_id, $group_id ) ) {
+			$privacy_sql = "( {$privacy_sql} OR {$alias}.privacy = 'group' )";
+		}
+
+		$sql = "{$alias}.media_id IN ( SELECT media_id FROM {$wpdb->prefix}mvs_media_meta WHERE meta_key = 'group_id' AND meta_value = %s )";
+
+		return array(
+			'' !== $privacy_sql ? "{$sql} AND {$privacy_sql}" : $sql,
+			array_merge( array( (string) $group_id ), array_values( $privacy_params ) ),
+		);
+	}
+
+	/**
 	 * Row count for the same filter set as {@see query()}.
 	 *
 	 * Uses COUNT(DISTINCT m.media_id) when a taxonomy join is present (a media
@@ -4318,29 +4354,6 @@ class MediaRepository implements MediaRepositoryInterface {
 		return (int) $wpdb->get_var( $sql );
 	}
 
-	/**
-	 * Apply defaults to a query()/query_count() args array.
-	 *
-	 * @param array $args Caller args.
-	 * @return array {
-	 *     @type string $status                  Index status. Default 'publish'. '' skips.
-	 *     @type string $moderation_status        Default '' (skip). Pass 'approved' to hide flagged/pending.
-	 *     @type int    $author_id                Default 0 (skip).
-	 *     @type string $search                   LIKE on title/description. Default ''.
-	 *     @type int    $tag_tt_id                term_taxonomy_id for a tag join. Default 0.
-	 *     @type int    $category_tt_id           term_taxonomy_id for a category join. Default 0.
-	 *     @type string $privacy                  'any'|'public'|'visible'|'profile'. Default 'any'.
-	 *     @type int    $viewer_id                Required when privacy='visible'/'profile'. Default 0.
-	 *     @type bool   $exclude_non_cover_group  Drop non-cover gallery members. Default false.
-	 *     @type bool   $exclude_empty_media_type Drop privacy-only stub rows (albums/collections). Default false.
-	 *     @type string[] $media_types              Library this listing is for. Default MediaTypes::MEDIA_LIBRARY.
-	 *     @type string $since                    created_at >= this datetime. Default ''.
-	 *     @type string $orderby                  Allowlisted column. Default 'created_at'.
-	 *     @type string $order                    'ASC'|'DESC'. Default 'DESC'.
-	 *     @type int    $limit                    Default 20.
-	 *     @type int    $offset                   Default 0.
-	 * }
-	 */
 	private function normalize_query_args( array $args ): array {
 		return wp_parse_args(
 			$args,
@@ -4354,6 +4367,8 @@ class MediaRepository implements MediaRepositoryInterface {
 				'privacy'                  => 'any',
 				'viewer_id'                => 0,
 				'exclude_non_cover_group'  => false,
+				// A BuddyPress group's media; its members also see 'group' items.
+				'group_id'                 => 0,
 				'exclude_empty_media_type' => false,
 				'media_types'              => MediaTypes::MEDIA_LIBRARY,
 				// ── Maintenance-walk args (2.4.0) ─────────────────────────────
@@ -4630,6 +4645,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		}
 
 		list( $privacy_where, $privacy_params ) = $this->build_privacy_where( (string) $args['privacy'], (int) $args['viewer_id'], (int) $args['author_id'] );
+		list( $privacy_where, $privacy_params ) = $this->group_scope_clause( 'm', (int) $args['group_id'], (int) $args['viewer_id'], $privacy_where, $privacy_params );
 		if ( '' !== $privacy_where ) {
 			$where[] = $privacy_where;
 			$params  = array_merge( $params, $privacy_params );

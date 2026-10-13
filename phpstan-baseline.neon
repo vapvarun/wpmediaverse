@@ -1112,7 +1112,7 @@ parameters:
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
-			count: 8
+			count: 9
 			path: includes/Integrations/BuddyPress/GroupTabIntegration.php
 
 		-

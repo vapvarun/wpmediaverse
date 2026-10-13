@@ -1645,7 +1645,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Group-scoped media renders; a non-member of a private group sees "no media in this group" (or is denied per the group's own BP visibility) rather than the group's actual content.
 - **UX expectation:** Same "no broken img tags" empty-state bar as MV-BP-001.
 - **Settings that change it:** none beyond the group's own BuddyPress privacy.
-- **Edge cases:** none beyond the shared rendering logic with MV-BP-001 (`BaseBPTabIntegration`).
+- **Edge cases:** Galleries show as one tile with a badge. Load More asks `GET /mvs/v1/media?group=<id>&group_covers=1`, the same listing as page 1 (`MediaRepository::group_scope_clause()`): with more than one page, page 2 holds only this group's items, no repeats, and a non-member never gets group-only items. Check with a group of 13+ items as member and visitor.
 
 #### MV-BP-003 — Upload creates a BuddyPress activity item
 - **Edition:** Free

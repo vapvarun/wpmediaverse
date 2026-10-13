@@ -150,6 +150,7 @@
 			search: loadMoreBtn.dataset.search || '',
 			scope: loadMoreBtn.dataset.scope || '',
 			author: loadMoreBtn.dataset.author || '',
+			group: loadMoreBtn.dataset.group || '',
 			groupCovers: loadMoreBtn.dataset.groupCovers === 'true',
 		};
 
@@ -197,6 +198,7 @@
 		if ( config.search ) url.searchParams.set( 's', config.search );
 		if ( config.scope ) url.searchParams.set( 'scope', config.scope );
 		if ( config.author ) url.searchParams.set( 'author', config.author );
+		if ( config.group ) url.searchParams.set( 'group', config.group );
 		if ( config.groupCovers ) url.searchParams.set( 'group_covers', '1' );
 
 		// Keep the order the visitor chose. The Explore / profile toolbar on

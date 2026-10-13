@@ -49,6 +49,7 @@ List media items. Returns only rows the caller is allowed to see.
 | `scope` | string | `all` | `all` returns everything the caller may see; `public` limits the list to public items; `self` returns the caller's own uploads; `followers` returns media from members the caller follows. `self` and `followers` need a logged-in caller |
 | `s` | string | (none) | Full-text search term |
 | `group_covers` | bool | `false` | Collapse gallery groups to a single cover item |
+| `group` | int | (none) | Only one BuddyPress group's media. Members of that group also get items shared with the group; everyone else gets what they may see anyway |
 
 **Response:**
 
