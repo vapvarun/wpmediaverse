@@ -36,7 +36,7 @@ See [Direct Messages](../features/direct-messages.md).
 
 ## BuddyPress
 
-- Comments deleted or edited in MediaVerse are removed or updated on the activity post too, with their notifications, including comments made before 2.6.2.
+- Comments deleted in MediaVerse are removed from the activity post too, with their replies and notifications, including comments made before 2.6.2.
 - The BuddyPress lightbox steps through every photo of a post made from the Upload page.
 - Visitors can open photos from the profile and group Media tabs, and Load More on a group tab shows only that group's media.
 

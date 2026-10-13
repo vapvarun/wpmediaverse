@@ -152,7 +152,7 @@ Chat files stay in the chat, galleries list the same way everywhere, BuddyPress 
 * Fix      - An MP4 file branded as M4V, as iPhones save them, uploads like any MP4.
 * Fix      - Changing an item's privacy through the API updates its BuddyPress activity post.
 * Fix      - A BuddyPress post made from several uploads follows its most private item, and deleting one photo keeps the post.
-* Fix      - Comments deleted or edited in MediaVerse are removed or updated on the BuddyPress activity post, with their notifications, and replies sit under their comment. Comments mirrored before 2.6.2 keep their activity copy.
+* Fix      - Comments deleted in MediaVerse are removed from the BuddyPress activity post with their replies and notifications, including comments made before 2.6.2, and replies sit under their comment.
 * Fix      - The BuddyPress lightbox steps through every photo of a post made from the Upload page.
 * Fix      - The BuddyPress lightbox shows Edit only to the owner and no Report on your own media.
 * Fix      - Load More on a BuddyPress group's Media tab shows only that group's media.

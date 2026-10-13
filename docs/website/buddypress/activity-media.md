@@ -79,7 +79,7 @@ A comment made on an item in MediaVerse is mirrored onto its activity post as an
 | What you do in MediaVerse | What happens on the activity post |
 |---------------------------|-----------------------------------|
 | Post a comment | An activity comment appears. |
-| Edit a comment | The activity comment shows the new text. |
+| Edit a comment | The edit shows in MediaVerse. The activity comment keeps the original wording, as BuddyPress does not edit comments. |
 | Delete a comment | The activity comment is deleted, with its reply notifications. |
 | Delete a comment that has replies | The replies and their activity comments are deleted too. |
 

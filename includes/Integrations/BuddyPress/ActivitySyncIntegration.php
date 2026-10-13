@@ -63,7 +63,6 @@ class ActivitySyncIntegration {
 		add_action( 'mvs_comment_created', array( $this, 'sync_media_comment_to_activity' ), 10, 5 );
 		add_action( 'delete_comment', array( $this, 'delete_mirrored_activity_comment' ), 10, 2 );
 		add_filter( 'wp_update_comment_data', array( $this, 'link_mirror_before_edit' ), 10, 2 );
-		add_action( 'edit_comment', array( $this, 'update_mirrored_activity_comment' ), 10, 2 );
 		add_action( 'mvs_album_items_added', array( $this, 'update_activity_with_album' ), 10, 4 );
 		add_action( 'mvs_media_group_assigned', array( $this, 'reassign_activity_to_group' ), 10, 2 );
 		add_action( 'mvs_media_privacy_changed', array( $this, 'sync_activity_privacy' ), 10, 3 );
@@ -1310,9 +1309,9 @@ class ActivitySyncIntegration {
 	/**
 	 * Link an old comment to its mirror while it still holds the text the mirror copied.
 	 *
-	 * The match in find_unlinked_mirror() is on the text, and by edit_comment the
-	 * comment already carries the new wording, so an old comment edited once
-	 * could never be linked again (nor removed when deleted later).
+	 * Edits are not copied to the activity comment (BuddyPress core has no comment
+	 * editing). find_unlinked_mirror() matches on text, so an old comment must be
+	 * linked before its text changes, or a later delete could not find its copy.
 	 *
 	 * @since 2.6.2
 	 *
@@ -1326,27 +1325,6 @@ class ActivitySyncIntegration {
 			$this->mirrored_activity_comment( $id );
 		}
 		return $data;
-	}
-
-	/**
-	 * An edited media comment shows its new text on the activity post.
-	 *
-	 * @since 2.6.2
-	 *
-	 * @param int|string $comment_id Comment that was edited.
-	 * @param mixed      $data       Comment data (unused).
-	 * @return void
-	 */
-	public function update_mirrored_activity_comment( $comment_id, $data = null ): void {
-		unset( $data );
-		$ac = $this->mirrored_activity_comment( $comment_id );
-		if ( ! $ac ) {
-			return;
-		}
-		$comment     = get_comment( (int) $comment_id );
-		$ac->content = (string) apply_filters( 'bp_activity_comment_content', $comment->comment_content, 'edit' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- BuddyPress's own comment filter, as bp_activity_new_comment() applies it.
-		$ac->save();
-		wp_cache_delete( (int) $ac->item_id, 'bp_activity_comments' );
 	}
 
 	/**
