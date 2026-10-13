@@ -60,7 +60,7 @@ Every Pro feature ships as a Gutenberg block, configurable in the editor. The co
 
 ### Migration page
 
-The migration tool admin page has one card per platform (rtMedia, MediaPress, BuddyBoss). Each card shows accurate imported counts and skips items that were already imported.
+The migration tool admin page has one card per platform (rtMedia, MediaPress, BuddyBoss). Each card shows accurate imported counts and skips items that were already imported. An imported album takes the strictest privacy of the photos filed in it, so an import never makes a private photo public (2.6.2).
 
 ## Pro Feature Categories
 
