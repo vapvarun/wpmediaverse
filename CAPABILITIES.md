@@ -37,7 +37,7 @@ Status key: **YES** shipped and code-verified · **PARTIAL** works with a named 
 > the list `Core\Migrator::tables()` returns and `UninstallCoverageTest` asserts against a
 > freshly migrated database (25 `CREATE TABLE` statements - `mvs_media_index` is created
 > twice). The twenty-fourth is `mvs_media_spaces`, added by migration v33 in 2.5.1 to link one
-> document into more than one space. Blocks: **9** in `Blocks\BlockRegistrar::BLOCKS`.
+> document into more than one space. Blocks: **8** in `Blocks\BlockRegistrar::BLOCKS`.
 > Shortcodes: **14** `add_shortcode()` calls in `Shortcodes\Shortcodes`. WP-CLI: **21**
 > subcommands (20 public methods on `CLI\Commands` plus `wp mvs cert`).
 >
@@ -143,7 +143,7 @@ Status key: **YES** shipped and code-verified · **PARTIAL** works with a named 
 
 | Can it… | Status | How |
 |---|---|---|
-| Render without writing code | **YES** | 9 registered blocks + 14 shortcodes |
+| Render without writing code | **YES** | 8 registered blocks + 14 shortcodes |
 | Choose how a grid draws itself | **YES** | Default Layout (`grid_layout_class()`) - justified rows (`original`, the default), square and list. Named honestly since 2.5.0: the free grid is Justified rows, not Masonry, and List renders as a list. Since 2.5.1 the setting also reaches **album and collection pages**, which its description has always named and which used to emit a fixed square grid - an update therefore changes how those two pages look on a site that never touched the setting |
 | Fit the site's own width, spacing and type | **YES** | `--mvs-content-width` (declared on `:root`, default 1200px) is read by the dashboard, Explore, single album, single collection, the banner and the messages page, so one line in a child theme moves every MediaVerse surface together; `.mvs-dashboard-grid` and `.mvs-feed` read `--mvs-grid-gap` the same way. Buttons, selects and inputs inherit the theme's font rather than imposing a system stack. Documented in `docs/website/developer-guide/template-overrides.md` |
 | Give members a dashboard and profile | **YES** | `templates/partials/dashboard-content.php`, `templates/profile-edit.php`, `templates/partials/profile-edit-panel.php` |
