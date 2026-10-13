@@ -2575,7 +2575,8 @@
         "CaptionController checks media type before provider",
         "LicenseManager activates through the bundled SDK",
         "Dribbble/Flickr profile header counts items",
-        "admin.css no longer redefines .mvs-badge"
+        "admin.css no longer redefines .mvs-badge",
+        "Core\\\\Plugin adds GamificationTemplateLoader::PAGES to mvs_virtual_route_query_vars"
       ]
     }
   },
