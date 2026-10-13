@@ -7012,6 +7012,19 @@
         "GroupTabIntegration::fetch_media_ids lists through query() (own SQL removed); Load More sends data-group",
         "group_scope_clause lists nothing for non-members of a private/hidden group (bp_moderate exempt)"
       ]
+    },
+    "refresh_2026_10_13_presentation_messaging": {
+      "scope": "13 Oct afternoon: chat media, blocked-pair UI, list layout, lightbox controls, licensing",
+      "added": [
+        "MessagingService::mask_blocked_presence(), mark_sent()",
+        "TemplateLoader::serve_as_found()",
+        "TemplateHelpers::render_grid_stats() (private); .mvs-grid-item-details in tiles",
+        "MediaController::group_route_args() (private)",
+        "NotificationService::on_comment_deleted(), MediaRepository::delete_comment_notifications()"
+      ],
+      "changed": [
+        "BuddyPress multi-item posts keep the strictest rule (2.7.0 plans the rebuild)"
+      ]
     }
   },
   "category_sources": {

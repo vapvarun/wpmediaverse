@@ -2568,6 +2568,15 @@
       "added": [
         "filter mvs_document_readable_via_post documented in manifest.hooks.json"
       ]
+    },
+    "refresh_2026_10_13_presentation": {
+      "scope": "13 Oct afternoon (Pro)",
+      "changed": [
+        "CaptionController checks media type before provider",
+        "LicenseManager activates through the bundled SDK",
+        "Dribbble/Flickr profile header counts items",
+        "admin.css no longer redefines .mvs-badge"
+      ]
     }
   },
   "category_sources": {
