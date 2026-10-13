@@ -22,7 +22,7 @@ estimated_runtime_minutes: 4
 ### 1. Hover reveals title overlay + stat icons at styled size
 - **Action**: visit `$SITE_URL/explore/`; hover a card.
 - **Expect**: hover reveals a title overlay; footer shows author avatar/name, a heart (likes) icon, and — ONLY when `views > 0` — an eye (views) icon. Both icons render at the styled 14x14px size (`dribbble.css`), never the browser-default SVG viewBox size (this is the exact regression MV-LAY-016 exists to catch on blocks; verify it holds on the site-wide Explore path too).
-- **On fail**: `assets/css/dribbble.css` icon sizing rule, or `includes/Frontend/Layouts/DribbbleLayout.php` view-count conditional.
+- **On fail**: `templates/layouts/dribbble/dribbble.css` icon sizing rule, or `includes/Frontend/Layouts/DribbbleLayout.php` view-count conditional.
 
 ### 2. Views icon is hidden, not "0", when zero
 - **Action**: locate the zero-view item's card.

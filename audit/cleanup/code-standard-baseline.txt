@@ -23,7 +23,7 @@ method	includes/Core/Abilities.php::get_ability_definitions	200
 wpdb	includes/Core/Deactivator.php	2
 method	includes/Core/Migrator.php::migrate_to_1	163
 method	includes/Core/Migrator.php::migrate_to_15	168
-method	includes/Core/Plugin.php::init	354
+method	includes/Core/Plugin.php::init	352
 method	includes/Core/Plugin.php::register_services	501
 method	includes/Core/Plugin.php::enqueue_frontend_assets	550
 method	includes/Core/TemplateHelpers.php::media_thumbnail	173
@@ -35,12 +35,10 @@ method	includes/Integrations/BuddyPress/ActivityContentIntegration.php::enhance_
 wpdb	includes/Integrations/BuddyPress/ActivityContentIntegration.php	1
 wpdb	includes/Integrations/BuddyPress/ActivityMediaLinkage.php	5
 wpdb	includes/Integrations/BuddyPress/ActivitySyncIntegration.php	1
-wpdb	includes/Integrations/BuddyPress/GroupTabIntegration.php	2
-owner:privacy-sql	includes/Integrations/BuddyPress/GroupTabIntegration.php	1
 wpdb	includes/Media/ObjectMediaLinkage.php	4
 wpdb	includes/Messaging/ChatFiles.php	7
 method	includes/Messaging/MessagingController.php::register_routes	314
-method	includes/Messaging/MessagingService.php::find_or_create_conversation	179
+method	includes/Messaging/MessagingService.php::find_or_create_conversation	177
 method	includes/Messaging/MessagingService.php::send_message	307
 wpdb	includes/Messaging/MessagingService.php	65
 wpdb	includes/Privacy/MemberPurger.php	5
@@ -48,9 +46,9 @@ method	includes/REST/Controller/AlbumController.php::register_routes	185
 wpdb	includes/REST/Controller/CollectionController.php	2
 wpdb	includes/REST/Controller/FollowController.php	1
 method	includes/REST/Controller/MediaController.php::register_routes	211
-method	includes/REST/Controller/MediaController.php::get_items	366
+method	includes/REST/Controller/MediaController.php::get_items	364
 method	includes/REST/Controller/MediaController.php::update_item	225
-method	includes/REST/Controller/MediaController.php::replace_file	351
+method	includes/REST/Controller/MediaController.php::replace_file	348
 method	includes/REST/Controller/MediaController.php::prepare_item_for_response	289
 wpdb	includes/REST/Controller/MediaController.php	13
 owner:privacy-sql	includes/REST/Controller/MediaController.php	1
@@ -61,7 +59,7 @@ wpdb	includes/REST/Controller/UserController.php	1
 owner:privacy-sql	includes/REST/Controller/UserController.php	1
 method	includes/REST/RestGate.php::map	189
 method	includes/Repository/MediaRepository.php::drive_documents_scope	168
-method	includes/Repository/MediaRepository.php::build_query_parts	269
+method	includes/Repository/MediaRepository.php::build_query_parts	268
 wpdb	includes/Services/AIService.php	1
 wpdb	includes/Services/AdminAggregatesService.php	13
 wpdb	includes/Services/AlbumService.php	11
@@ -107,8 +105,6 @@ id	templates/documents.php	e560f9ff313d6cb7d42dfdfea879f680d525d4c8
 id	templates/explore.php	61d55209a8c9329c127faba5149b413d0e624456
 id	templates/explore.php	ae725e65b5785db6aec3f1dce2bfc61aea972ef8
 id	templates/explore.php	2f4e9dff23811ed7dfd066c24ab4f71158820adf
-id	templates/explore.php	41651923430ded34bd3371e1cf0aec6a2ade8067
-id	templates/explore.php	5c65ed9b9284f5a0e463321c81129cadf733586c
 id	templates/explore.php	61d55209a8c9329c127faba5149b413d0e624456
 id	templates/explore.php	d4ae8ac1ba310e082d798ada518ee1d3c818df7e
 id	templates/explore.php	ac1b2f8c275b4e22da4c966df5b4b78a4a8a8b8d

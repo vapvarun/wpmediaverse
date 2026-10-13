@@ -68,5 +68,5 @@ estimated_runtime_minutes: 6
 |---|---|---|
 | Block shows a fatal on a deleted battle id | missing not-found guard | `src/blocks/pro-battle/render.php` |
 | Off-state notice visible to a regular visitor | notice not scoped to `manage_options` | `src/blocks/pro-battle/render.php` / `pro-battles-active/render.php` |
-| Voting from the block behaves differently than the page | block uses a divergent renderer/JS path | `src/blocks/pro-battles-active/view.js` |
+| Voting from the block behaves differently than the page | block uses a divergent renderer/JS path | `src/blocks/pro-battles-active/render.php` |
 | Horizontal scroll at 390px on a battle card | missing `@media` breakpoint | Pro battles stylesheet |

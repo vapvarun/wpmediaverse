@@ -125,6 +125,61 @@ Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui
 
 == Changelog ==
 
+= 2.6.2 - October 2026 =
+
+Chat files stay in the chat, galleries list the same way everywhere, BuddyPress posts follow their media, and member deletion cleans up fully.
+
+* New      - Deleting a comment also deletes its replies, as on social networks.
+* New      - Read notifications older than 90 days are removed daily.
+* Improve  - Chat attachments live only in their conversation: they are no longer listed in My Media, the media list or the WordPress Media Library, and existing ones move to protected storage.
+* Improve  - Chat files uploaded but never sent are deleted after a day.
+* Improve  - A gallery shows as one tile with a badge on Explore, the Media Grid block, the feeds and the BuddyPress profile and group tabs, and stays listed when its first item is private or deleted.
+* Improve  - The gallery badge and lightbox count every item the viewer may see, so owners and followers reach all of theirs.
+* Improve  - A chat thread opens at the newest message and stays there while photos and videos load.
+* Improve  - The comment delete prompt says how many replies go with it, and album prompts say items instead of photos.
+* Improve  - Following, favouriting or reacting again notifies the owner only once.
+* Improve  - A notification about an item its reader can no longer see shows no title or link.
+* Improve  - Member search matches display names and public profile names, never login names.
+* Improve  - Explore search returns the same results on the first page and on Load More.
+* Improve  - Categories has its own item in the MediaVerse menu, and the Albums screen no longer shows media categories and tags.
+* Improve  - On a BuddyNext site, BuddyNext sends only the member emails it owns; MediaVerse still sends the rest.
+* Improve  - Database updates run one at a time and continue where they stopped.
+* Improve  - Screen readers hear the right name for the People search field and the chat message buttons, and comment buttons are 44px on touch screens.
+* Improve  - A document page names its privacy with the same words as the drive.
+* Improve  - Storage screens call local storage "This server", as the setting does.
+* Fix      - BuddyPress activity posts show their photo again when direct delivery is on.
+* Fix      - An MP4 file branded as M4V, as iPhones save them, uploads like any MP4.
+* Fix      - Changing an item's privacy through the API updates its BuddyPress activity post.
+* Fix      - A BuddyPress post made from several uploads follows its most private item, and deleting one photo keeps the post.
+* Fix      - Comments deleted or edited in MediaVerse are removed or updated on the BuddyPress activity post, with their notifications, and replies sit under their comment. Comments mirrored before 2.6.2 keep their activity copy.
+* Fix      - The BuddyPress lightbox steps through every photo of a post made from the Upload page.
+* Fix      - The BuddyPress lightbox shows Edit only to the owner and no Report on your own media.
+* Fix      - Load More on a BuddyPress group's Media tab shows only that group's media.
+* Fix      - Deleting or erasing a member removes their media files, and account deletion never stops part way.
+* Fix      - Cancelling an account deletion request lifts only the suspension it set, and asking twice changes nothing.
+* Fix      - The album edit window pre-selects the album's photos again, and album cards show exact counts to their owner.
+* Fix      - Uploads with the same title at the same time no longer fail.
+* Fix      - A blocked member can no longer reopen a conversation.
+* Fix      - A deleted chat message no longer offers reactions or Reply.
+* Fix      - Explore says "in" rather than "tagged" when a category has no results.
+* Fix      - The wp mvs diagnose_cpt_ids warning no longer points at a fix that shipped in 2.4.0.
+* Security - Chat attachments open only for the people in the conversation.
+* Security - A shared item opens only for what its owner chose to share.
+* Security - Album and collection feeds, archives, sitemaps and site search list only public ones.
+* Security - Bulk delete checks the same capabilities as a single delete.
+* Security - Signed link lifetimes are capped at the site's setting.
+* Security - A slug lookup and the activity feed apply the same visibility checks as the item page.
+* Security - A message reply can only reference a message in its own conversation.
+* Security - A member's data export lists only the blocks and reports they made.
+* Dev      - GET /mvs/v1/media accepts group (a BuddyPress group's media, following the group's visibility).
+* Dev      - GET /mvs/v1/albums omits item ids unless with_items=1 is passed (filter mvs_album_list_include_items).
+* Dev      - New filters mvs_comment_delete_replies, mvs_unsent_chat_file_hours and mvs_privacy_level_value.
+* Dev      - New MediaRepository::gallery_hidden_clause(), gallery_tile_counts(), group_scope_clause(), search_clause() and document_scope_ids(); gallery_exclude_subquery() is deprecated.
+* Dev      - Database update: BuddyPress activity privacy is refreshed, and indexes are added to mvs_media_meta and mvs_messages. This may take a moment on large sites.
+* Dev      - Templates updated (2.6.2): explore.php, media-single.php, partials/chat-message.php, partials/dashboard-content.php, partials/shared-ui-frame.php.
+* Compat   - Requires PHP 8.1 or newer (was 7.4).
+* Compat   - Aligned with MediaVerse Pro 2.6.2. Install both updates together.
+
 = 2.6.1 - October 2026 =
 
 Faster media delivery, videos that start sooner, upload progress, a Followers privacy level, and private albums and tags that stay private everywhere.
