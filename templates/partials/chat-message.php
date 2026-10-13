@@ -88,7 +88,7 @@ defined( 'ABSPATH' ) || exit;
 		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.setReplyTo" type="button" title="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Reply', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z" fill="currentColor"/></svg>
 		</button>
-		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="context.item.isReceived" type="button" title="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>">
+		<button class="mvs-chat-msg__context-btn mvs-chat-msg__context-btn--delete" data-wp-on--click="actions.deleteMessage" data-wp-bind--hidden="state.hideDeleteMessage" type="button" title="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Delete for everyone', 'wpmediaverse' ); ?>">
 			<svg viewBox="0 0 24 24" width="16" height="16" xmlns="http://www.w3.org/2000/svg"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
 		</button>
 		<button class="mvs-chat-msg__context-btn" data-wp-on--click="actions.reportMessage" data-wp-bind--hidden="state.hideReportMessage" type="button" title="<?php esc_attr_e( 'Report', 'wpmediaverse' ); ?>" aria-label="<?php esc_attr_e( 'Report message', 'wpmediaverse' ); ?>">
@@ -112,23 +112,42 @@ defined( 'ABSPATH' ) || exit;
 		<!-- Text content (shown for text-only messages AND attachment messages with text) -->
 		<span data-wp-bind--hidden="context.item.noTextContent" data-wp-text="context.item.content"></span>
 
-		<!-- Image attachment -->
-		<img
-			class="mvs-chat-msg__image"
+		<!-- Image attachment: opens full size; the bubble's menu stays on the rest of the bubble. -->
+		<a
+			class="mvs-chat-msg__image-link"
 			data-wp-bind--hidden="context.item.notImage"
-			data-wp-bind--src="context.item.attachment.thumbnail"
-			alt="" data-wp-bind--alt="context.item.attachment.name"
-			loading="lazy"
-		/>
+			data-wp-bind--href="context.item.attachment.url"
+			data-wp-on--click="actions.openChatImage"
+			target="_blank"
+			rel="noopener"
+			aria-label="<?php esc_attr_e( 'Open the image full size', 'wpmediaverse' ); ?>"
+		>
+			<img
+				class="mvs-chat-msg__image"
+				data-wp-bind--src="context.item.attachment.thumbnail"
+				alt="" data-wp-bind--alt="context.item.attachment.name"
+				loading="lazy"
+			/>
+		</a>
 
 		<!-- Video attachment -->
 		<video
 			class="mvs-chat-msg__video"
 			data-wp-bind--hidden="context.item.notVideo"
 			data-wp-bind--src="context.item.attachment.url"
+			data-wp-bind--poster="context.item.attachment.thumbnail"
 			controls
-			preload="none"
+			preload="metadata"
 		></video>
+
+		<!-- Audio file (a voice note is recorded in the chat and drawn below) -->
+		<audio
+			class="mvs-chat-msg__audio"
+			data-wp-bind--hidden="context.item.notAudio"
+			data-wp-bind--src="context.item.attachment.url"
+			controls
+			preload="metadata"
+		></audio>
 
 		<!-- Voice message -->
 		<div class="mvs-chat-msg__voice" data-wp-bind--hidden="context.item.notVoice">

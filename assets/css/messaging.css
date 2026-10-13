@@ -821,6 +821,22 @@ body.dark-mode {
 	border-radius: 12px;
 }
 
+.mvs-chat-msg__image-link {
+	display: block;
+	border-radius: 12px;
+}
+
+.mvs-chat-msg__image-link:focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+}
+
+.mvs-chat-msg__audio {
+	display: block;
+	width: 260px;
+	max-width: 100%;
+}
+
 .mvs-chat-msg__file {
 	display: flex;
 	align-items: center;

@@ -257,7 +257,8 @@ function enrichMessage( msg ) {
 	msg.notText    = msg.message_type !== 'text';
 	msg.notImage   = msg.message_type !== 'image';
 	msg.notVideo   = msg.message_type !== 'video';
-	msg.notVoice   = msg.message_type !== 'voice' && msg.message_type !== 'audio';
+	msg.notVoice   = msg.message_type !== 'voice';
+	msg.notAudio   = msg.message_type !== 'audio';
 	msg.notFile    = msg.message_type !== 'file';
 	msg.notMediaShare = msg.message_type !== 'media_share';
 
@@ -629,6 +630,13 @@ const { state, actions } = store( 'mvs/messaging', {
 			const created = parseServerDate( msg.created_at );
 			const fifteenMin = 15 * 60 * 1000;
 			return ( Date.now() - created ) > fifteenMin;
+		},
+
+		// One "for everyone" control at a time: Unsend while its window is open
+		// (it also removes the file), Delete after it closes.
+		get hideDeleteMessage() {
+			const msg = getContext().item;
+			return ! msg || ! msg.isSent || ! state.hideUnsend;
 		},
 
 		get messageDuration() {
@@ -1778,6 +1786,11 @@ const { state, actions } = store( 'mvs/messaging', {
 		},
 
 		// ---- Reactions ----
+		// The image link opens the file; keep the click from opening the menu.
+		openChatImage( event ) {
+			event.stopPropagation();
+		},
+
 		showContextMenu( event ) {
 			event.preventDefault();
 			event.stopPropagation();
