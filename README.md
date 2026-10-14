@@ -1,480 +1,108 @@
-# WPMediaVerse
+# MediaVerse
 
-[![WordPress](https://img.shields.io/badge/WordPress-6.5%2B-blue?logo=wordpress)](https://wordpress.org/)
-[![PHP](https://img.shields.io/badge/PHP-7.4%2B-8892BF?logo=php)](https://php.net/)
-[![License](https://img.shields.io/badge/License-GPLv2-green)](https://www.gnu.org/licenses/gpl-2.0.html)
-[![Version](https://img.shields.io/badge/Version-2.4.0-brightgreen)](https://github.com/vapvarun/wpmediaverse/releases/tag/v2.4.0)
-[![BuddyPress](https://img.shields.io/badge/BuddyPress-Compatible-orange)](https://buddypress.org/)
-[![Gutenberg](https://img.shields.io/badge/Gutenberg-12%20Blocks-purple)](https://developer.wordpress.org/block-editor/)
-[![REST API](https://img.shields.io/badge/REST%20API-138%20Endpoints-red)](https://developer.wordpress.org/rest-api/)
+A media platform for WordPress with albums, reactions, comments, direct messaging, AI moderation and optional BuddyPress integration. Media lives in its own database tables, not in `wp_posts`.
 
-**The media layer your community site is missing.** Custom database tables, AI moderation, direct messaging, and a full social layer — without requiring BuddyPress. The only WordPress media plugin that doesn't store uploads in `wp_posts`.
+## What it does
 
-**Built by** [vapvarun](https://github.com/vapvarun) & [Wbcom Designs](https://wbcomdesigns.com/)
+**Uploads and library**
+- Photo, video and audio uploads with a MIME allowlist, a dangerous-extension blocklist, and SHA-256 duplicate detection.
+- Location data is stripped from photos by default, and thumbnails are generated at several sizes. WebP and AVIF copies can be generated (AVIF is off by default).
+- Full-text search across the library, tags and categories, a tag merge tool and bulk actions in the admin.
+- Media is stored in 23 dedicated, indexed tables (`mvs_*`), so media queries do not touch posts, pages or products.
 
-[Try Live Demo](https://app.instawp.io/launch?s=wpmediaverse&d=v2) · [Download Free](https://store.wbcomdesigns.com/wpmediaverse/) · [Get Pro](https://store.wbcomdesigns.com/wpmediaverse-pro/) · [Documentation](https://store.wbcomdesigns.com/wpmediaverse/docs/) · [Announcement](https://vapvarun.com/why-i-built-wpmediaverse/)
+**Organisation**
+- Albums with a cover and ordered items, including audio playlists.
+- Rule-based collections, public or members-only.
+- An Explore feed with filters by tag, album, member and media type, and a lightbox with reactions, comments, favorites and sharing.
 
-> **Why WPMediaVerse?** Every other WordPress media plugin (rtMedia, MediaPress, BuddyBoss Media) stores uploads in `wp_posts`. On active communities, that table grows into tens of thousands of mixed rows. WPMediaVerse uses 22 dedicated, indexed MySQL tables — media queries never touch your posts, pages, or products. Performance stays predictable at 100,000+ media items.
+**Privacy and access**
+- Per-item privacy levels including public, members, logged-in, friends, group, space, private, direct message and custom.
+- Signed, time-limited media URLs for gated media.
 
----
+**Social**
+- Six reaction types, threaded comments, favorites, @mentions, follows, share links, abuse reports and member blocklists.
+- Direct messaging with text, media and voice messages, read state and typing indicators.
+- In-app notifications and push notification device registration for mobile apps.
 
-## What's New in 2.4.0
+**Moderation**
+- AI moderation with OpenAI: scan uploads, then flag, hide or reject by score, with a monthly budget and an admin moderation queue. Other providers can be added through the `mvs_ai_providers` hook, and Pro adds Google Vision, AWS Rekognition and Claude.
 
-Documents get a real home, and My Media becomes a set of addressable sections.
+**Community and integrations**
+- BuddyPress and BuddyBoss: media and album tabs on profiles and groups, photo and video uploads in the activity form, and notifications. BuddyPress is optional.
+- Outbound webhooks signed with HMAC-SHA256.
+- WordPress personal data export and erase support.
+- The Integrations screen can install companion plugins: BuddyNext, Jetonomy, WB Gamification, Learnomy, WP Career Board and Listora.
 
-- New: **A document drive per member** (with Pro) — folders, trash and restore, targeted sharing to a member or a role, in-drive search. Documents are deliberately not photos and do not live in the media library.
-- New: **`use_mvs_documents` capability** answers "may this member have a document library at all", separately from whether they may upload and from whether a given file is readable. Granted to every role by default, because it arrives on a feature that already shipped.
-- New: **Every My Media section is a URL** (`/my-media/<slug>/`), painted server-side on first load. Editing your profile became a section, which returned about 110px at the top of every visit.
-- Improve: Documents admin gained a single view and edit screen, writing through the same path the REST API uses so the two cannot drift.
-- Fix: Album IDs are evicted from `mvs_media_index`. Albums had been writing `wp_posts` IDs into a table whose primary key auto-increments for media — on a site where uploads have outrun post IDs, creating an album overwrote a real photo's slug and privacy.
-- Fix: A missing `vendor/` took the whole site down rather than the plugin. Runtime dependencies now ship under `libs/` and the autoloader is hand-written, so there is no Composer autoloader that can go missing.
+## Who it is for
 
-[Full release notes](https://github.com/vapvarun/wpmediaverse/releases/tag/v2.4.0) · [Changelog](#changelog) (below)
+Community sites, membership sites, portfolios and any WordPress site where members upload and share media. Developers can build headless or mobile front ends on the REST API.
 
----
+## Where to get it
 
-## What Can You Build?
+- Product site: [wpmediaverse.com](https://wpmediaverse.com)
+- Download: [wbcomdesigns.com/downloads/mediaverse/](https://wbcomdesigns.com/downloads/mediaverse/)
+- MediaVerse Pro: [wbcomdesigns.com/downloads/mediaverse-pro/](https://wbcomdesigns.com/downloads/mediaverse-pro/)
 
-WPMediaVerse is designed to power **any media-centric WordPress site**:
+MediaVerse is not listed on WordPress.org.
 
-| Use Case | How |
-|----------|-----|
-| **Photo Sharing Community** | BuddyPress profiles + groups + reactions + albums |
-| **Portfolio Gallery** | Media grid blocks + albums + privacy controls |
-| **Digital Asset Library** | Upload + organize + search + access rules |
-| **Membership Media Portal** | Signed URLs + lock overlay + payment bridges |
-| **Client File Delivery** | Access codes + signed URLs + download tracking |
-| **Stock Photo Marketplace** | Watermark preview + purchase gates + checkout |
-| **Team Collaboration** | Group media + albums + activity stream + notifications |
-| **Social Intranet** | BuddyPress + reactions + comments + mentions + favorites |
-| **Learning Platform Media** | Albums as course media + privacy per role |
-| **Video/Audio Hub** | Media player block + view tracking + playlists |
+## Documentation
 
----
-
-## Feature Overview
-
-### Upload & Storage
-- Drag & drop uploader with MIME validation and size limits
-- Automatic EXIF GPS stripping for privacy protection
-- Duplicate detection via file hash
-- Extension blocklist and double-extension blocking
-- Storage driver pattern — local default, extensible to **S3**, **BunnyCDN**, or custom via filter (Pro)
-- Organized file storage in `wp-content/uploads/wpmediaverse/`
-
-### Media Organization
-- **Albums** — Ordered collections with cover images, drag-to-reorder, auto-cover fallback
-- **Playlists** — Audio albums with sequential playback
-- **Smart Collections** — Auto-curated based on rules (type, tag, date range, author)
-- **Stories** — Time-limited Instagram-style media with auto-cleanup via WP Cron
-- **Tags & Categories** — Full taxonomy support with tag cloud, merge, rename, and autocomplete
-
-### Privacy & Access Control
-| Level | Description |
-|-------|-------------|
-| `public` | Visible to everyone |
-| `loggedin` | Visible to logged-in users |
-| `friends` | Visible to BuddyPress friends only |
-| `group` | Visible to group members only |
-| `private` | Visible to owner only |
-| `custom` | Fine-grained access rules |
-
-- Access rules engine supporting: **role**, **capability**, **membership**, **purchase**, **subscription**, **redemption code**
-- **Signed URLs with HMAC-SHA256** for time-limited, gated media delivery — every thumbnail surface routes through signed URLs as of 1.1.3
-- Range request support for video/audio streaming through signed URLs
-- Lock overlay block with blurred preview for paywalled content
-- Payment bridge with hooks for Stripe/WooCommerce integration
-
-### Direct Messaging
-- 1:1 private messaging between users
-- Group conversations with multi-user participants
-- Read receipts with per-user last-read state
-- Message reactions, edit, delete (within configurable window)
-- Media attachments via existing upload pipeline
-- BP notification dispatch + REST polling transport
-
-### Social Layer
-| Feature | Details |
-|---------|---------|
-| **Reactions** | 6 types: like, love, haha, wow, sad, angry — one per user per media |
-| **Comments** | Threaded via WP comment system, with mention support |
-| **Favorites** | Bookmark media into personal collections |
-| **Mentions** | @mention users in comments — triggers notifications |
-| **Follows** | User-to-user follow relationships |
-| **Sharing** | Generate share links for Facebook, Twitter, LinkedIn, email |
-| **Stats** | Views, downloads, reactions — per-media and per-user aggregation |
-| **Activity** | BuddyPress activity stream with thumbnails and lightbox |
-| **Notifications** | In-app + BuddyPress notification queue |
-| **Reports** | User-submitted abuse reports with moderator review |
-| **Blocks** | User-to-user blocklist for DM/comment safety |
-
-### AI-Powered Moderation
-- **OpenAI Vision** (GPT-4) for automatic content analysis and tagging
-- Provider abstraction — bring your own AI via `mvs_ai_providers` hook
-- Budget tracking with monthly limits and cost-per-analysis controls
-- Auto-actions: flag, hide, or reject based on moderation score
-- Admin moderation queue with approve/reject workflow
-- Async processing via **Action Scheduler** (sync fallback when unavailable)
-
-### BuddyPress Integration
-
-Deeply integrated with BuddyPress — all features activate automatically when BP is detected:
-
-| Feature | Profile | Groups |
-|---------|---------|--------|
-| Media grid with upload | `/members/{user}/media/` | `/groups/{slug}/media/` |
-| Albums with create | `/members/{user}/media/albums/` | `/groups/{slug}/media/albums/` |
-| Single album with add media | `/members/{user}/media/albums/{slug}/` | `/groups/{slug}/media/albums/{slug}/` |
-| Sub-tab navigation | Media \| Albums | Media \| Albums |
-| Activity on upload | "uploaded a new photo: X" | "uploaded a new photo: X in the group Y" |
-
-**Additional BP features:**
-- Activity media attachment — Photo/Video button in "What's New" form (1-6 per post)
-- Multi-image grid layout in activity stream (Facebook-style)
-- Full-viewport lightbox on activity media — images, video player, audio player (reactions, comments, favorites, share)
-- BP notifications for reactions, comments, mentions, and DMs
-- Media count badge on profile tab ("Media 49")
-- Activity filter dropdown includes Media Uploads
-
-### Gutenberg Blocks
-
-12 blocks, all powered by the **WordPress Interactivity API** — zero legacy JavaScript:
-
-| Block | Slug | Description |
-|-------|------|-------------|
-| Media Upload | `mvs/media-upload` | Drag & drop file uploader with REST integration |
-| Media Grid | `mvs/media-grid` | Filterable grid with lightbox and lazy loading |
-| Media Player | `mvs/media-player` | Video/audio player with view tracking |
-| Album Viewer | `mvs/album-viewer` | Album display with ordered items |
-| Story Viewer | `mvs/story-viewer` | Instagram-style stories carousel |
-| Media Stats | `mvs/media-stats` | User stats dashboard cards |
-| Media Social | `mvs/media-social` | Social actions bar (reactions, comments, share) |
-| Explore Feed | `mvs/explore-feed` | Public explore feed with search and filters |
-| Explore View | `mvs/explore-view` | Explore page layout with browse modes |
-| Dashboard View | `mvs/dashboard-view` | User dashboard (My Media, Albums, Favorites) |
-| Shared UI | `mvs/shared-ui` | Lightbox shell (image/video/audio), FAB uploader, shared components |
-| Lock Overlay | `mvs/lock-overlay` | Paywall overlay with blurred preview + unlock prompt |
-
-WPMediaVerse Pro adds 12 more blocks: the four layout feeds plus tournament, challenge, battle, leaderboard and compete-hub blocks.
-
-### Shortcodes
-
-8 shortcodes — drop media features into any page or widget.
-`columns` and per-page are NOT shortcode attributes: they come from
-Settings → Display (Grid Columns, Items Per Page) so a shortcode cannot
-silently override an admin setting.
-
-```
-[mvs_gallery]                    Filterable media grid
-[mvs_gallery type="image" category="nature" tag="summer" orderby="date"]
-
-[mvs_upload]                     Upload form
-[mvs_upload max_files="10" show_privacy="true"]
-
-[mvs_album id="123"]            Album viewer
-[mvs_album id="123" columns="3" show_title="true"]
-
-[mvs_player id="456"]           Media player
-[mvs_player id="456" autoplay="false" loop="true"]
-
-[mvs_stats]                      Stats dashboard
-[mvs_stats views="true" downloads="true" reactions="true" top="true" top_count="5"]
-
-[mvs_dashboard]                  User dashboard (My Media / Albums / Favorites)
-
-[mvs_collection id="789"]       Smart collection viewer
-
-[mvs_profile_edit]               In-place profile editor
-```
-
-### Template Override System
-
-Copy templates to your theme for full customization:
-
-```
-your-theme/wpmediaverse/
-├── media-single.php     Single media item (social UI, owner actions)
-├── album.php            Single album display
-├── explore.php          Explore/archive page (search + tag cloud)
-├── dashboard.php        User dashboard (My Media / Albums / Favorites)
-├── messages.php         Direct message inbox + thread view
-└── shortcodes/          Per-shortcode template parts
-```
-
-### REST API
-
-80+ endpoints across **18 controllers** under `mvs/v1/` for full headless/decoupled usage:
-
-| Endpoint Group | Routes | Methods |
-|----------------|--------|---------|
-| Media | `/media`, `/media/{id}`, `/media/{id}/view`, `/me/media` | GET, POST, PUT, DELETE |
-| Albums | `/albums`, `/albums/{id}`, `/albums/{id}/items`, `/albums/{id}/reorder` | GET, POST, PUT, DELETE |
-| Collections | `/collections`, `/collections/{id}`, `/collections/{id}/rules` | GET, POST, PUT, DELETE |
-| Reactions | `/media/{id}/reactions` | GET, POST, DELETE |
-| Comments | `/media/{id}/comments`, `/media/{id}/comments/{cid}` | GET, POST, DELETE |
-| Favorites | `/media/{id}/favorite`, `/me/favorites` | GET, POST, DELETE |
-| Follows | `/users/{id}/follow`, `/me/following`, `/me/followers` | GET, POST, DELETE |
-| Tags | `/tags`, `/tags/cloud`, `/tags/merge`, `/tags/{id}` | GET, POST, PUT |
-| Stats | `/media/{id}/stats`, `/me/stats` | GET |
-| Profiles | `/profiles/{username}`, `/me/profile` | GET, PUT |
-| Notifications | `/me/notifications` | GET, PUT |
-| Activity | `/activity`, `/activity/{id}/media` | GET, POST |
-| Access Rules | `/media/{id}/rules`, `/media/{id}/grant`, `/me/grants` | GET, POST, DELETE |
-| Signed URLs | `/media/{id}/signed-url`, `/serve` | GET |
-| Moderation | `/moderation`, `/moderation/counts`, `/moderation/{id}/approve` | GET, POST |
-| Bulk | `/media/bulk` | POST |
-| Reports | `/media/{id}/report` | POST |
-| Users | `/users`, `/users/{id}` | GET |
-
-All endpoints support proper authentication (nonce + cookie), validation, rate limiting middleware, and error handling.
-
-### Admin Dashboard
-
-| Page | Description |
-|------|-------------|
-| **Overview** | At-a-glance stats (media count, albums, pending, total views), quick action links, recent uploads, system status |
-| **Settings** | 5 tabs: General, Display (grid/pagination/thumbnails), Permissions (role x capability matrix), AI & Moderation, Webhooks |
-| **Moderation** | Review flagged/pending media with approve/reject, AI analysis results, flag pills |
-| **Stats** | Top media by views, reactions summary, AI usage metrics |
-| **All Media** | Custom listing page with filters, search, bulk actions (replaces CPT edit.php) |
-| **Log Viewer** | Internal error log with severity filter |
-| **Setup Wizard** | First-run configuration walkthrough |
-
-### WP-CLI Commands
-
-```bash
-wp mvs migrate                # Run pending database migrations
-wp mvs prune-views            # Clean old view tracking records
-wp mvs cleanup-expired        # Remove expired stories and grants
-wp mvs reindex                # Rebuild the media index table
-wp mvs cache-flush            # Clear all plugin caches
-wp mvs moderation-stats       # Moderation queue counts
-wp mvs import-rtmedia         # Import from rtMedia (use --dry-run first)
-wp mvs stats                  # Media statistics overview
-```
-
-### Webhooks
-
-Outbound event webhooks for integrating with external systems:
-
-- Events: `media.uploaded`, `media.deleted`, `media.moderated`, `media.reaction`, `media.comment`, `media.purchased`
-- HMAC-SHA256 signed payloads for verification
-- Async delivery via Action Scheduler
-- Configurable URLs and secrets via Settings > Webhooks
-
----
-
-## Installation
-
-### From ZIP
-1. Download the [latest release](https://github.com/vapvarun/wpmediaverse/releases/latest)
-2. Upload to **Plugins > Add New > Upload Plugin**
-3. Activate
-
-### From Source
-```bash
-cd wp-content/plugins/
-git clone https://github.com/vapvarun/wpmediaverse.git
-cd wpmediaverse
-composer install
-npm install && npm run build
-```
-
-### After Activation
-1. Three pages are auto-created: **Explore Media**, **My Media**, **Upload Media**
-2. Go to **MediaVerse > Settings** to configure upload limits, display, and permissions
-3. (Optional) Add your OpenAI API key in **Settings > AI & Moderation**
-4. (Optional) BuddyPress features activate automatically when BP is active
-
----
-
-## Architecture
-
-```
-wpmediaverse/
-├── includes/
-│   ├── Core/             Bootstrap, ServiceContainer, Migrator, TemplateHelpers
-│   ├── PostTypes/        Album + Collection custom post types
-│   ├── Taxonomies/       mvs_tag, mvs_category
-│   ├── Services/         Upload, Storage, AI, Moderation, Stats, Cache, Album, GDPR, Health
-│   ├── Social/           Reactions, Comments, Favorites, Mentions, Shares, Follows, Activity, Notifications, Reports
-│   ├── Messaging/        DM service, controllers, REST polling transport, notification listener
-│   ├── REST/             18 controllers + RateLimiter middleware
-│   ├── Repository/       MediaRepository (single owner of media data access)
-│   ├── Capabilities/     MediaCapabilities (role x capability matrix)
-│   ├── Integrations/     BuddyPress (7 focused classes), Webhooks
-│   ├── Admin/            Overview, Settings (5 classes), Stats, Moderation, MediaList, LogViewer, SetupWizard
-│   ├── Blocks/           BlockRegistrar
-│   ├── Shortcodes/       8 shortcodes
-│   └── CLI/              WP-CLI commands
-├── src/blocks/           12 Gutenberg blocks (JSX + Interactivity API)
-├── templates/            Overridable frontend templates (album, explore, dashboard, messaging, single)
-├── assets/
-│   ├── css/              Frontend + admin stylesheets
-│   └── js/               Card builders, BP activity media attachment
-└── languages/            i18n ready (POT regenerated each release)
-```
-
-### Design Principles
-- **Service Container** — Lazy-loaded dependencies, no singletons or globals
-- **PSR-4 Autoloading** — Clean namespace mapping via Composer
-- **Custom Tables** — 21 indexed tables for fast queries without `wp_posts`/postmeta JOINs
-- **Interactivity API** — 100% modern WordPress frontend, zero legacy JS
-- **Driver Pattern** — Swap storage backends without changing core code (Pro)
-- **Hook-First** — Filter/action hooks throughout for extensibility
-- **Privacy by Default** — EXIF stripping, signed URLs, configurable access
-- **REST-Only Frontend** — Zero `admin-ajax.php` calls from public-facing JS
-
-### Custom Database Tables (21)
-
-All prefixed with `{$wpdb->prefix}mvs_`. Defined in `includes/Core/Migrator.php`.
-
-| Table | Purpose |
-|-------|---------|
-| `mvs_media_index` | Authoritative media record (no CPT dependency) |
-| `mvs_media_meta` | Arbitrary key-value metadata for media |
-| `mvs_media_views` | Per-user view tracking |
-| `mvs_media_stats` | Aggregated media statistics |
-| `mvs_reactions` | Emoji reactions on media |
-| `mvs_favorites` | User favorites/bookmarks |
-| `mvs_follows` | User-to-user follow relationships |
-| `mvs_mentions` | @mention records |
-| `mvs_activity` | Activity feed entries |
-| `mvs_notifications` | User notification queue |
-| `mvs_reports` | Content/user abuse reports |
-| `mvs_blocks` | User block list |
-| `mvs_access_rules` | Per-media access control rules |
-| `mvs_access_grants` | Granted access tokens |
-| `mvs_album_items` | Album-to-media mapping |
-| `mvs_error_log` | Internal error/debug log |
-| `mvs_conversations` | DM conversation threads |
-| `mvs_conversation_participants` | Conversation membership |
-| `mvs_messages` | Individual DM messages |
-| `mvs_message_reactions` | Reactions on DM messages |
-| `mvs_transactions` | Credit/monetization transactions |
-
----
+- [Documentation on wpmediaverse.com](https://wpmediaverse.com/docs/)
+- [Documentation hub](https://docs.wbcomdesigns.com/products/mediaverse/)
+- [Release notes](https://wbcomdesigns.com/release-notes/mediaverse/)
 
 ## Requirements
 
-| Requirement | Version |
-|-------------|---------|
-| WordPress | 6.5+ |
-| PHP | 7.4+ (tested on 8.1, 8.2, 8.3, 8.4) |
-| BuddyPress | 12.0+ (optional) |
-| OpenAI API | GPT-4 Vision (optional, for AI moderation) |
+- WordPress 6.5 or later
+- PHP 8.1 or later
 
----
+## Installation
 
-## Frequently Asked Questions
+1. Download the plugin from the [download page](https://wbcomdesigns.com/downloads/mediaverse/).
+2. In WordPress go to **Plugins > Add New > Upload Plugin**, upload the zip and activate it. Activation creates the Explore, Dashboard and Upload pages.
+3. Open **MediaVerse > Settings** (`admin.php?page=mvs-settings`) to set upload limits, privacy defaults, storage and AI moderation.
+4. Add the blocks or shortcodes to your pages, or use the pages created on activation.
 
-**Does this require BuddyPress?**
-No. WPMediaVerse works standalone. BuddyPress features (activity, profile/group tabs, friend privacy, notifications) activate automatically when BP is detected.
+## For developers
 
-**Can I use this for a membership site?**
-Yes. Use access rules (role, capability, or purchase-based) combined with signed URLs and the lock overlay block to gate premium media content.
+**Identifiers**
 
-**What file types are supported?**
-Images (jpg, png, gif, webp, svg), video (mp4, webm, mov) and audio (mp3, wav, ogg, flac), configurable in settings.
+| Item | Value |
+|---|---|
+| PHP namespace | `WPMediaVerse` |
+| Function, option and hook prefix | `mvs_` |
+| Text domain | `wpmediaverse` |
+| Database tables | `{wpdb prefix}mvs_*` |
+| REST namespace | `mvs/v1` |
+| Theme template directory | `{your-theme}/wpmediaverse/` |
 
-PDFs and other documents are deliberately **not** accepted by the media library — a contract is not a photo, and mixing them made both worse. New PDF uploads are refused there (`UploadService::hard_refused_mimes()`), while historical PDFs keep rendering. Documents have their own home instead: WPMediaVerse Pro 2.4.0 gives each member a document drive with folders, trash, sharing and search.
+**Blocks** (8, registered by `Blocks\BlockRegistrar`, under the `mvs/` namespace): `media-upload`, `media-grid`, `media-player`, `album-viewer`, `media-stats`, `explore-feed`, `member-photos` and `pdf-viewer`.
 
-**Can I import from rtMedia?**
-Yes. Use `wp mvs import-rtmedia --dry-run` to preview, then run without `--dry-run` to import. Handles media, albums, album-media relationships, and engagement (reactions, comments, views) as of 1.2.0.
+**Shortcodes** (14): `[mvs_gallery]`, `[mvs_upload]`, `[mvs_album]`, `[mvs_player]`, `[mvs_stats]`, `[mvs_dashboard]`, `[mvs_collection]`, `[mvs_profile_edit]`, `[mvs_documents]`, `[mvs_explore_feed]`, `[mvs_lock_overlay]`, `[mvs_member_photos]`, `[mvs_pdf_viewer]` and `[mvs_usage_history]`.
 
-**How do I add a custom AI provider?**
-```php
-add_action( 'mvs_ai_providers', function( $ai_service ) {
-    $ai_service->register_provider( 'my-provider', new MyCustomProvider() );
-});
-```
-Your provider must implement `WPMediaVerse\Services\AIProviderInterface`.
+**REST API.** Namespace `mvs/v1`, with controllers for media, albums, collections, comments, reactions, favorites, follows, tags, profiles, users, notifications, devices, reports, moderation, signed URLs, stats, activity, messaging and auth. See the [REST API guide](https://wpmediaverse.com/docs/developer-guide/rest-api/).
 
-**How do I add a custom storage driver?**
-```php
-add_filter( 'mvs_storage_driver', function() {
-    return new MyS3Driver();
-});
-```
-Your driver must implement `WPMediaVerse\Services\StorageDriverInterface`.
+**Hooks.** Filters and actions use the `mvs_` prefix: [hooks and filters](https://wpmediaverse.com/docs/developer-guide/hooks-filters/). Storage drivers and AI providers are pluggable: [custom storage drivers](https://wpmediaverse.com/docs/developer-guide/custom-storage-drivers/).
 
----
+**Template overrides.** Copy a template into `{your-theme}/wpmediaverse/`. See [template overrides](https://wpmediaverse.com/docs/developer-guide/template-overrides/).
 
-## Changelog
+**WP-CLI.** The `wp mvs` command has these subcommands: `stats`, `migrate`, `prune-views`, `cleanup-expired`, `reindex`, `cache-flush`, `backfill-activity-thumbnails`, `faststart`, `regenerate-thumbnails`, `moderation-stats`, `sync-activity-privacy`, `migrate-storage`, `cloud-thumbs-backfill`, `backfill-placeholder-color`, `cleanup-local`, `relocalize-private`, `optimize`, `optimize-bulk` and `repair-storage`. See the [WP-CLI guide](https://wpmediaverse.com/docs/developer-guide/wp-cli/).
 
-### 1.1.3 — Apr 29, 2026
-
-**New**
-- **Facebook-style fullscreen lightbox** — full-viewport with full-resolution images. New "Lightbox Image Size" setting (Original / Large / Medium / Auto).
-- Real video previews in grids — phone videos (MP4/MOV) get proper preview thumbnails extracted from the video itself; screen recordings without an embedded cover get a live first-frame browser preview.
-- Activity images now have proper breathing room in BuddyPress activity cards.
-- "Upload Page" admin setting (was missing in 1.1.2).
-
-**Improved**
-- **Every thumbnail flows through signed URLs** — album covers, grid items, lightbox previews, and BP activity media all consistently routed through the access-controlled signed-URL endpoint.
-- Consistent grid layout regardless of media type (mixed photo/video/audio uploads have uniform card sizes).
-- Lucide icon system across feeds, dashboards, lightbox, and BP activity stream.
-- Album covers behave — auto-fallback to first photo, picking a cover persists.
-- Trash icons only appear on owner's own profile/group tabs (never on public Explore/Albums/Collections).
-
-**Fixed**
-- Logged-in users can view shared media (privacy `loggedin` case was missing).
-- Thumbnails always generate at all 3 sizes; small images backfilled from original.
-- BP activity media renders reliably (two-layer recovery for stripped HTML).
-- Lightbox Favorite button shows just one heart (no duplicated emoji prefix).
-- Carry-over fixes from 1.1.2: 5-column grid renders 5 cols, Stats date filters update counts, new tags appear in tag cloud immediately, lightbox Share single icon, Favorite visible to all signed-in users.
-- Demo data installer routes through real upload pipeline.
-
-**Under the hood**
-- Unified thumbnail pipeline shared by Free and Pro.
-- Upload failures now visible to admins via error log instead of failing silently.
-- Block editor blocks load correctly via WordPress Interactivity API on block-rendered pages.
-- `shared-ui-frame.css` simplified by 160 lines after lightbox refactor (renamed from `shared-ui-shell.css` in 1.2.1).
-- Hardened uninstall.
-
-### 1.1.2 — Apr 22, 2026
-- Fixed grid columns=5 rendering, Stats page date filters, tag cloud counts, lightbox Favorite/Share polish.
-- New: Add Tag button, sortable Tag admin columns, mobile back buttons, 44×44 touch targets, iOS safe-area FAB, bottom-sheet modals, sticky single-media action bar, skeleton loaders, optimistic UI feedback, mobile tab snap-scroll, in-plugin Lucide icons, custom notification type filter.
-- Fixed: tag bulk-delete error, tag pagination count, sort preserved through bulk actions, default Allowed File Types ticked on fresh install, album categories fully wired, demo cleanup removes seeded tags, per-upload privacy honored on every surface, full GDPR cascade on user delete.
-
-### 1.1.1 — Apr 8, 2026
-- Fixed single media interactivity (comments, reactions, favorites, follow, report).
-- Signed URL serving wired across all media files.
-- Anonymous lightbox view fixed (no more 401/403).
-- Notification titles use mvs_media_index, not WordPress post title.
-- Reaction counts properly sync to mvs_media_index on add/remove.
-- Delete cascade cleans up all related rows.
-
-### 1.1.0 — Apr 5, 2026
-- Initial public release with full feature set.
-
-→ [Full release history on GitHub](https://github.com/vapvarun/wpmediaverse/releases)
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. **Run `bash bin/ci-local.sh` before pushing** — it runs the same gates as CI (PHP lint matrix, PHPCS, PHPStan, duplicate-method sniff). Saves the round-trip to GitHub.
-4. Commit your changes
-5. Push to the branch (`git push origin feature/amazing-feature`)
-6. Open a Pull Request
-
-### Local CI gate
+**Build from source**
 
 ```bash
-bash bin/ci-local.sh           # full check
-bash bin/ci-local.sh --quick   # default PHP only
-bash bin/ci-local.sh --staged  # only against staged files
+npm install
+npm run build        # blocks, built into build/blocks
+npm run start        # watch mode
+npm run lint:js
+npm run lint:css
+npm run test:e2e     # Playwright
+composer ci          # local CI runner
 ```
 
----
+## Support and licence
 
-## License
+- Support: [wbcomdesigns.com/support/](https://wbcomdesigns.com/support/)
+- Licence: GPL-2.0-or-later. See [LICENSE](LICENSE).
 
-GPLv2 or later. See [LICENSE](https://www.gnu.org/licenses/gpl-2.0.html).
-
----
-
-**Made with care by [Wbcom Designs](https://wbcomdesigns.com/)** — Building BuddyPress & WordPress community solutions since 2016.
+Built by [Wbcom Designs](https://wbcomdesigns.com) and [vapvarun](https://github.com/vapvarun).
