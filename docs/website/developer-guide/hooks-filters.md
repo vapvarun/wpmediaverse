@@ -252,6 +252,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_pro_collections_manage_url` | filter | Pro | 1.8.0 |
 | `mvs_pro_compete_points_url` | filter | Pro | 1.8.0 |
 | `mvs_users_primed` | action | Free + Pro | 2.6.3 |
+| `mvs_resolve_user` | filter | Free + Pro | 2.6.3 |
 
 ---
 
@@ -374,6 +375,21 @@ add_action( 'mvs_users_primed', function ( array $user_ids ) {
 | Parameter | Type | Description |
 |---|---|---|
 | `$user_ids` | `int[]` | User ids just primed. |
+
+### `mvs_resolve_user` **(New in 2.6.3)**
+
+Filters the member that a typed name resolves to, in @mentions (comments and descriptions) and in Pro document sharing. MediaVerse tries the login, the email (sharing only) and the profile handle (nicename) first, and accepts a leading @. Return a `WP_User` to answer for names your plugin owns, such as custom profile slugs.
+
+```php
+add_filter( 'mvs_resolve_user', function ( $user, string $typed ) {
+    return $user ?: my_plugin_user_by_handle( $typed );
+}, 10, 2 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$user` | `WP_User\|null` | The member found so far, or null. |
+| `$typed` | `string` | What was typed, without a leading @. |
 
 ---
 
