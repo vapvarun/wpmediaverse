@@ -3384,17 +3384,19 @@ class MessagingService {
 			return null;
 		}
 
-		$data = array(
-			'id'    => $media_id,
-			'title' => $repo->get( $media_id, 'title' ),
-			'type'  => $repo->get( $media_id, 'media_type' ) ?: 'image',
+		$allow_download = $repo->downloads_allowed( $media_id );
+		$data           = array(
+			'id'             => $media_id,
+			'title'          => $repo->get( $media_id, 'title' ),
+			'type'           => $repo->get( $media_id, 'media_type' ) ?: 'image',
+			'allow_download' => $allow_download,
 		);
 
 		$su = \WPMediaVerse\Core\Plugin::container()->get( 'signed_urls' );
 		if ( $su ) {
 			$thumb                = $su->generate_thumbnail( $media_id, $viewer_id );
 			$view                 = $su->generate( $media_id, $viewer_id );
-			$download             = $su->generate( $media_id, $viewer_id, 0, true );
+			$download             = $allow_download ? $su->generate( $media_id, $viewer_id, 0, true ) : '';
 			$data['thumbnail']    = is_string( $thumb ) ? $thumb : '';
 			$data['url']          = is_string( $view ) ? $view : '';
 			$data['download_url'] = is_string( $download ) ? $download : '';

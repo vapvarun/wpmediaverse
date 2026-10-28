@@ -385,11 +385,21 @@ class SignedUrlService {
 		}
 
 		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
+		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// A signed download link outlives the setting it was signed under: the
+		// site switch or the owner's per-item "no download" applies at serve time.
+		if ( $is_download && ! $repo->downloads_allowed( $media_id ) ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain' );
+			echo esc_html__( 'Downloads are turned off for this item.', 'wpmediaverse' );
+			exit;
+		}
+
 		// Prefer the original (user-provided) filename when present — keeps
 		// downloads recognisable for end users even when the on-disk basename
 		// is a 1.2.1+ hash. Falls back to the on-disk basename for older
 		// uploads where original_filename meta is absent.
-		$repo              = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$original_filename = (string) $repo->get( $media_id, 'original_filename' );
 		$filename          = '' !== $original_filename
 			? sanitize_file_name( $original_filename )
