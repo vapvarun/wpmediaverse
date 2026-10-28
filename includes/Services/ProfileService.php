@@ -275,16 +275,34 @@ class ProfileService {
 	 * @return array<string,string> value => label.
 	 */
 	public static function dm_access_options(): array {
-		// Each label says who still reaches Message requests, because that
-		// differs per choice (see can_message()).
 		$labels = array(
 			'everyone'  => __( 'Everyone', 'wpmediaverse' ),
-			'followers' => __( 'People who follow you (anyone else can send a message request)', 'wpmediaverse' ),
-			'mutual'    => __( 'People you follow back (other followers can send a message request)', 'wpmediaverse' ),
-			'nobody'    => __( 'No one (this also stops replies in your existing chats)', 'wpmediaverse' ),
+			'followers' => __( 'People who follow you', 'wpmediaverse' ),
+			'mutual'    => __( 'People you follow back', 'wpmediaverse' ),
+			'nobody'    => __( 'No one', 'wpmediaverse' ),
 		);
 
 		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
+	}
+
+	/**
+	 * One plain sentence per "who can message you" choice, shown under the
+	 * picker for the selected choice. Who still reaches Message requests
+	 * differs per choice (see can_message()), and a long option label is cut
+	 * off in a closed picker on a phone, so the rule lives here.
+	 *
+	 * @since 2.6.3
+	 * @return array<string,string> value => hint.
+	 */
+	public static function dm_access_hints(): array {
+		$hints = array(
+			'everyone'  => __( 'Any member can message you.', 'wpmediaverse' ),
+			'followers' => __( 'People who follow you can message you. Anyone else can send a message request.', 'wpmediaverse' ),
+			'mutual'    => __( 'People you follow back can message you. Your other followers can send a message request.', 'wpmediaverse' ),
+			'nobody'    => __( 'No one can message you, and replies in your existing chats stop too.', 'wpmediaverse' ),
+		);
+
+		return array_intersect_key( $hints, array_flip( self::dm_access_choices() ) );
 	}
 
 	/**

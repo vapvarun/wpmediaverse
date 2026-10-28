@@ -44,6 +44,7 @@ $mvs_deferred  = $mvs_community['fields'];
 					'displayName'     => $mvs_current_user->display_name,
 					'bio'             => $mvs_current_user->description,
 					'dmAccess'        => \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_current_user->ID ),
+					'dmAccessHints'   => \WPMediaVerse\Services\ProfileService::dm_access_hints(),
 					'onlineStatus'    => get_user_meta( $mvs_current_user->ID, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
 					'emailActivity'   => 'off' === get_user_meta( $mvs_current_user->ID, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 					'avatarUrl'       => $mvs_avatar_url ?: '',
@@ -128,13 +129,14 @@ $mvs_deferred  = $mvs_community['fields'];
 					<?php if ( \WPMediaVerse\Core\Plugin::messaging_enabled() ) : ?>
 					<div class="mvs-profile-field">
 						<label for="mvs-dash-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
-						<select id="mvs-dash-dm-access"
+						<select id="mvs-dash-dm-access" aria-describedby="mvs-dash-dm-access-hint"
 							data-wp-bind--value="context.dmAccess"
 							data-wp-on--change="actions.updateDmAccess">
 							<?php foreach ( \WPMediaVerse\Services\ProfileService::dm_access_options() as $mvs_dm_value => $mvs_dm_label ) : ?>
 								<option value="<?php echo esc_attr( $mvs_dm_value ); ?>"><?php echo esc_html( $mvs_dm_label ); ?></option>
 							<?php endforeach; ?>
 						</select>
+						<p class="mvs-field-hint" id="mvs-dash-dm-access-hint" data-wp-text="state.dmAccessHint"><?php echo esc_html( \WPMediaVerse\Services\ProfileService::dm_access_hints()[ \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_current_user->ID ) ] ?? '' ); ?></p>
 					</div>
 					<div class="mvs-profile-field">
 						<label for="mvs-dash-online-status"><?php esc_html_e( 'Show your online status', 'wpmediaverse' ); ?></label>

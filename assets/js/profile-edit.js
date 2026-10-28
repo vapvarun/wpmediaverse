@@ -11,6 +11,13 @@
 import { store, getContext, getElement } from '@wordpress/interactivity';
 
 const { actions } = store( 'mvs/profile-edit', {
+	state: {
+		// The rule for the selected "who can message you" choice.
+		get dmAccessHint() {
+			const ctx = getContext();
+			return ( ctx.dmAccessHints || {} )[ ctx.dmAccess ] || '';
+		},
+	},
 	actions: {
 		toggleProfileEdit() {
 			const ctx = getContext();
