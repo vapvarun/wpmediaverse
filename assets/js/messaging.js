@@ -1538,18 +1538,22 @@ const { state, actions } = store( 'mvs/messaging', {
 
 		// ---- Attachments ----
 		openAttachmentPicker() {
-			const input = document.createElement( 'input' );
-			input.type = 'file';
-			// Media only — MediaVerse DMs share image/video/audio, not documents.
-			// The server enforces the same allowlist (mvs_dm_allowed_file_types).
-			input.accept = 'image/*,video/*,audio/*';
-			// Safari ignores click() on an input that is not in the page, so it
-			// joins the document for the pick and leaves on change or cancel.
-			input.hidden = true;
-			document.body.appendChild( input );
-			input.addEventListener( 'cancel', () => input.remove() );
+			// Safari ignores click() on an input that is not in the page, so one
+			// hidden picker input lives in the document and is reused per pick
+			// (a cancelled pick fires no event in older browsers to clean up after).
+			let input = document.getElementById( 'mvs-dm-file-picker' );
+			if ( ! input ) {
+				input = document.createElement( 'input' );
+				input.type = 'file';
+				input.id = 'mvs-dm-file-picker';
+				input.hidden = true;
+				// Media only — MediaVerse DMs share image/video/audio, not documents.
+				// The server enforces the same allowlist (mvs_dm_allowed_file_types).
+				input.accept = 'image/*,video/*,audio/*';
+				document.body.appendChild( input );
+			}
+			input.value = '';
 			input.onchange = ( e ) => {
-				input.remove();
 				const file = e.target.files[0];
 				if ( ! file ) return;
 
