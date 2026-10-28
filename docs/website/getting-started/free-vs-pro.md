@@ -141,13 +141,13 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 
 Privacy is the one area where "Free vs Pro" is not a clean on/off split, so it is worth stating precisely:
 
-- **Free enforces every privacy level.** MediaVerse accepts Public, Members, Friends, Group, Space, Only me and Custom, and checks the level every time someone tries to view a file. If a media item carries one of those levels - set by an import, the API, an album that passes its privacy down, or Pro before a licence lapsed - Free honours it. Your members' private media does not become visible because Pro is inactive.
-- **Free's upload form offers four choices**: Public, Members, Friends (only when the BuddyPress Friends component is active) and Only me. Media posted into a BuddyPress group is limited to that group automatically. Group, Space and Custom have no picker in the stock upload form.
+- **Free enforces every privacy level.** MediaVerse accepts Public, Members, Followers, Friends, Group, Space, Only me and Custom, and checks the level every time someone tries to view a file. If a media item carries one of those levels - set by an import, the API, an album that passes its privacy down, or Pro before a licence lapsed - Free honours it. Your members' private media does not become visible because Pro is inactive.
+- **Free's upload form offers these choices**: Public, Members, Followers (people who follow you), Friends (only when the BuddyPress Friends component is active) and Only me. Media posted into a BuddyPress group is limited to that group automatically. Group, Space and Custom have no picker in the stock upload form.
 - **Free can change privacy on many items at once**: select items in My Media or Explore, then use the privacy menu in the bulk bar. **Allow Users to Set Privacy** switches this off for members.
 - **Pro adds API features, not a new screen**: saved privacy presets, a bulk-privacy endpoint, plain-language descriptions of each level in API responses, and the ability to set Custom (a list of specific people) on an item.
 - **Album-level privacy inheritance is Free.** When media is added to an album, each item takes the more restrictive of the two privacy levels, and MediaVerse asks before it changes an album to a stricter level.
 
-There is no "Followers Only" media privacy level you can set in either plugin. "Followers only" appears as a **direct-message** choice (under **Who can send messages**), which controls who may open a conversation with you - not who can see your media.
+**Followers** is a media privacy level in Free: only people who follow the uploader can see the item. It is separate from the **Who can send messages** setting, which has its own "Followers only" choice for who may start a conversation with you.
 
 ## What You Get Free
 
