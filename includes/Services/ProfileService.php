@@ -275,11 +275,13 @@ class ProfileService {
 	 * @return array<string,string> value => label.
 	 */
 	public static function dm_access_options(): array {
+		// Each label says who still reaches Message requests, because that
+		// differs per choice (see can_message()).
 		$labels = array(
 			'everyone'  => __( 'Everyone', 'wpmediaverse' ),
-			'followers' => __( 'People who follow you', 'wpmediaverse' ),
-			'mutual'    => __( 'People you follow back', 'wpmediaverse' ),
-			'nobody'    => __( 'No one', 'wpmediaverse' ),
+			'followers' => __( 'People who follow you (anyone else can send a message request)', 'wpmediaverse' ),
+			'mutual'    => __( 'People you follow back (other followers can send a message request)', 'wpmediaverse' ),
+			'nobody'    => __( 'No one (this also stops replies in your existing chats)', 'wpmediaverse' ),
 		);
 
 		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
