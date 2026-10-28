@@ -70,7 +70,7 @@ With Pro's cloud storage, files can also be stored on Amazon S3 or BunnyCDN whil
 | Storage | wp_posts + postmeta | wp_posts + postmeta | wp_posts + postmeta | Custom tables |
 | Requires BuddyPress | Yes | Yes (BuddyBoss) | Yes | No (optional) |
 | Standalone mode | No | No | No | Yes |
-| Privacy levels | Basic | Basic | Basic | Public, Members, Friends, Group, Only me |
+| Privacy levels | Basic | Basic | Basic | Public, Members, Followers, Friends, Group, Only me |
 | Direct messaging | No | Separate plugin | No | Built-in |
 | Gamification | No | No | No | Challenges, battles, tournaments (Pro) |
 | Cloud storage | No | No | No | S3, BunnyCDN, Cloudflare R2, DigitalOcean Spaces (Pro) |
