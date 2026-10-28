@@ -1543,7 +1543,13 @@ const { state, actions } = store( 'mvs/messaging', {
 			// Media only — MediaVerse DMs share image/video/audio, not documents.
 			// The server enforces the same allowlist (mvs_dm_allowed_file_types).
 			input.accept = 'image/*,video/*,audio/*';
+			// Safari ignores click() on an input that is not in the page, so it
+			// joins the document for the pick and leaves on change or cancel.
+			input.hidden = true;
+			document.body.appendChild( input );
+			input.addEventListener( 'cancel', () => input.remove() );
 			input.onchange = ( e ) => {
+				input.remove();
 				const file = e.target.files[0];
 				if ( ! file ) return;
 
