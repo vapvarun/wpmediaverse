@@ -251,6 +251,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_suggestions_cache_ttl` | filter | Free | 1.9.0 |
 | `mvs_pro_collections_manage_url` | filter | Pro | 1.8.0 |
 | `mvs_pro_compete_points_url` | filter | Pro | 1.8.0 |
+| `mvs_users_primed` | action | Free + Pro | 2.6.3 |
 
 ---
 
@@ -359,6 +360,20 @@ add_action( 'mvs_ai_providers', function( $ai_service ) {
 | Filter | Description | Parameters | Returns |
 |--------|-------------|------------|---------|
 | `mvs_theme_json` | Filter theme.json data passed to the frontend JS bundle | `$data` (array) | `array` |
+
+### `mvs_users_primed` **(New in 2.6.3)**
+
+Fires right after MediaVerse loads a batch of users into the user cache (inbox, message threads, activity, media grids, leaderboards, challenges, battles, tournaments). Prime your own per-user data (avatars, profile fields) for the same ids here, so a list costs one query instead of one per row.
+
+```php
+add_action( 'mvs_users_primed', function ( array $user_ids ) {
+    my_plugin_prime_profiles( $user_ids );
+} );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$user_ids` | `int[]` | User ids just primed. |
 
 ---
 

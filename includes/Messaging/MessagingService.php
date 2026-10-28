@@ -767,6 +767,16 @@ class MessagingService {
 
 		$user_ids = array_values( array_unique( array_map( 'intval', wp_list_pluck( $rows, 'user_id' ) ) ) );
 		cache_users( $user_ids );
+		/**
+		 * Fires after a batch of users is loaded into the user cache, so an
+		 * avatar or profile plugin can prime its own data for the same ids in
+		 * one query instead of one per row.
+		 *
+		 * @since 2.6.3
+		 *
+		 * @param int[] $user_ids User ids just primed.
+		 */
+		do_action( 'mvs_users_primed', $user_ids );
 
 		$by_conversation = array();
 		foreach ( $rows as $row ) {
@@ -2021,7 +2031,9 @@ class MessagingService {
 		}
 		// $rows is non-empty here (early return above), so there is always at
 		// least one sender to prime.
-		cache_users( array_unique( $sender_ids ) );
+		$mvs_primed_ids = array_unique( $sender_ids );
+		cache_users( $mvs_primed_ids );
+		do_action( 'mvs_users_primed', $mvs_primed_ids );
 
 		foreach ( $rows as &$row ) {
 			$sender              = get_userdata( (int) $row->sender_id );
@@ -2189,7 +2201,10 @@ class MessagingService {
 		// (big-site checklist item 3: threads scaled query count with
 		// message count).
 		$reactions_by_message = $this->get_reactions_for_messages( wp_list_pluck( $messages, 'id' ) );
-		cache_users( array_values( array_unique( array_map( 'intval', wp_list_pluck( $messages, 'sender_id' ) ) ) ) );
+
+		$mvs_primed_ids = array_values( array_unique( array_map( 'intval', wp_list_pluck( $messages, 'sender_id' ) ) ) );
+		cache_users( $mvs_primed_ids );
+		do_action( 'mvs_users_primed', $mvs_primed_ids );
 
 		// Enrich messages.
 		foreach ( $messages as &$msg ) {

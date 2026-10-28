@@ -198,7 +198,9 @@ class ActivityService {
 			}
 		}
 		if ( $actor_ids ) {
-			cache_users( array_unique( $actor_ids ) );
+			$mvs_primed_ids = array_unique( $actor_ids );
+			cache_users( $mvs_primed_ids );
+			do_action( 'mvs_users_primed', $mvs_primed_ids );
 		}
 		if ( $media_ids ) {
 			\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->prefetch( array_unique( $media_ids ) );

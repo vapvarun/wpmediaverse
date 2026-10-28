@@ -2183,7 +2183,9 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 		if ( $authors ) {
-			cache_users( array_keys( $authors ) );
+			$mvs_primed_ids = array_keys( $authors );
+			cache_users( $mvs_primed_ids );
+			do_action( 'mvs_users_primed', $mvs_primed_ids );
 		}
 
 		if ( $viewer_id <= 0 ) {
