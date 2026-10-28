@@ -855,8 +855,7 @@ class Plugin {
 			'integration.bp_activity_linkage',
 			function ( $container ) {
 				$linkage = new \WPMediaVerse\Integrations\BuddyPress\ActivityMediaLinkage(
-					$container->get( 'media_repository' ),
-					$container->get( 'template_helpers' )
+					$container->get( 'media_repository' )
 				);
 				$linkage->init();
 				return $linkage;

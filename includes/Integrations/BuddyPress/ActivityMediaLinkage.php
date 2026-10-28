@@ -19,7 +19,6 @@ namespace WPMediaVerse\Integrations\BuddyPress;
 defined( 'ABSPATH' ) || exit;
 
 use WPMediaVerse\Repository\MediaRepositoryInterface;
-use WPMediaVerse\Core\TemplateHelpersInterface;
 
 /**
  * Owns the `mvs_bp_activity_media` linkage table and the activity-render
@@ -38,11 +37,9 @@ class ActivityMediaLinkage {
 	private const VARIANTS = array( 'image', 'video', 'audio', 'document' );
 
 	private MediaRepositoryInterface $repo;
-	private TemplateHelpersInterface $tpl;
 
-	public function __construct( MediaRepositoryInterface $repo, TemplateHelpersInterface $tpl ) {
+	public function __construct( MediaRepositoryInterface $repo ) {
 		$this->repo = $repo;
-		$this->tpl  = $tpl;
 	}
 
 	/**
@@ -175,18 +172,10 @@ class ActivityMediaLinkage {
 				continue;
 			}
 
-			$pieces[] = $this->tpl->media_thumbnail(
-				$mvs_media_id,
-				array(
-					'size'      => 'large',
-					// Long-lived broadcast TTL — activity content lives in
-					// bp_activity.content for months; the per-request 1h
-					// signed URL would 403 by the next page-view.
-					'ttl'       => YEAR_IN_SECONDS,
-					'user_id'   => 0,
-					'show_play' => true,
-				)
-			);
+			// The same tile the composer path embeds: linked to the item, and
+			// signed for this viewer when the anonymous URL would only give a
+			// members-only item a placeholder.
+			$pieces[] = MediaDisplayHelper::get_media_thumbnail_html( $mvs_media_id, 'large' );
 		}
 
 		// Every linked media is gone or unpublished: render nothing rather than
