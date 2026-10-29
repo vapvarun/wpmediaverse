@@ -1274,6 +1274,8 @@ add_filter( 'mvs_messaging_enabled', function ( bool $enabled ): bool {
 
 The filter is read once per request, early in plugin boot, so hook it from a must-use plugin or your plugin's main file, not from a template.
 
+To change the switch itself from code (for example a one-click "Turn on messages" in an add-on), call `\WPMediaVerse\Core\Plugin::set_messaging_enabled( true )` (since 2.6.3). It writes the same option as the settings screen; check the user's capability before calling it. A value forced by this filter still wins.
+
 ### `mvs_can_send_message`
 
 Filters whether a user is allowed to send a DM to a recipient.

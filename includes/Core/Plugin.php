@@ -3450,6 +3450,22 @@ JS;
 	}
 
 	/**
+	 * Turn private messaging on or off - the same switch as Settings > Messages.
+	 *
+	 * The door an add-on uses to offer the owner a one-click "Turn on messages"
+	 * (BuddyNext does) instead of sending them to this plugin's settings. The
+	 * caller checks the capability; stored conversations are kept either way.
+	 *
+	 * @since 2.6.3
+	 *
+	 * @param bool $enabled Whether messaging is on.
+	 * @return void
+	 */
+	public static function set_messaging_enabled( bool $enabled ): void {
+		update_option( \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION, $enabled );
+	}
+
+	/**
 	 * Tell an administrator why /messages/ is a 404 while Messages is off.
 	 *
 	 * An admin-bar item, so it reaches only people who can change the setting
