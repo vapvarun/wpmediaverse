@@ -18,6 +18,14 @@ defined( 'ABSPATH' ) || exit;
 class AlbumService {
 
 	/**
+	 * Marks a build whose create(), add_items() and upload path honour a source
+	 * time, so an importer can refuse a build that would drop it silently.
+	 *
+	 * @since 2.6.3
+	 */
+	public const TAKES_SOURCE_TIME = true;
+
+	/**
 	 * Post-meta key holding an album's own privacy.
 	 *
 	 * Album privacy controls how the ALBUM is visible. It is a property of the
@@ -374,6 +382,7 @@ class AlbumService {
 	 *                               written to both mvs_media_meta AND
 	 *                               post_meta `_mvs_group_id` (BP group tab
 	 *                               listings WP_Query against post_meta).
+	 *     @type string $created_at  Optional. UTC source time for an import (see Core\Dates::resolve_backdate()).
 	 * }
 	 * @return int|\WP_Error Album post ID on success, WP_Error on validation
 	 *                      failure or DB error.
@@ -386,11 +395,13 @@ class AlbumService {
 
 		$album_id = wp_insert_post(
 			array(
-				'post_type'    => 'mvs_album',
-				'post_title'   => $title,
-				'post_content' => isset( $args['description'] ) ? wp_kses_post( $args['description'] ) : '',
-				'post_status'  => 'publish',
-				'post_author'  => $author_id,
+				'post_type'     => 'mvs_album',
+				'post_title'    => $title,
+				'post_content'  => isset( $args['description'] ) ? wp_kses_post( $args['description'] ) : '',
+				'post_status'   => 'publish',
+				'post_author'   => $author_id,
+				// WordPress derives post_date from this; '' is its own default, meaning now.
+				'post_date_gmt' => \WPMediaVerse\Core\Dates::resolve_backdate( isset( $args['created_at'] ) ? (string) $args['created_at'] : null ) ?? '',
 			),
 			true
 		);
@@ -675,6 +686,7 @@ class AlbumService {
 	 * @param int   $album_id  Album post ID.
 	 * @param int[] $media_ids Array of media post IDs.
 	 * @param array $args      Optional. 'announce' => false skips the mvs_album_items_added action (imports). @since 2.6.0
+	 *                         'added_at' => UTC source time for an import (see Core\Dates::resolve_backdate()). @since 2.6.3
 	 * @return int Number of items successfully added.
 	 */
 	public function add_items( int $album_id, array $media_ids, array $args = array() ): int {
@@ -736,18 +748,18 @@ class AlbumService {
 		// the unique key and is skipped, so it is not counted in $added (same
 		// as the per-row insert this replaces).
 		foreach ( array_chunk( $accepted, 500 ) as $chunk ) {
-			$rows = array();
-			$args = array();
-			$now  = current_time( 'mysql', true );
+			$rows       = array();
+			$query_args = array();
+			$added_at   = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $args['added_at'] ) ? (string) $args['added_at'] : null ) ?? current_time( 'mysql', true );
 			foreach ( $chunk as $mid ) {
 				++$max_pos;
 				$rows[] = '(%d, %d, %d, %s)';
-				array_push( $args, $album_id, $mid, $max_pos, $now );
+				array_push( $query_args, $album_id, $mid, $max_pos, $added_at );
 			}
 			$added += (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
 					"INSERT IGNORE INTO {$wpdb->prefix}mvs_album_items (album_id, media_id, position, added_at) VALUES " . implode( ',', $rows ), // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
-					...$args
+					...$query_args
 				)
 			);
 		}

@@ -3411,6 +3411,18 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `wpmediaverse_companions` | filter | `$companions` | The catalog (slug => entry) of companion plugins the installer and admin screen list. |
 | `mvs_default_privacy` | filter | `$privacy` | The privacy value a new item defaults to when the member has not chosen one. |
 
+### Importing with original dates (2.6.3)
+
+An importer can pass each record's source time as a UTC `Y-m-d H:i:s` string. Leave it out and the record is dated now. A future or unreadable value also means now. No REST route accepts these arguments.
+
+| Method | Argument |
+|---|---|
+| `AlbumService::create( $author, $args )` | `$args['created_at']` |
+| `AlbumService::add_items( $album, $media, $args )` | `$args['added_at']` |
+| `UploadService::handle( $file, $user, $args )` | `$args['created_at']` |
+
+`add_items()` also takes `'announce' => false`, which skips the `mvs_album_items_added` action so an import does not post an update per photo.
+
 ### Added in 2.6.2
 
 | Hook | Type | Arguments | Description |

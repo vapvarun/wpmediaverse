@@ -494,8 +494,8 @@ class UploadService {
 		}
 
 		// No scheduled publishing: the old publish_at branch stored a 'scheduled'
-		// row that nothing ever published.
-		$created_at = current_time( 'mysql', true );
+		// row that nothing ever published. An importer may pass the source time.
+		$created_at = \WPMediaVerse\Core\Dates::resolve_backdate( isset( $args['created_at'] ) ? (string) $args['created_at'] : null ) ?? current_time( 'mysql', true );
 
 		$description = ! empty( $args['description'] ) ? wp_kses_post( $args['description'] ) : '';
 
