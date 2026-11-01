@@ -308,6 +308,28 @@ class SignedUrlService {
 	}
 
 	/**
+	 * Whether a signed link to a trashed item is refused for this viewer.
+	 *
+	 * The can_view() check always lets an owner through, and an owner's links last for years
+	 * in pages and caches, so whoever holds one could still fetch a photo the owner
+	 * deleted. Only a moderator's screen still draws it, on the admin Trash list.
+	 * Documents keep their own trash, which their editors can open and restore.
+	 *
+	 * @since 2.6.3
+	 *
+	 * @param int $media_id  Media id.
+	 * @param int $viewer_id Viewer the link was signed for, or the live session.
+	 * @return bool
+	 */
+	public function refuses_trashed( int $media_id, int $viewer_id ): bool {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		return 'trash' === (string) $repo->get( $media_id, 'status' )
+			&& ! in_array( (string) $repo->get( $media_id, 'media_type' ), \WPMediaVerse\Core\MediaTypes::DOCUMENT_LIBRARY, true )
+			&& ! user_can( $viewer_id, 'moderate_mvs_media' );
+	}
+
+	/**
 	 * Serve a file for a validated signed URL request.
 	 *
 	 * @param array $params Validated URL parameters.
@@ -359,7 +381,7 @@ class SignedUrlService {
 		// flagged or rejected item is public right up until it is taken down. For
 		// approved public media check_access() still returns true, so this costs one
 		// repo read rather than a behaviour change.
-		if ( ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
+		if ( $this->refuses_trashed( $media_id, $viewer_user_id ) || ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
 			status_header( 403 );
 			header( 'Content-Type: text/plain' );
 			echo esc_html( 'Access denied.' );
