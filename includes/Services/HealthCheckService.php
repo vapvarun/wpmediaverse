@@ -453,7 +453,7 @@ class HealthCheckService {
 				(string) (int) ( $state['status'] ?? 0 )
 			)
 		) . '</p>';
-		$result['actions']        = 'x-accel' === $mode
+		$result['actions'] = 'x-accel' === $mode
 			? '<p>' . esc_html__( 'Add this to the site\'s nginx server block and reload nginx:', 'wpmediaverse' ) . '</p><pre class="mvs-health-snippet"><code>' . esc_html( ServerFileOffload::nginx_location() ) . '</code></pre>'
 			: '<p>' . esc_html__( 'Enable mod_xsendfile and add "XSendFile On" and "XSendFilePath" for the uploads folder to the Apache configuration.', 'wpmediaverse' ) . '</p>';
 
@@ -549,12 +549,24 @@ class HealthCheckService {
 				return $result;
 			}
 			$result['status']      = 'recommended';
+			$status                = (int) ( $delivery['status'] ?? 0 );
 			$result['description'] = sprintf(
-				'<p>%s</p><p>%s</p>',
+				'<p>%s</p><p>%s</p><p>%s</p>',
 				__( 'Every photo and video is sent through WordPress, one PHP request per file. On busy pages this can use many PHP workers. Files are already given random names, so the web server can send them directly and safely.', 'wpmediaverse' ),
-				__( 'The web server refused a test file with a random name. This usually means an older rule denies the whole MediaVerse folder, such as the nginx rule MediaVerse used to recommend. Replace it with the rule below; files with readable names stay protected.', 'wpmediaverse' )
+				__( 'The web server refused a test file with a random name. This usually means an older rule denies the whole MediaVerse folder, such as the nginx rule MediaVerse used to recommend. Replace it with the rule below; files with readable names stay protected.', 'wpmediaverse' ),
+				// What the host's support needs to look into (Basecamp 10370404673).
+				$status > 0
+					/* translators: %d: HTTP status code the test file got. */
+					? esc_html( sprintf( __( 'Last check: the test file got HTTP %d.', 'wpmediaverse' ), $status ) )
+					: esc_html__( 'Last check: the site could not fetch the test file from itself, so loopback requests may be blocked.', 'wpmediaverse' )
 			);
-			$result['actions']     = $rule;
+			$result['actions'] = $rule;
+			if ( ! empty( $GLOBALS['is_apache'] ) ) {
+				// On Apache the refusal is a .htaccess MediaVerse did not write
+				// (it never overwrites one an owner customised), not nginx.
+				$result['actions'] = '<p>' . esc_html__( 'Replace the .htaccess file in uploads/wpmediaverse with this one:', 'wpmediaverse' )
+					. '</p><pre class="mvs-health-snippet"><code>' . esc_html( DirectDelivery::htaccess() ) . '</code></pre>';
+			}
 		}
 
 		return $result;
