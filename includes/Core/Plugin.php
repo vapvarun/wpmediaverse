@@ -3006,9 +3006,9 @@ JS;
 	/**
 	 * Register the player guard (no right-click menu on a nodownload player).
 	 *
-	 * Registered early and globally, like mvs-lucide, so every surface that
-	 * prints a player - ours through TemplateHelpers::player_download_attr(),
-	 * BuddyNext's through a script dependency - shares one copy.
+	 * Registered early and globally, like mvs-lucide, so every MediaVerse and
+	 * Pro surface that prints a player (TemplateHelpers::player_download_attr()
+	 * enqueues it) shares one copy. BuddyNext owns its own players and guard.
 	 *
 	 * @since 2.6.3
 	 */
@@ -3167,8 +3167,7 @@ JS;
 		// (battles/challenges/tournaments/compete) call via window.mvsRest.
 		// Stripping it here would leave those stores unable to load. Filterable
 		// so future shared utilities can opt out of the UI-suppression sweep.
-		// `mvs-player-guard` is the same kind: BuddyNext's own players load it.
-		$keep_handles = (array) apply_filters( 'mvs_frontend_presence_keep_handles', array( 'mvs-rest', 'mvs-player-guard' ) );
+		$keep_handles = (array) apply_filters( 'mvs_frontend_presence_keep_handles', array( 'mvs-rest' ) );
 
 		// Classic styles + scripts: dequeue and deregister anything `mvs-*`.
 		foreach ( array( wp_styles(), wp_scripts() ) as $registry ) {
