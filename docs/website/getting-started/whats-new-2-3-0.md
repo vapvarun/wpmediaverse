@@ -14,7 +14,9 @@ Sites that already normalise orientation upstream - some CDNs and phone-upload a
 
 A member who creates a Private album and uploads into it expects the contents to be private. Adding media to an album now clamps each item to the **more restrictive** of the two privacy levels, so a public photo added to a private album becomes private, and a private photo added to a public album stays private.
 
-Nothing is ever made *more* public by this: the clamp only tightens. Album privacy inheritance is controllable with `mvs_album_inherit_privacy`, and each clamp fires `mvs_media_privacy_clamped_by_album` for auditing.
+Nothing is ever made *more* public by this: the clamp only tightens.
+
+**Changed in 2.6.0:** the album's privacy now applies to every photo in it, in both directions, and each photo keeps its own setting for when it leaves the album. See [Album privacy](../features/albums.md#album-privacy). Album privacy inheritance is controllable with `mvs_album_inherit_privacy`, and each clamp fires `mvs_media_privacy_clamped_by_album` for auditing.
 
 > Album-level privacy inheritance is a **Free** feature. See [Free vs Pro](free-vs-pro.md#a-note-on-the-privacy-rows) for exactly which parts of privacy are Free and which parts Pro adds.
 

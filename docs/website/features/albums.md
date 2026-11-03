@@ -53,7 +53,7 @@ Updating to 2.6.0 changes nothing you can see: each photo's current privacy is r
 
 Site owners who want album and photo privacy to stay fully independent (the behaviour before 2.3.0) can return `false` from the `mvs_album_inherit_privacy` filter.
 
-If a user can see the album but not a specific media item (because the item's privacy is more restrictive still), that item is hidden from the album view.
+When `mvs_album_inherit_privacy` returns `false`, each photo keeps its own privacy inside the album, so a viewer who can see the album but not a photo does not see that photo in it.
 
 ## Displaying an Album
 

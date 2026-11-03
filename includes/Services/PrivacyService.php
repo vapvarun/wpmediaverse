@@ -326,8 +326,13 @@ class PrivacyService {
 	}
 
 	/**
-	 * Effective privacy for a media item — most restrictive of its own privacy
-	 * and its parent album's.
+	 * Effective privacy for a media item in an album.
+	 *
+	 * Since 2.6.0 the album decides: adding an item, or changing the album,
+	 * writes the album's level into the item's privacy (its own choice is kept
+	 * for when it leaves), so a private photo in a public album shows as public.
+	 * The clamp to a non-public album below only guards rows written before
+	 * that rule; for them it can only tighten.
 	 *
 	 * @since 2.3.0
 	 *

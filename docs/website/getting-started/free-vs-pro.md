@@ -145,7 +145,7 @@ Privacy is the one area where "Free vs Pro" is not a clean on/off split, so it i
 - **Free's upload form offers these choices**: Public, Members, Followers (people who follow you), Friends (only when the BuddyPress Friends component is active) and Only me. Media posted into a BuddyPress group is limited to that group automatically. Group, Space and Custom have no picker in the stock upload form.
 - **Free can change privacy on many items at once**: select items in My Media or Explore, then use the privacy menu in the bulk bar. **Allow Users to Set Privacy** switches this off for members.
 - **Pro adds API features, not a new screen**: saved privacy presets, a bulk-privacy endpoint, plain-language descriptions of each level in API responses, and the ability to set Custom (a list of specific people) on an item.
-- **Album-level privacy inheritance is Free.** When media is added to an album, each item takes the more restrictive of the two privacy levels, and MediaVerse asks before it changes an album to a stricter level.
+- **Album privacy is Free.** A photo in an album shows with the album's privacy, even when its own setting is more private, and goes back to its own privacy when it leaves the album. MediaVerse asks before you add a more private photo or change an album's privacy. See [Albums](../features/albums.md#album-privacy).
 
 **Followers** is a media privacy level in Free: only people who follow the uploader can see the item. It is separate from the **Who can send messages** setting, which has its own "Followers only" choice for who may start a conversation with you.
 
