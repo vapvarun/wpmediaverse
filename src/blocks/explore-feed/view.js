@@ -53,6 +53,10 @@ function buildThumbnailNodes( item ) {
 		video.muted = true;
 		video.setAttribute( 'playsinline', 'playsinline' );
 		video.setAttribute( 'aria-hidden', 'true' );
+		// Downloads off: the player guard refuses "Save video as" on it.
+		if ( false === item.allow_download ) {
+			video.setAttribute( 'controlsList', 'nodownload' );
+		}
 		if ( thumbUrl ) {
 			video.poster = thumbUrl;
 		}

@@ -62,15 +62,17 @@ class ActivityContentIntegration {
 		);
 
 		// Allow inline <video> player.
+		// controlslist carries "nodownload" for items with downloads off.
 		$tags['video'] = array(
-			'src'      => array(),
-			'controls' => array(),
-			'preload'  => array(),
-			'poster'   => array(),
-			'style'    => array(),
-			'class'    => array(),
-			'width'    => array(),
-			'height'   => array(),
+			'src'          => array(),
+			'controls'     => array(),
+			'controlslist' => array(),
+			'preload'      => array(),
+			'poster'       => array(),
+			'style'        => array(),
+			'class'        => array(),
+			'width'        => array(),
+			'height'       => array(),
 		);
 
 		// Allow <source> inside <video>/<audio>.
@@ -81,11 +83,12 @@ class ActivityContentIntegration {
 
 		// Allow inline <audio> player.
 		$tags['audio'] = array(
-			'src'      => array(),
-			'controls' => array(),
-			'preload'  => array(),
-			'style'    => array(),
-			'class'    => array(),
+			'src'          => array(),
+			'controls'     => array(),
+			'controlslist' => array(),
+			'preload'      => array(),
+			'style'        => array(),
+			'class'        => array(),
 		);
 
 		// Allow class/style and Interactivity API attrs on <a> for MVS media links.
@@ -163,7 +166,7 @@ class ActivityContentIntegration {
 		// or fails to load. Letting the browser pull the first frame is the
 		// belt-and-braces fix.
 		$video_html = '<div class="mvs-activity-media mvs-activity-media--video" data-mvs-media-id="' . esc_attr( $media_id ) . '">'
-			. '<video controls preload="auto"' . $poster . '>'
+			. '<video controls preload="auto"' . $poster . \WPMediaVerse\Core\TemplateHelpers::player_download_attr( (int) $media_id ) . '>'
 			. '<source src="' . esc_url( $file_url ) . '" type="' . esc_attr( \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'file_type' ) ?: 'video/mp4' ) . '">'
 			. '</video>'
 			. '<a href="' . esc_url( $permalink ) . '" class="mvs-activity-media-link">' . esc_html__( 'View full media', 'wpmediaverse' ) . '</a>'

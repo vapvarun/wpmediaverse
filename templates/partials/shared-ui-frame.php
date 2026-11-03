@@ -423,7 +423,7 @@ wp_interactivity_state(
 							<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
 						</label>
 						<p class="mvs-modal-field-hint">
-							<?php esc_html_e( 'Uncheck to hide the Download button on this single item. The site-wide download setting still applies.', 'wpmediaverse' ); ?>
+							<?php esc_html_e( 'Uncheck to remove the Download button and the player\'s download option for this item. It cannot stop someone who can play or view it from saving or recording it. The site-wide download setting still applies.', 'wpmediaverse' ); ?>
 						</p>
 					</div>
 					<?php endif; ?>
@@ -505,7 +505,7 @@ wp_interactivity_state(
 					<img data-wp-bind--src="state.lightboxImageSrc" alt="" data-wp-bind--alt="state.lightboxAlt" data-wp-bind--hidden="state.lightboxHideImage" />
 				</picture>
 				<?php // preload/poster mirror media-single.php:243 — without them the lightbox pulled the whole file on open and showed a black frame while it buffered. (Basecamp 10171640247) ?>
-				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" data-wp-on--error="actions.lightboxVideoError" hidden>
+				<video class="mvs-lightbox-video" controls preload="metadata" data-wp-bind--controlslist="state.lightboxControlsList" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--poster="state.lightboxPosterUrl" data-wp-bind--hidden="state.lightboxHideVideo" data-wp-on--error="actions.lightboxVideoError" hidden>
 					<?php // Captions from REST (Pro's captions_url); no src means no track. ?>
 					<track kind="captions" default label="<?php esc_attr_e( 'Captions', 'wpmediaverse' ); ?>" data-wp-bind--src="state.lightboxCaptionsUrl" data-wp-bind--srclang="state.lightboxCaptionsLang" />
 				</video>
@@ -519,7 +519,7 @@ wp_interactivity_state(
 				</div>
 				<?php // Cover art behind the player; after <picture> because the BP clone reads the first img as the photo. ?>
 				<img class="mvs-lightbox-audio-cover" alt="" data-wp-bind--src="state.lightboxAudioCoverUrl" data-wp-bind--hidden="!state.lightboxAudioCoverUrl" hidden />
-				<audio class="mvs-lightbox-audio" controls data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
+				<audio class="mvs-lightbox-audio" controls data-wp-bind--controlslist="state.lightboxControlsList" data-wp-bind--src="state.lightboxVideoUrl" data-wp-bind--hidden="state.lightboxHideAudio" hidden></audio>
 				<?php // A document has no displayable image, so instead of synthesising a broken <img> from its file URL the lightbox shows a doc card (glyph + title + type); the chrome below (Open / Download) still reaches the file. (Basecamp 10248528902) ?>
 				<?php // Pro's viewer when it can render the type, the download card otherwise. Basecamp 10268223516. ?>
 				<div class="mvs-lightbox-doc-viewer" data-wp-bind--hidden="state.lightboxHideDocViewer" data-wp-watch="callbacks.lightboxDocViewer" hidden></div>

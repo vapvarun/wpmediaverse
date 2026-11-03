@@ -178,6 +178,8 @@ class Plugin {
 		// Lucide powers the <i data-lucide> icons in the lightbox action bar.
 		// Registered globally on `wp_enqueue_scripts@1`.
 		wp_enqueue_script( 'mvs-lucide' );
+		// The lightbox players carry controlsList=nodownload when downloads are off.
+		wp_enqueue_script( 'mvs-player-guard' );
 
 		// Dialog frame stylesheet (registered globally in enqueue_frontend_assets).
 		wp_enqueue_style( 'mvs-shared-ui-frame' );
@@ -450,6 +452,7 @@ class Plugin {
 		// needs to re-register the script or re-add the hydration inline.
 		add_action( 'wp_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
+		add_action( 'wp_enqueue_scripts', array( self::class, 'register_player_guard_script' ), 1 );
 
 		// The two stylesheets every BuddyPress surface asks for, registered at
 		// the SAME earliest priority and for the same reason.
@@ -1575,6 +1578,7 @@ class Plugin {
 			// Follow/Message buttons were dead until the user hit refresh.
 			// All of these are delegated + config-from-data-*, so loading them
 			// on a page that has no matching markup is a no-op.
+			wp_enqueue_script( 'mvs-player-guard' );
 			wp_enqueue_script( 'mvs-profile-actions' );
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
@@ -3000,6 +3004,32 @@ JS;
 	}
 
 	/**
+	 * Register the player guard (no right-click menu on a nodownload player).
+	 *
+	 * Registered early and globally, like mvs-lucide, so every surface that
+	 * prints a player - ours through TemplateHelpers::player_download_attr(),
+	 * BuddyNext's through a script dependency - shares one copy.
+	 *
+	 * @since 2.6.3
+	 */
+	public static function register_player_guard_script(): void {
+		if ( wp_script_is( 'mvs-player-guard', 'registered' ) ) {
+			return;
+		}
+
+		wp_register_script(
+			'mvs-player-guard',
+			MVS_PLUGIN_URL . 'assets/js/frontend/player-guard.js',
+			array(),
+			self::asset_version( 'assets/js/frontend/player-guard.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+	}
+
+	/**
 	 * Register (or enqueue) the @mvs/shared-ui script module with the canonical
 	 * dependency array, including @wordpress/interactivity-router as a dynamic dep
 	 * so the navigate action's dynamic import() is declared at module-registry time.
@@ -3137,7 +3167,8 @@ JS;
 		// (battles/challenges/tournaments/compete) call via window.mvsRest.
 		// Stripping it here would leave those stores unable to load. Filterable
 		// so future shared utilities can opt out of the UI-suppression sweep.
-		$keep_handles = (array) apply_filters( 'mvs_frontend_presence_keep_handles', array( 'mvs-rest' ) );
+		// `mvs-player-guard` is the same kind: BuddyNext's own players load it.
+		$keep_handles = (array) apply_filters( 'mvs_frontend_presence_keep_handles', array( 'mvs-rest', 'mvs-player-guard' ) );
 
 		// Classic styles + scripts: dequeue and deregister anything `mvs-*`.
 		foreach ( array( wp_styles(), wp_scripts() ) as $registry ) {

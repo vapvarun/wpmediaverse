@@ -217,6 +217,10 @@
 			if ( thumbUrl ) {
 				vidAttrs.poster = thumbUrl;
 			}
+			// Downloads off: the player guard refuses "Save video as" on it.
+			if ( false === item.allow_download ) {
+				vidAttrs.controlslist = 'nodownload';
+			}
 			nodes.push( el( 'video', 'mvs-grid-video-preview', vidAttrs ) );
 			if ( showPlay ) {
 				nodes.push( iconPlay() );

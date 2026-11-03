@@ -121,6 +121,10 @@ class ActivityFormIntegration {
 		wp_enqueue_style( 'mvs-frontend' );
 		wp_enqueue_style( 'mvs-bp-integration' );
 
+		// Activity players for items with downloads off carry nodownload. The
+		// stream arrives over admin-ajax, so the guard is loaded with the page.
+		wp_enqueue_script( 'mvs-player-guard' );
+
 		// Lightbox handled by shared-ui Interactivity API module — no legacy JS needed.
 
 		// Upload button and activity-media JS only for logged-in users.

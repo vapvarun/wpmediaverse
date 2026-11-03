@@ -45,6 +45,17 @@
 		}
 	}
 
+	// One <audio> plays every track, so the nodownload mark follows the track.
+	function setTrack( audio, track ) {
+		audio.src = track.url;
+		audio.type = track.type;
+		if ( track.nodownload ) {
+			audio.setAttribute( 'controlsList', 'nodownload' );
+		} else {
+			audio.removeAttribute( 'controlsList' );
+		}
+	}
+
 	function label( t ) {
 		return ( t.artist ? t.artist + ' — ' : '' ) + t.title;
 	}
@@ -61,8 +72,7 @@
 			return;
 		}
 		state[ albumId ] = idx;
-		audio.src = tracks[ idx ].url;
-		audio.type = tracks[ idx ].type;
+		setTrack( audio, tracks[ idx ] );
 		audio.play();
 		nowEl.textContent = label( tracks[ idx ] );
 		scope.querySelectorAll( '.mvs-playlist-track' ).forEach( function ( el, i ) {
@@ -120,8 +130,7 @@
 			if ( ! audio || ! nowEl || audio.src ) {
 				return;
 			}
-			audio.src = tracks[ 0 ].url;
-			audio.type = tracks[ 0 ].type;
+			setTrack( audio, tracks[ 0 ] );
 			nowEl.textContent = label( tracks[ 0 ] );
 			var first = scope.querySelector( '.mvs-playlist-track' );
 			if ( first ) {

@@ -721,6 +721,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxHideDownload() {
 			return ! state.lightboxAllowDownload;
 		},
+		// Same gate on the player itself: no Download in the browser's player
+		// menu, and the player guard refuses the right-click menu. false drops
+		// the attribute while no item is loaded.
+		get lightboxControlsList() {
+			return state.lightboxMediaData && state.lightboxHideDownload ? 'nodownload' : false;
+		},
 		get lightboxViewsText() {
 			const s = state.lightboxStats;
 			const views = s?.views || 0;

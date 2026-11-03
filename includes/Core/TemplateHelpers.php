@@ -447,7 +447,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				// on this very line above — so there is nothing left for the
 				// frame-grab to rescue. Omitting it also means a grid of videos
 				// does not fetch a moov atom per tile.
-				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
+				// A preview plays the whole file, so it carries the same nodownload mark.
+				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . self::player_download_attr( $media_id ) . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
 			// No streamable URL (the viewer may not stream the file). Show the
 			// default poster as a still image with the play overlay.
@@ -604,6 +605,30 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			$height,
 			$rects
 		);
+	}
+
+	/**
+	 * The nodownload attribute for a player of this item, when downloads are off.
+	 *
+	 * Download buttons already follow downloads_allowed(); the browser's own
+	 * player menu and right-click did not. This puts controlsList="nodownload"
+	 * on the <audio>/<video> and loads the player guard that refuses the
+	 * right-click menu on it. Same two gates as every Download control: the
+	 * site switch and the item's own setting.
+	 *
+	 * @since 2.6.3
+	 *
+	 * @param int $media_id Media ID.
+	 * @return string ' controlsList="nodownload"' or ''.
+	 */
+	public static function player_download_attr( int $media_id ): string {
+		if ( Plugin::container()->get( 'media_repository' )->downloads_allowed( $media_id ) ) {
+			return '';
+		}
+
+		wp_enqueue_script( 'mvs-player-guard' );
+
+		return ' controlsList="nodownload"';
 	}
 
 	/**

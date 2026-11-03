@@ -142,6 +142,7 @@ $mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
 		<div class="mvs-player-video-wrap">
 			<video class="mvs-player-video"
 				controls
+				<?php echo \WPMediaVerse\Core\TemplateHelpers::player_download_attr( (int) $media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed attribute string. ?>
 				data-wp-bind--hidden="context.failed"
 				<?php echo $autoplay ? 'autoplay muted' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static strings. ?>
 				<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
@@ -174,6 +175,7 @@ $mvs_resume_url = ( $mvs_pro_active && is_user_logged_in() )
 			<div class="mvs-player-audio-title"><?php echo esc_html( $media_title ); ?></div>
 			<audio class="mvs-player-audio"
 				controls
+				<?php echo \WPMediaVerse\Core\TemplateHelpers::player_download_attr( (int) $media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed attribute string. ?>
 				<?php echo $autoplay ? 'autoplay' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
 				<?php echo $loop ? 'loop' : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static string. ?>
 				preload="metadata"
