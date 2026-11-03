@@ -1164,7 +1164,6 @@
     clear: both;
 }
 
-#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn,
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
     display: inline-flex;
     align-items: center;
@@ -1190,11 +1189,42 @@
     transition: border-color 0.15s, background-color 0.15s, color 0.15s;
 }
 
+/* Attach media is a composer tool, like the Poll icon beside it: no box of its
+ * own, the tools' type, a 40px tap target, and its visible label (Zoho #42390,
+ * where it read as a bordered pill apart from the other tools). */
 #buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn {
+    display: inline-flex;
+    align-items: center;
     gap: 6px;
+    box-sizing: border-box;
+    height: auto;
+    min-height: 40px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font-size: 14px;
+    font-family: inherit;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: none;
+    vertical-align: middle;
+    transition: background-color 0.15s, color 0.15s;
 }
 
-#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn:hover,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn:hover {
+    background-color: var(--mvs-surface-2);
+    color: var(--mvs-text);
+}
+
+#buddypress #whats-new-form #whats-new-options #mvs-activity-media-btn:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:hover,
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:focus {
     background-color: var(--mvs-surface-2);
@@ -1425,10 +1455,12 @@
  *  enough for the side-by-side layout (Reign's 46.8em breakpoint),
  *  nudge our attach-media wrap to start at the textarea's x-offset
  *  rather than at the avatar's. Below the breakpoint the avatar column
- *  collapses and no indent is needed.
+ *  collapses and no indent is needed. Only when we are the first tool:
+ *  after another one (BuddyPress Polls indents its own first item the
+ *  same way) the indent opened an 85px hole between the two.
  * ============================================================================= */
 @media screen and (min-width: 46.8em) {
-    body.wb-reign-theme #buddypress #whats-new-form .mvs-activity-media-btn-wrap {
+    body.wb-reign-theme #buddypress #whats-new-form #whats-new-options > .mvs-activity-media-btn-wrap:first-child {
         margin-left: 65px;
     }
 }

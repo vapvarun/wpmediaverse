@@ -51,6 +51,7 @@ class ActivityFormIntegration {
 				id="mvs-activity-media-btn"
 				class="mvs-activity-media-btn"
 				aria-label="<?php esc_attr_e( 'Attach media', 'wpmediaverse' ); ?>"
+				title="<?php esc_attr_e( 'Attach photos, videos or audio', 'wpmediaverse' ); ?>"
 			>
 				<?php
 				// Server-rendered SVG (no JS/Lucide dependency) so the icon is
