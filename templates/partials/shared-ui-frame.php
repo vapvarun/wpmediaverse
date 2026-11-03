@@ -90,6 +90,8 @@ wp_interactivity_state(
 			'savedRedirecting'     => __( 'Saved! Redirecting to the new URL…', 'wpmediaverse' ),
 			'settingsSaved'        => __( 'Media settings saved.', 'wpmediaverse' ),
 			'selectFiles'          => __( 'Please select files to upload.', 'wpmediaverse' ),
+			/* translators: %s: comma-separated names of the files that were not added. */
+			'filesSkippedType'     => __( 'Not added: %s. Upload one kind of media at a time: photos, videos or audio.', 'wpmediaverse' ),
 			/* translators: %d: number of files uploaded. */
 			'filesUploaded'        => __( '%d file(s) uploaded!', 'wpmediaverse' ),
 			/* translators: 1: uploaded count, 2: failed count. */
