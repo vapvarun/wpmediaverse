@@ -34,21 +34,26 @@ class Collection {
 		);
 
 		$args = array(
-			'labels'          => $labels,
-			'public'          => true,
-			'has_archive'     => true,
+			'labels'              => $labels,
+			'public'              => true,
+			'has_archive'         => true,
 			// No core wp/v2 route: it listed and returned private items to anyone
 			// The classic editor does not need it, and
 			// mvs/v1 is the privacy-aware API for albums and collections.
-			'show_in_rest'    => false,
+			'show_in_rest'        => false,
 			// Site search ignored privacy; owners can re-enable it with core's
 			// register_post_type_args filter.
 			'exclude_from_search' => true,
-			'supports'        => array( 'title', 'editor', 'author' ),
-			'capability_type' => 'post',
-			'map_meta_cap'    => true,
-			'rewrite'         => array( 'slug' => 'collection' ),
-			'show_in_menu'    => 'wpmediaverse',
+			'supports'            => array( 'title', 'editor', 'author' ),
+			'capability_type'     => 'post',
+			// The admin list sits under MediaVerse, which needs mvs_settings_screen.
+			// Tied to edit_posts, an Author or Editor got a menu entry that answered
+			// 403. Members manage their own in My Media through mvs/v1, so the
+			// admin screens (and the core menu entry) are for site managers only.
+			'capabilities'        => array( 'edit_posts' => 'mvs_settings_screen' ),
+			'map_meta_cap'        => true,
+			'rewrite'             => array( 'slug' => 'collection' ),
+			'show_in_menu'        => 'wpmediaverse',
 		);
 
 		register_post_type( 'mvs_collection', $args );
