@@ -7042,6 +7042,26 @@
         "CompanionRegistry: no unlocks for learnomy, wp-career-board, wb-listora",
         "CommentController edit: only false is a failure"
       ]
+    },
+    "refresh_2026_11_04_release_2_6_3": {
+      "scope": "2.6.3 release delta (Free), since v2.6.2",
+      "added": [
+        "Migrator::migrate_to_44() - pre-2.6.2 chat files move from media_id to attachment_id",
+        "Plugin::register_player_guard_script() (mvs-player-guard, registered from enqueue_frontend_assets)",
+        "Plugin::set_messaging_enabled()",
+        "TemplateHelpers::player_download_attr() - controlsList=nodownload when downloads are off",
+        "ProfileService::dm_access_hints(), dm_access_texts() (private)",
+        "SignedUrlService::refuses_trashed(), refuse() (private)",
+        "MentionService::resolve_user() (private) and filter mvs_resolve_user",
+        "action mvs_users_primed after every batch user prime",
+        "src/shared/components/EntityPicker.js: EntityPicker, useEntity, TermPicker (Album Viewer, Media Player, Media Grid)"
+      ],
+      "changed": [
+        "GET /mvs/v1/media media_type takes a comma list; a list naming document is refused",
+        "ActivityMediaLinkage constructor no longer takes TemplateHelpers",
+        "mvs/pdf-viewer block supports.inserter false (existing blocks and [mvs_pdf_viewer] unchanged)",
+        "SignedUrlService::serve refuses trashed items and downloads turned off at serve time"
+      ]
     }
   },
   "category_sources": {

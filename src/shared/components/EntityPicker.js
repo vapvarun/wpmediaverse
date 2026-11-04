@@ -11,7 +11,7 @@ import { addQueryArgs } from '@wordpress/url';
 
 /**
  * Search-and-pick list over a MediaVerse REST collection, so no block asks an
- * editor to type a database id (card 10470288160). Used by Media Player (media)
+ * editor to type a database id. Used by Media Player (media)
  * and Album Viewer (albums). Both routes take the search term as `s`.
  *
  * @param {Object}   props

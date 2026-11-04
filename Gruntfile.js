@@ -125,6 +125,7 @@ module.exports = function( grunt ) {
 							'!phpstan.neon',
 							'!phpstan.neon.dist',
 							'!phpstan-baseline.neon',
+							'!phpstan-bootstrap.php',
 							'!phpcs.xml',
 							'!.phpcs.xml.dist',
 							'!package.json',

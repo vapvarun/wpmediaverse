@@ -2580,6 +2580,17 @@
         "AlbumMarkerLookupTrait::add_to_album raises album privacy to the photo when stricter (imports never loosen)",
         "GamificationTemplateLoader::init adds PAGES to mvs_virtual_route_query_vars (moved from Core\\\\Plugin)"
       ]
+    },
+    "refresh_2026_11_04_release_2_6_3": {
+      "scope": "2.6.3 release delta (Pro), since v2.6.2",
+      "added": [
+        "Leaderboard gamification_rows() (private) behind filter mvs_pro_leaderboard_xp_rows",
+        "fires mvs_users_primed after batch user primes; reads mvs_resolve_user for @handles"
+      ],
+      "changed": [
+        "gamification.css: no-cover challenge/tournament placeholder tinted from --mvs-primary with a trophy",
+        "Instagram layout players follow Allow downloads"
+      ]
     }
   },
   "category_sources": {

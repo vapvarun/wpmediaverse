@@ -447,7 +447,6 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				// on this very line above — so there is nothing left for the
 				// frame-grab to rescue. Omitting it also means a grid of videos
 				// does not fetch a moov atom per tile.
-				// A preview plays the whole file, so it carries the same nodownload mark.
 				return '<video class="' . esc_attr( $vid_class ) . '" preload="none" muted playsinline disablepictureinpicture aria-hidden="true"' . self::player_download_attr( $media_id ) . $poster_attr . ' src="' . esc_url( $file_url ) . '"></video>' . $play_icon;
 			}
 			// No streamable URL (the viewer may not stream the file). Show the

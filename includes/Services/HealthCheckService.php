@@ -554,7 +554,7 @@ class HealthCheckService {
 				'<p>%s</p><p>%s</p><p>%s</p>',
 				__( 'Every photo and video is sent through WordPress, one PHP request per file. On busy pages this can use many PHP workers. Files are already given random names, so the web server can send them directly and safely.', 'wpmediaverse' ),
 				__( 'The web server refused a test file with a random name. This usually means an older rule denies the whole MediaVerse folder, such as the nginx rule MediaVerse used to recommend. Replace it with the rule below; files with readable names stay protected.', 'wpmediaverse' ),
-				// What the host's support needs to look into (Basecamp 10370404673).
+				// What the host's support needs to look into.
 				$status > 0
 					/* translators: %d: HTTP status code the test file got. */
 					? esc_html( sprintf( __( 'Last check: the test file got HTTP %d.', 'wpmediaverse' ), $status ) )

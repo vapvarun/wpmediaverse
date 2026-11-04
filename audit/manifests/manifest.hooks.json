@@ -2591,6 +2591,14 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_resolve_user",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": ["\\WP_User|null $user", "string $typed"],
+      "where": "includes/Social/MentionService.php:136",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_reserved_media_paths",
       "type": "filter",
       "args_signature": [],
@@ -3215,6 +3223,14 @@
         "int $following_id"
       ],
       "where": "includes/Social/FollowService.php:115",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_users_primed",
+      "type": "action",
+      "args_count": 1,
+      "args_signature": ["int[] $user_ids"],
+      "where": "includes/Social/ActivityService.php:203",
       "consumed_by": []
     },
     {

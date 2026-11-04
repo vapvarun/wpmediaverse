@@ -452,7 +452,6 @@ class Plugin {
 		// needs to re-register the script or re-add the hydration inline.
 		add_action( 'wp_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'register_lucide_script' ), 1 );
-		add_action( 'wp_enqueue_scripts', array( self::class, 'register_player_guard_script' ), 1 );
 
 		// The two stylesheets every BuddyPress surface asks for, registered at
 		// the SAME earliest priority and for the same reason.
@@ -1468,6 +1467,9 @@ class Plugin {
 	 * Enqueue frontend styles and scripts on MVS pages.
 	 */
 	public static function enqueue_frontend_assets(): void {
+		// Players print controlsList=nodownload and enqueue this guard while rendering.
+		self::register_player_guard_script();
+
 		// Shared REST client — registered globally so any surface (Pro feed
 		// shortcodes, BP tabs, explore, dashboard) can enqueue by handle.
 		// Localized with restBase + a fresh nonce so window.mvsRest is ready
