@@ -182,8 +182,8 @@ if ( file_exists( MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 if ( file_exists( MVS_PLUGIN_DIR . 'libs/package-signatures/package-signatures.php' ) ) {
 	require_once MVS_PLUGIN_DIR . 'libs/package-signatures/package-signatures.php';
 	$mvs_signed_products = array(
-		'wpmediaverse'     => MVS_PLUGIN_BASENAME,
-		'wpmediaverse-pro' => 'wpmediaverse-pro/wpmediaverse-pro.php',
+		'mediaverse'     => MVS_PLUGIN_BASENAME,
+		'mediaverse-pro' => 'wpmediaverse-pro/wpmediaverse-pro.php',
 	);
 	foreach ( $mvs_signed_products as $mvs_signed_product => $mvs_signed_plugin ) {
 		package_signatures_register(
