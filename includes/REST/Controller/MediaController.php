@@ -494,7 +494,10 @@ class MediaController extends WP_REST_Controller {
 		// app, so the leak would ship to every client at once.
 		//
 		// Documents are read through the Pro document routes instead.
-		$mvs_wants_documents = $media_type && in_array( (string) $media_type, MediaTypes::DOCUMENTS, true );
+		// media_type takes one type or a comma list ("video,audio", the Media
+		// Player picker). Unknown names are dropped; none left = the media library.
+		$mvs_types           = array_values( array_filter( array_map( 'trim', explode( ',', (string) $media_type ) ), array( MediaTypes::class, 'is_known' ) ) );
+		$mvs_wants_documents = (bool) array_intersect( $mvs_types, MediaTypes::DOCUMENTS );
 		if ( $mvs_wants_documents && ! self::media_feed_allows_documents() ) {
 			return new WP_Error(
 				'mvs_document_route',
@@ -503,14 +506,9 @@ class MediaController extends WP_REST_Controller {
 			);
 		}
 
-		if ( $media_type && MediaTypes::is_known( (string) $media_type ) ) {
-			$where[]  = 'media_type = %s';
-			$params[] = sanitize_text_field( (string) $media_type );
-		} else {
-			list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA_LIBRARY );
-			$where[]                                = $mvs_type_sql;
-			$params                                 = array_merge( $params, $mvs_type_params );
-		}
+		list( $mvs_type_sql, $mvs_type_params ) = MediaTypes::in_clause( $mvs_types ? $mvs_types : MediaTypes::MEDIA_LIBRARY );
+		$where[]                                = $mvs_type_sql;
+		$params                                 = array_merge( $params, $mvs_type_params );
 
 		// Privacy filtering via index table: the one listing rule Explore and the
 		// activity feed share, so the three cannot drift apart again.

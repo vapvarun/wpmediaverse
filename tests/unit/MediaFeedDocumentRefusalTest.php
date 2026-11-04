@@ -157,6 +157,36 @@ class MediaFeedDocumentRefusalTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A comma list filters to exactly those types (card 10470288160).
+	 *
+	 * The Media Player picker asks for `video,audio`. The route used to treat the
+	 * whole string as one unknown type and fall back to the full library, so
+	 * photos were offered to a video/audio block. A list that names `document`
+	 * is refused like the single value.
+	 */
+	public function test_media_type_list_filters_to_those_types(): void {
+		$photo = $this->insert_row( 'image' );
+		$video = $this->insert_row( 'video' );
+		$audio = $this->insert_row( 'audio' );
+
+		$response = $this->get_feed(
+			array(
+				'media_type' => 'video,audio',
+				'per_page'   => 100,
+			)
+		);
+		$data     = (array) $response->get_data();
+		$ids      = array_map( 'intval', array_column( $data, 'id' ) );
+
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertContains( $video, $ids );
+		$this->assertContains( $audio, $ids );
+		$this->assertNotContains( $photo, $ids, 'A photo was returned for media_type=video,audio.' );
+
+		$this->assertSame( 400, $this->get_feed( array( 'media_type' => 'video,document' ) )->get_status() );
+	}
+
+	/**
 	 * Production Rule 3 — the escape hatch restores the old behaviour.
 	 *
 	 * `media_type`'s enum has advertised `document` since the first release, so a
