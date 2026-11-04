@@ -18,7 +18,8 @@
     "align": [
       "wide",
       "full"
-    ]
+    ],
+    "inserter": false
   },
   "attributes": {
     "mediaId": {
