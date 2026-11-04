@@ -125,6 +125,29 @@ Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui
 
 == Changelog ==
 
+= 2.6.3 - November 2026 =
+
+Download settings that hold on every player and link, BuddyPress activity media that opens, and blocks that find items by name. Lockstep with WPMediaVerse Pro 2.6.3 - install and test both together.
+
+* New      - Album Viewer, Media Player and Media Grid blocks pick albums, media, categories and tags by name instead of typed ids and slugs.
+* New      - Albums and uploads accept an optional original date, so an importer keeps the dates from the source site.
+* Improve  - With downloads off, players show no download option and no right-click menu, and signed download links and message attachments follow the setting.
+* Improve  - BuddyPress activity media tiles open their item, and members-only photos show to members.
+* Improve  - Who can message you explains the chosen option under the picker, including who can still send a message request.
+* Improve  - The upload window names any files left out of a mixed photo and video pick and keeps the note until you close it.
+* Improve  - The BuddyPress post box shows Attach media as a plain tool beside Poll, with its label and a tooltip.
+* Improve  - Site Health says what the direct-delivery check returned and which Apache rule fixes it.
+* Improve  - The PDF Viewer block is no longer offered in the block inserter, since PDF uploads are turned off; pages that already use it keep working.
+* Fix      - Attaching a file to a message works in Safari.
+* Fix      - Files sent in messages before 2.6.2 show again.
+* Fix      - Mentions of handles with dots or hyphens reach the right member.
+* Fix      - Media Player block search filters by what you type and lists only video and audio.
+* Fix      - Contributors and Authors no longer see Albums and Collections admin screens they cannot open.
+* Security - A signed link to an item moved to the trash stops working, including the owner's older links.
+* Dev      - New action `mvs_users_primed` fires after each batch of members is loaded, so avatar and profile plugins can batch their own queries.
+* Dev      - New filter `mvs_resolve_user` to match an @handle to a member.
+* Dev      - `GET /mvs/v1/media` accepts a comma-separated `media_type` list.
+
 = 2.6.2 - October 2026 =
 
 Chat files stay in the chat, galleries list the same way everywhere, BuddyPress posts follow their media, and member deletion cleans up fully.
