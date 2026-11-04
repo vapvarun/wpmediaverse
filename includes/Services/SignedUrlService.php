@@ -308,6 +308,41 @@ class SignedUrlService {
 	}
 
 	/**
+	 * Whether a signed link to a trashed item is refused for this viewer.
+	 *
+	 * The can_view() check always lets an owner through, and an owner's links last for years
+	 * in pages and caches, so whoever holds one could still fetch a photo the owner
+	 * deleted. Only a moderator's screen still draws it, on the admin Trash list.
+	 * Documents keep their own trash, which their editors can open and restore.
+	 *
+	 * @since 2.6.3
+	 *
+	 * @param int $media_id  Media id.
+	 * @param int $viewer_id Viewer the link was signed for, or the live session.
+	 * @return bool
+	 */
+	public function refuses_trashed( int $media_id, int $viewer_id ): bool {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		return 'trash' === (string) $repo->get( $media_id, 'status' )
+			&& ! in_array( (string) $repo->get( $media_id, 'media_type' ), \WPMediaVerse\Core\MediaTypes::DOCUMENT_LIBRARY, true )
+			&& ! user_can( $viewer_id, 'moderate_mvs_media' );
+	}
+
+	/**
+	 * End a signed-URL request with a plain-text refusal.
+	 *
+	 * @param int    $status  HTTP status.
+	 * @param string $message Message shown to the browser.
+	 */
+	private function refuse( int $status, string $message ): never {
+		status_header( $status );
+		header( 'Content-Type: text/plain' );
+		echo esc_html( $message );
+		exit;
+	}
+
+	/**
 	 * Serve a file for a validated signed URL request.
 	 *
 	 * @param array $params Validated URL parameters.
@@ -318,10 +353,7 @@ class SignedUrlService {
 		$media_id              = $this->validate_signature( $params, $expired );
 
 		if ( ! $media_id ) {
-			status_header( 403 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html( 'Invalid or expired signed URL.' );
-			exit;
+			$this->refuse( 403, 'Invalid or expired signed URL.' );
 		}
 
 		// Restricted media: re-check view access for the token's signed viewer.
@@ -348,10 +380,7 @@ class SignedUrlService {
 			$serve_expired_public = apply_filters( 'mvs_serve_expired_public_urls', true, $media_id );
 
 			if ( 'public' !== $privacy || ! $serve_expired_public ) {
-				status_header( 403 );
-				header( 'Content-Type: text/plain' );
-				echo esc_html( 'Invalid or expired signed URL.' );
-				exit;
+				$this->refuse( 403, 'Invalid or expired signed URL.' );
 			}
 		}
 
@@ -359,11 +388,8 @@ class SignedUrlService {
 		// flagged or rejected item is public right up until it is taken down. For
 		// approved public media check_access() still returns true, so this costs one
 		// repo read rather than a behaviour change.
-		if ( ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
-			status_header( 403 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html( 'Access denied.' );
-			exit;
+		if ( $this->refuses_trashed( $media_id, $viewer_user_id ) || ! $this->privacy->can_view( $media_id, $viewer_user_id ) ) {
+			$this->refuse( 403, 'Access denied.' );
 		}
 
 		// Dispatch thumbnail requests to a dedicated handler.
@@ -378,18 +404,22 @@ class SignedUrlService {
 		$file_type = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_raw( $media_id, 'file_type' );
 
 		if ( null === $full_path ) {
-			status_header( 404 );
-			header( 'Content-Type: text/plain' );
-			echo esc_html( 'File not found.' );
-			exit;
+			$this->refuse( 404, 'File not found.' );
 		}
 
 		$is_download = ! empty( $params[ self::PARAM_DOWNLOAD ] );
+		$repo        = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+
+		// A signed download link outlives the setting it was signed under: the
+		// site switch or the owner's per-item "no download" applies at serve time.
+		if ( $is_download && ! $repo->downloads_allowed( $media_id ) ) {
+			$this->refuse( 403, __( 'Downloads are turned off for this item.', 'wpmediaverse' ) );
+		}
+
 		// Prefer the original (user-provided) filename when present — keeps
 		// downloads recognisable for end users even when the on-disk basename
 		// is a 1.2.1+ hash. Falls back to the on-disk basename for older
 		// uploads where original_filename meta is absent.
-		$repo              = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$original_filename = (string) $repo->get( $media_id, 'original_filename' );
 		$filename          = '' !== $original_filename
 			? sanitize_file_name( $original_filename )

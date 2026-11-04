@@ -251,6 +251,8 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_suggestions_cache_ttl` | filter | Free | 1.9.0 |
 | `mvs_pro_collections_manage_url` | filter | Pro | 1.8.0 |
 | `mvs_pro_compete_points_url` | filter | Pro | 1.8.0 |
+| `mvs_users_primed` | action | Free + Pro | 2.6.3 |
+| `mvs_resolve_user` | filter | Free + Pro | 2.6.3 |
 
 ---
 
@@ -359,6 +361,35 @@ add_action( 'mvs_ai_providers', function( $ai_service ) {
 | Filter | Description | Parameters | Returns |
 |--------|-------------|------------|---------|
 | `mvs_theme_json` | Filter theme.json data passed to the frontend JS bundle | `$data` (array) | `array` |
+
+### `mvs_users_primed` **(New in 2.6.3)**
+
+Fires right after MediaVerse loads a batch of users into the user cache (inbox, message threads, activity, media grids, leaderboards, challenges, battles, tournaments). Prime your own per-user data (avatars, profile fields) for the same ids here, so a list costs one query instead of one per row.
+
+```php
+add_action( 'mvs_users_primed', function ( array $user_ids ) {
+    my_plugin_prime_profiles( $user_ids );
+} );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$user_ids` | `int[]` | User ids just primed. |
+
+### `mvs_resolve_user` **(New in 2.6.3)**
+
+Filters the member that a typed name resolves to, in @mentions (comments and descriptions) and in Pro document sharing. MediaVerse tries the login, the email (sharing only) and the profile handle (nicename) first, and accepts a leading @. Return a `WP_User` to answer for names your plugin owns, such as custom profile slugs.
+
+```php
+add_filter( 'mvs_resolve_user', function ( $user, string $typed ) {
+    return $user ?: my_plugin_user_by_handle( $typed );
+}, 10, 2 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$user` | `WP_User\|null` | The member found so far, or null. |
+| `$typed` | `string` | What was typed, without a leading @. |
 
 ---
 
@@ -1242,6 +1273,8 @@ add_filter( 'mvs_messaging_enabled', function ( bool $enabled ): bool {
 ```
 
 The filter is read once per request, early in plugin boot, so hook it from a must-use plugin or your plugin's main file, not from a template.
+
+To change the switch itself from code (for example a one-click "Turn on messages" in an add-on), call `\WPMediaVerse\Core\Plugin::set_messaging_enabled( true )` (since 2.6.3). It writes the same option as the settings screen; check the user's capability before calling it. A value forced by this filter still wins.
 
 ### `mvs_can_send_message`
 
@@ -3377,6 +3410,18 @@ defaults and the document UI degrades honestly rather than showing empty slots.
 | `mvs_show_demo_import` | filter | `0 === count_published()` | Whether the Overview page offers the demo content import. Default true only while the site has no published media. |
 | `wpmediaverse_companions` | filter | `$companions` | The catalog (slug => entry) of companion plugins the installer and admin screen list. |
 | `mvs_default_privacy` | filter | `$privacy` | The privacy value a new item defaults to when the member has not chosen one. |
+
+### Importing with original dates (2.6.3)
+
+An importer can pass each record's source time as a UTC `Y-m-d H:i:s` string. Leave it out and the record is dated now. A future or unreadable value also means now. No REST route accepts these arguments.
+
+| Method | Argument |
+|---|---|
+| `AlbumService::create( $author, $args )` | `$args['created_at']` |
+| `AlbumService::add_items( $album, $media, $args )` | `$args['added_at']` |
+| `UploadService::handle( $file, $user, $args )` | `$args['created_at']` |
+
+`add_items()` also takes `'announce' => false`, which skips the `mvs_album_items_added` action so an import does not post an update per photo.
 
 ### Added in 2.6.2
 

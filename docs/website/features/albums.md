@@ -17,7 +17,7 @@ Group your own uploads into an album - tell a story, document a trip, or build a
 
 1. Go to your media dashboard, open **Albums** and click **Create Album**
 2. Give your album a title and optional description
-3. Choose a privacy level: Public, Members, Friends (only when BuddyPress friends is active), or Only me
+3. Choose a privacy level: Public, Members, Followers, Friends (only when BuddyPress friends is active), or Only me
 4. Under **Select Media**, click thumbnails to pick photos from your uploads - select as many as you like. Click **Set Cover** on a photo to make it the cover
 5. Click **Create** - your album is live and appears on your profile
 6. To change it later, open **Edit Album**, adjust the details or the media, and click **Save**. The window opens with the album's current photos already selected. On the album page, **Add Media** adds more photos
@@ -53,7 +53,7 @@ Updating to 2.6.0 changes nothing you can see: each photo's current privacy is r
 
 Site owners who want album and photo privacy to stay fully independent (the behaviour before 2.3.0) can return `false` from the `mvs_album_inherit_privacy` filter.
 
-If a user can see the album but not a specific media item (because the item's privacy is more restrictive still), that item is hidden from the album view.
+When `mvs_album_inherit_privacy` returns `false`, each photo keeps its own privacy inside the album, so a viewer who can see the album but not a photo does not see that photo in it.
 
 ## Displaying an Album
 

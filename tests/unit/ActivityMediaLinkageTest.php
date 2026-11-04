@@ -40,10 +40,7 @@ class ActivityMediaLinkageTest extends WP_UnitTestCase {
 		wp_set_current_user( $this->admin_id );
 
 		$this->repo    = Plugin::container()->get( 'media_repository' );
-		$this->linkage = new ActivityMediaLinkage(
-			$this->repo,
-			Plugin::container()->get( 'template_helpers' )
-		);
+		$this->linkage = new ActivityMediaLinkage( $this->repo );
 	}
 
 	private function insert_image( string $title = 'Linkage fixture' ): int {
@@ -133,7 +130,7 @@ class ActivityMediaLinkageTest extends WP_UnitTestCase {
 
 	/**
 	 * `render()` emits MVS markup wrapped in `.mvs-activity-media-group`.
-	 * Markup is generated via TemplateHelpers — no regex on saved HTML.
+	 * Markup is generated via MediaDisplayHelper — no regex on saved HTML.
 	 */
 	public function test_render_emits_grouped_markup_from_linkage(): void {
 		$a           = $this->insert_image( 'Render A' );
@@ -151,6 +148,8 @@ class ActivityMediaLinkageTest extends WP_UnitTestCase {
 			'data-mvs-activity-id="' . $activity_id . '"',
 			$html
 		);
+		// Each tile opens its item (the old render printed a bare <img>).
+		$this->assertSame( 2, substr_count( $html, '<a href=' ) );
 	}
 
 	/**

@@ -1,11 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 2
-			path: includes/Admin/CollectionMetaBox.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\CollectionMetaBox\\:\\:render_rule_row\\(\\) has parameter \\$categories with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/CollectionMetaBox.php
@@ -21,39 +16,14 @@ parameters:
 			path: includes/Admin/CollectionMetaBox.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 2
-			path: includes/Admin/DocumentListPage.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\DocumentListPage\\:\\:authors_for\\(\\) has parameter \\$items with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/DocumentListPage.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Admin/IntegrationsPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 2
-			path: includes/Admin/IntegrationsPage.php
-
-		-
 			message: "#^Parameter \\#1 \\$args of function paginate_links expects array\\{base\\?\\: string, format\\?\\: string, total\\?\\: int, current\\?\\: int, aria_current\\?\\: string, show_all\\?\\: bool, end_size\\?\\: int, mid_size\\?\\: int, \\.\\.\\.\\}, array\\{base\\: string, format\\: '', current\\: int, total\\: float\\} given\\.$#"
 			count: 1
 			path: includes/Admin/LogViewerPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Admin/MediaListPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/MediaListPage.php
 
 		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\MediaListPage\\:\\:render_row\\(\\) has parameter \\$item with no value type specified in iterable type array\\.$#"
@@ -101,11 +71,6 @@ parameters:
 			path: includes/Admin/MemberModeration.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/ModerationQueue.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\ModerationQueue\\:\\:build_tabs\\(\\) has parameter \\$counts with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/ModerationQueue.php
@@ -126,16 +91,6 @@ parameters:
 			path: includes/Admin/ModerationQueue.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 2
-			path: includes/Admin/OverviewPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 8
-			path: includes/Admin/OverviewPage.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\OverviewPage\\:\\:get_recent_media\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/OverviewPage.php
@@ -154,11 +109,6 @@ parameters:
 			message: "#^Method WPMediaVerse\\\\Admin\\\\ReportsPage\\:\\:add_moderation_tab\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/ReportsPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Admin/Settings/FieldRenderer.php
 
 		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\FieldRenderer\\:\\:add_field\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
@@ -261,16 +211,6 @@ parameters:
 			path: includes/Admin/Settings/Sanitizers.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Admin/Settings/SettingsPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 3
-			path: includes/Admin/Settings/SettingsPage.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\Settings\\\\SettingsPage\\:\\:get_registered_sections\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Admin/Settings/SettingsPage.php
@@ -311,11 +251,6 @@ parameters:
 			path: includes/Admin/Settings/SettingsSaveGuard.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 3
-			path: includes/Admin/SetupWizard.php
-
-		-
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, int given\\.$#"
 			count: 1
 			path: includes/Admin/SetupWizard.php
@@ -324,11 +259,6 @@ parameters:
 			message: "#^Parameter \\#1 \\$text of function esc_html expects string, float given\\.$#"
 			count: 1
 			path: includes/Admin/StatsPage.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Admin/TagManagementPage.php
 
 		-
 			message: "#^Method WPMediaVerse\\\\Admin\\\\TagManagementPage\\:\\:render_bulk_actions_form\\(\\) has parameter \\$tags with no value type specified in iterable type array\\.$#"
@@ -364,11 +294,6 @@ parameters:
 			message: "#^Method WPMediaVerse\\\\Auth\\\\AppConnect\\:\\:join_buddynext_allowlist\\(\\) return type has no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Auth/AppConnect.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Blocks/BlockRegistrar.php
 
 		-
 			message: "#^Method WPMediaVerse\\\\Blocks\\\\BlockRegistrar\\:\\:register_category\\(\\) has parameter \\$categories with no value type specified in iterable type array\\.$#"
@@ -826,16 +751,6 @@ parameters:
 			path: includes/Core/Migrator.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 11
-			path: includes/Core/Plugin.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 37
-			path: includes/Core/Plugin.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Core\\\\Plugin\\:\\:admin_url\\(\\) has parameter \\$args with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Core/Plugin.php
@@ -883,16 +798,6 @@ parameters:
 		-
 			message: "#^Call to static method auth_url\\(\\) on an unknown class BuddyNext\\\\Core\\\\PageRouter\\.$#"
 			count: 2
-			path: includes/Core/TemplateHelpers.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Core/TemplateHelpers.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 3
 			path: includes/Core/TemplateHelpers.php
 
 		-
@@ -1026,11 +931,6 @@ parameters:
 			path: includes/Core/TemplateHelpersInterface.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Core/TemplateLoader.php
-
-		-
 			message: "#^Method WPMediaVerse\\\\Core\\\\TemplateLoader\\:\\:can_view_media\\(\\) has parameter \\$media with no value type specified in iterable type array\\.$#"
 			count: 1
 			path: includes/Core/TemplateLoader.php
@@ -1054,11 +954,6 @@ parameters:
 			message: "#^Ternary operator condition is always true\\.$#"
 			count: 1
 			path: includes/Core/TemplateLoader.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Core/TemplateVersions.php
 
 		-
 			message: "#^Access to an undefined property object\\:\\:\\$component\\.$#"
@@ -1091,24 +986,9 @@ parameters:
 			path: includes/Integrations/BuddyPress/ActivityContentIntegration.php
 
 		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 1
-			path: includes/Integrations/BuddyPress/ActivityFormIntegration.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Integrations/BuddyPress/ActivityFormIntegration.php
-
-		-
 			message: "#^Function buddypress not found\\.$#"
 			count: 3
 			path: includes/Integrations/BuddyPress/ActivitySyncIntegration.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 1
-			path: includes/Integrations/BuddyPress/BaseBPTabIntegration.php
 
 		-
 			message: "#^Function groups_get_current_group not found\\.$#"
@@ -2424,16 +2304,6 @@ parameters:
 			message: "#^Method WPMediaVerse\\\\Services\\\\ViewRetentionService\\:\\:sanitize_setting\\(\\) has parameter \\$value with no type specified\\.$#"
 			count: 1
 			path: includes/Services/ViewRetentionService.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_DIR not found\\.$#"
-			count: 12
-			path: includes/Shortcodes/Shortcodes.php
-
-		-
-			message: "#^Constant MVS_PLUGIN_URL not found\\.$#"
-			count: 5
-			path: includes/Shortcodes/Shortcodes.php
 
 		-
 			message: "#^Method WPMediaVerse\\\\Shortcodes\\\\Shortcodes\\:\\:render_album\\(\\) has parameter \\$atts with no value type specified in iterable type array\\.$#"

@@ -178,6 +178,8 @@ class Plugin {
 		// Lucide powers the <i data-lucide> icons in the lightbox action bar.
 		// Registered globally on `wp_enqueue_scripts@1`.
 		wp_enqueue_script( 'mvs-lucide' );
+		// The lightbox players carry controlsList=nodownload when downloads are off.
+		wp_enqueue_script( 'mvs-player-guard' );
 
 		// Dialog frame stylesheet (registered globally in enqueue_frontend_assets).
 		wp_enqueue_style( 'mvs-shared-ui-frame' );
@@ -855,8 +857,7 @@ class Plugin {
 			'integration.bp_activity_linkage',
 			function ( $container ) {
 				$linkage = new \WPMediaVerse\Integrations\BuddyPress\ActivityMediaLinkage(
-					$container->get( 'media_repository' ),
-					$container->get( 'template_helpers' )
+					$container->get( 'media_repository' )
 				);
 				$linkage->init();
 				return $linkage;
@@ -1466,6 +1467,9 @@ class Plugin {
 	 * Enqueue frontend styles and scripts on MVS pages.
 	 */
 	public static function enqueue_frontend_assets(): void {
+		// Players print controlsList=nodownload and enqueue this guard while rendering.
+		self::register_player_guard_script();
+
 		// Shared REST client — registered globally so any surface (Pro feed
 		// shortcodes, BP tabs, explore, dashboard) can enqueue by handle.
 		// Localized with restBase + a fresh nonce so window.mvsRest is ready
@@ -1576,6 +1580,7 @@ class Plugin {
 			// Follow/Message buttons were dead until the user hit refresh.
 			// All of these are delegated + config-from-data-*, so loading them
 			// on a page that has no matching markup is a no-op.
+			wp_enqueue_script( 'mvs-player-guard' );
 			wp_enqueue_script( 'mvs-profile-actions' );
 			wp_enqueue_script( 'mvs-album-upload' );
 			wp_enqueue_script( 'mvs-explore-search' );
@@ -3001,6 +3006,32 @@ JS;
 	}
 
 	/**
+	 * Register the player guard (no right-click menu on a nodownload player).
+	 *
+	 * Registered early and globally, like mvs-lucide, so every MediaVerse and
+	 * Pro surface that prints a player (TemplateHelpers::player_download_attr()
+	 * enqueues it) shares one copy. BuddyNext owns its own players and guard.
+	 *
+	 * @since 2.6.3
+	 */
+	public static function register_player_guard_script(): void {
+		if ( wp_script_is( 'mvs-player-guard', 'registered' ) ) {
+			return;
+		}
+
+		wp_register_script(
+			'mvs-player-guard',
+			MVS_PLUGIN_URL . 'assets/js/frontend/player-guard.js',
+			array(),
+			self::asset_version( 'assets/js/frontend/player-guard.js' ),
+			array(
+				'in_footer' => true,
+				'strategy'  => 'defer',
+			)
+		);
+	}
+
+	/**
 	 * Register (or enqueue) the @mvs/shared-ui script module with the canonical
 	 * dependency array, including @wordpress/interactivity-router as a dynamic dep
 	 * so the navigate action's dynamic import() is declared at module-registry time.
@@ -3448,6 +3479,22 @@ JS;
 			'mvs_messaging_enabled',
 			(bool) get_option( \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION, true )
 		);
+	}
+
+	/**
+	 * Turn private messaging on or off - the same switch as Settings > Messages.
+	 *
+	 * The door an add-on uses to offer the owner a one-click "Turn on messages"
+	 * (BuddyNext does) instead of sending them to this plugin's settings. The
+	 * caller checks the capability; stored conversations are kept either way.
+	 *
+	 * @since 2.6.3
+	 *
+	 * @param bool $enabled Whether messaging is on.
+	 * @return void
+	 */
+	public static function set_messaging_enabled( bool $enabled ): void {
+		update_option( \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar::ENABLED_OPTION, $enabled );
 	}
 
 	/**

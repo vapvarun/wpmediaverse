@@ -275,14 +275,47 @@ class ProfileService {
 	 * @return array<string,string> value => label.
 	 */
 	public static function dm_access_options(): array {
-		$labels = array(
-			'everyone'  => __( 'Everyone', 'wpmediaverse' ),
-			'followers' => __( 'People who follow you', 'wpmediaverse' ),
-			'mutual'    => __( 'People you follow back', 'wpmediaverse' ),
-			'nobody'    => __( 'No one', 'wpmediaverse' ),
+		return array_column( self::dm_access_texts(), 'label', 'value' );
+	}
+
+	/**
+	 * One plain sentence per "who can message you" choice, shown under the
+	 * picker for the selected choice. Who still reaches Message requests
+	 * differs per choice (see can_message()), and a long option label is cut
+	 * off in a closed picker on a phone, so the rule lives here.
+	 *
+	 * @since 2.6.3
+	 * @return array<string,string> value => hint.
+	 */
+	public static function dm_access_hints(): array {
+		return array_column( self::dm_access_texts(), 'hint', 'value' );
+	}
+
+	/**
+	 * Label and hint for each "who can message you" choice this site allows,
+	 * in one table so the two never list different choices.
+	 *
+	 * @return array<int,array{value:string,label:string,hint:string}>
+	 */
+	private static function dm_access_texts(): array {
+		$texts = array(
+			'everyone'  => array( __( 'Everyone', 'wpmediaverse' ), __( 'Any member can message you.', 'wpmediaverse' ) ),
+			'followers' => array( __( 'People who follow you', 'wpmediaverse' ), __( 'People who follow you can message you. Anyone else can send a message request.', 'wpmediaverse' ) ),
+			'mutual'    => array( __( 'People you follow back', 'wpmediaverse' ), __( 'People you follow back can message you. Your other followers can send a message request.', 'wpmediaverse' ) ),
+			'nobody'    => array( __( 'No one', 'wpmediaverse' ), __( 'No one can message you, and replies in your existing chats stop too.', 'wpmediaverse' ) ),
 		);
 
-		return array_intersect_key( $labels, array_flip( self::dm_access_choices() ) );
+		$rows = array();
+		foreach ( self::dm_access_choices() as $value ) {
+			if ( isset( $texts[ $value ] ) ) {
+				$rows[] = array(
+					'value' => $value,
+					'label' => $texts[ $value ][0],
+					'hint'  => $texts[ $value ][1],
+				);
+			}
+		}
+		return $rows;
 	}
 
 	/**

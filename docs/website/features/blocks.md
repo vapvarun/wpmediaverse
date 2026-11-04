@@ -2,7 +2,7 @@
 
 > **Included in Free** - This feature is available in the free version of MediaVerse.
 
-MediaVerse registers **8** Gutenberg blocks. In the inserter, Media Upload, Media Grid, Media Player, Album Viewer and Explore Feed sit under **Media**, Member Photos and PDF Viewer under **MediaVerse**, and Media Stats under **Widgets**. All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
+MediaVerse registers **8** Gutenberg blocks. In the inserter, Media Upload, Media Grid, Media Player, Album Viewer and Explore Feed sit under **Media**, Member Photos under **MediaVerse**, and Media Stats under **Widgets**. PDF Viewer is not in the inserter (see below). All blocks use the WordPress Interactivity API for reactive front-end behavior without a separate JavaScript framework.
 
 ## Block List
 
@@ -105,8 +105,10 @@ The Member Photos block renders a single member's media grid. The block resolves
 
 The PDF Viewer block embeds a PDF using the browser's native viewer via the `#view=FitH` URL fragment - no third-party JS, no licensing concerns.
 
+> **Note:** Since 2.6.3 the block is hidden from the inserter. The media library no longer accepts PDF uploads, and the block cannot show Pro Documents (they have their own viewer and sharing rules), so on a new site it has nothing to show. Pages that already use it keep working, and the `[mvs_pdf_viewer]` shortcode is unchanged. To share PDFs with members, use Documents (Pro).
+
 **Block Settings:**
-- Media ID (required - pick a PDF media item)
+- Media ID (required - a PDF media item uploaded before PDF uploads were turned off)
 - Height (200–1400 px, default 600)
 - Show Toolbar (default: on)
 

@@ -6,6 +6,8 @@ parameters:
     level: 6
     paths:
         - includes/
+    bootstrapFiles:
+        - phpstan-bootstrap.php
     scanFiles:
         - wpmediaverse.php
         # Action Scheduler is bundled under libs/ rather than installed by

@@ -168,6 +168,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// Off by default - a title edit leaves the URL alone. Held in state so
 			// re-opening the panel shows what the member actually chose.
 			regenerateSlug: false,
+			allowDownload: true,
 			saving: false,
 			// "42%" while a Replace File upload is sending, '' otherwise.
 			replaceProgress: '',
@@ -1125,6 +1126,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			state.editModal.tagResults = [];
 			state.editModal.tagDropdownVisible = false;
 			state.editModal.regenerateSlug = false;
+			// REST folds the site-wide switch in; the field only shows when it is on.
+			state.editModal.allowDownload = item.allow_download !== false;
 		},
 
 		closeEditModal() {
@@ -1133,6 +1136,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		setEditTitle( event ) { state.editModal.title = event.target.value; },
 		setEditRegenerateSlug( event ) { state.editModal.regenerateSlug = !! event.target.checked; },
+		setEditAllowDownload( event ) { state.editModal.allowDownload = !! event.target.checked; },
 		setEditDesc( event ) { state.editModal.description = event.target.value; },
 		setEditPrivacy( event ) { state.editModal.privacy = event.target.value; },
 
@@ -1233,6 +1237,10 @@ const { state, actions } = store( 'mvs/dashboard', {
 				privacy: state.editModal.privacy,
 				tags: Array.from( state.editModal.tags || [] ),
 			};
+			// Only sent when the field is on the page (site-wide downloads on).
+			if ( document.querySelector( '.mvs-edit-allow-download' ) ) {
+				payload.allow_download = !! state.editModal.allowDownload;
+			}
 
 			// Slug stays put unless the user explicitly opted in via the
 			// "Update URL slug" checkbox. Read DOM directly — keeps the

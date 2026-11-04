@@ -2,10 +2,13 @@
   "domain": "wpmediaverse",
   "potFile": "languages/wpmediaverse.pot",
   "languagesDir": "languages",
+  "glossaryFile": ".wbcom-i18n-glossary.json",
   "engine": "claude",
   "model": "haiku",
+  "review": true,
   "batch": 40,
   "makeJson": true,
+  "makePhp": false,
   "protect": [
     "WPMediaVerse",
     "MediaVerse",
@@ -17,29 +20,21 @@
     "API",
     "URL",
     "CSV",
-    "AI",
     "CDN",
     "EXIF",
     "GIF",
     "WebP"
   ],
-  "glossary": {
-    "Album": "",
-    "Collection": "",
-    "Story": "",
-    "Explore": "",
-    "Feed": ""
-  },
   "locales": [
     { "locale": "de_DE", "name": "German", "register": "informal (du)" },
     { "locale": "fr_FR", "name": "French", "register": "informal (tu)" },
     { "locale": "es_ES", "name": "Spanish", "register": "informal (tú)" },
     { "locale": "nl_NL", "name": "Dutch", "register": "informal (je)" },
-    { "locale": "ko_KR", "name": "Korean", "register": "polite (해요체)", "model": "sonnet" },
+    { "locale": "ko_KR", "name": "Korean", "register": "polite (해요체)" },
     { "locale": "pt_BR", "name": "Portuguese (Brazil)", "register": "informal (você)" },
     { "locale": "it_IT", "name": "Italian", "register": "informal (tu)" },
     { "locale": "ru_RU", "name": "Russian", "register": "neutral" },
-    { "locale": "ja", "name": "Japanese", "register": "polite (です/ます)", "model": "sonnet" },
-    { "locale": "zh_CN", "name": "Chinese (Simplified)", "register": "neutral", "model": "sonnet" }
+    { "locale": "ja", "name": "Japanese", "register": "polite (です/ます)" },
+    { "locale": "zh_CN", "name": "Chinese (Simplified)", "register": "neutral" }
   ]
 }

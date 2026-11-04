@@ -1,1507 +1,324 @@
 {
   "mode": "combo",
-  "release_version": "2.6.2",
-  "free_version": "2.6.2",
-  "pro_version": "2.6.2",
-  "ran_at": "2026-10-13T13:34:16Z",
-  "site": "http://mediaverse.local (+ Docker http://localhost:8911 for BuddyPress/chat rows)",
-  "environment_notes": [
-    "Free 2.6.2 and Pro 2.6.2 active on mediaverse.local (Reign 8.0.7, BuddyPress off, WB Gamification active); Docker 8911 BuddyPress 14.5.2 + Reign. Debug log baseline 3757057 bytes; diff window archived to qa-artifacts/debug-log-2.6.2-2026-10-13T12:32:00Z.txt.",
-    "Scope: this pass fully walked X_2_6_2_focus and a sample of C/D/E; the remaining C/D/E rows are listed as untested, not passed. A and B skipped (live model site).",
-    "Seeding used UploadService::handle via WP-CLI (Smoke Gal A1-A4 as journey_owner, Smoke Cdn); storage driver on the model site is bunnycdn, so uploads reached the real CDN zone and the deleted files' edge copies still answer 200.",
-    "Temporary setting changes, all restored: mvs_allow_user_privacy '' -> '1' -> ''; Settings > Display Layout via the UI (original -> list -> dribbble -> flickr -> instagram -> flickr -> original) then mvs_thumbnail_style and mvs_layout_choice deleted (neither existed before), mvs_pro_feed_layout grid; page 'Smoke grid block' (id 426) created and deleted.",
-    "Docker changes: BuddyPress Groups component activated (rewrite flushed) for X7 then deactivated; groups 11-13, users smoke_peer/smoke_peer2, conversations 8-9 and all Smoke media deleted; Docker layout option reset. Passwords set to qa-pass-262 for admin, qa_member, qa_victim, qa_attacker (allowed by the brief). qa_friend's attacker-thread notifications were marked read by the X4 test. Conv 7 unpinned.",
-    "Fixture cleanup block run before and after; 0 Smoke/E2E rows, comments or notifications remain on either site.",
-    "Playwright MCP wrote page snapshots/console logs into the site-root .playwright-mcp folder (pre-existing practice); the smoke screenshots were moved to qa-artifacts/smoke-2.6.2/. Two tool calls hung for 30 minutes (browser_tabs close, new browser context); no data impact.",
-    "Pre-existing, not from this run: 40 failed mvs_cleanup_media_files, 9 mvs_cloud_sync_media and 2 mvs_cloud_repatriate_media Action Scheduler jobs from Oct 10-11 ('marked as failed after 300 seconds'), and 18 buddynext_mvs_media_activity jobs from Sep 19 with no callback.",
-    "Dark mode: Reign does not follow prefers-color-scheme and the plugin deliberately has no media-query dark mode (frontend.css line 462); dark was tested by setting Reign's [data-bx-mode=dark] + body.dark-scheme.",
-    "After the walk, these fixes landed and were checked separately (not re-walked): comment Save with unchanged text (200), Pro competition pages on the shared virtual-route list, import album privacy (Pro), Integrations screen claims. Release CI reruns on the final head."
-  ],
+  "release_version": "2.6.3",
+  "code_version_header": "2.6.2 (headers not bumped yet; release_version is the version under test)",
+  "free_version": "2.6.3",
+  "pro_version": "2.6.3",
+  "ran_at": "2026-11-04T08:59:50Z",
+  "site": "Docker mv263-combo http://localhost:8121",
+  "environment": {
+    "wp": "latest wordpress:php8.3-apache",
+    "php": "8.3.36",
+    "buddypress": "14.5.4",
+    "themes": [
+      "reign-theme 8.0.8 (primary)",
+      "buddyx 5.2.0 (combo: post box + 8 pages)"
+    ],
+    "free_branch": "2.6.3 a3910eae",
+    "pro_branch": "2.6.3 556cec7",
+    "mailpit": "running, 0 mails seen (no email-sending flow was exercised)",
+    "other_plugins": [
+      "buddypress-polls (post box neighbour)"
+    ],
+    "seed": "seed-demo-data.php + 11 QA personas + library of photo/video/audio incl. downloads-off video+audio, playlist album, private/members items, long-title item"
+  },
+  "walk_isolation": "Shared browser: another session navigated the walker's tab twice; combo cells were checked against page title, free cells re-run in an isolated browser context. Cells whose title did not match were discarded and re-run.",
   "sections": {
     "A_fresh_install": {
       "pass": 0,
       "fail": 0,
-      "skipped": 5,
-      "untested": 0
+      "skipped": 1
     },
     "B_upgrade": {
       "pass": 0,
       "fail": 0,
-      "skipped": 3,
-      "untested": 0
+      "skipped": 1
     },
     "C_core_flows": {
-      "pass": 17,
+      "pass": 38,
       "fail": 0,
-      "skipped": 0,
-      "untested": 29
+      "skipped": 0
     },
     "D_regression_guards": {
-      "pass": 11,
+      "pass": 0,
       "fail": 0,
-      "skipped": 0,
-      "untested": 38
+      "skipped": 0
     },
     "E_pro_smoke": {
-      "pass": 6,
-      "fail": 0,
-      "skipped": 0,
-      "untested": 18
-    },
-    "E2_environment": {
       "pass": 0,
       "fail": 0,
-      "skipped": 0,
-      "untested": 12
+      "skipped": 0
     },
     "F_cross_browser": {
-      "pass": 1,
-      "fail": 0,
-      "skipped": 0,
-      "untested": 3
-    },
-    "G_post_release": {
       "pass": 0,
       "fail": 0,
-      "skipped": 1,
-      "untested": 0
-    },
-    "X_2_6_2_focus": {
-      "pass": 42,
-      "fail": 0,
-      "skipped": 0,
-      "untested": 0
+      "skipped": 1
     }
   },
+  "checks": [
+    {
+      "id": "U.mixed-pick.window-note-1440-390-light-dark",
+      "result": "pass",
+      "note": "names the file left out, stays in the window >6s, Reign"
+    },
+    {
+      "id": "D.downloads-off.single-page-player",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.lightbox-player-and-no-Download-button",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.media-player-block-and-shortcode",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.audio-playlist-album-switching-tracks",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.explore-grid-preview",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.bp-activity-video",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.edit-switch-and-hint-my-media-single-lightbox",
+      "result": "pass"
+    },
+    {
+      "id": "D.downloads-off.messages-media_share-payload",
+      "result": "pass",
+      "note": "allow_download false and empty download_url for locked item; signed URL for open item"
+    },
+    {
+      "id": "A.postbox.attach-media-plain-tool-reign-1440",
+      "result": "pass"
+    },
+    {
+      "id": "A.postbox.attach-media-buddyx-1440-390-light-dark",
+      "result": "pass"
+    },
+    {
+      "id": "A.activity.tiles-open-lightbox-view-react-save-share-report",
+      "result": "pass"
+    },
+    {
+      "id": "A.activity.non-public-tiles-by-viewer",
+      "result": "pass",
+      "note": "private/followers hidden for non-viewers, members-only shown to a member, owner sees own, anon sees none"
+    },
+    {
+      "id": "A.comments.reply-chain-depth-5-all-returned",
+      "result": "pass"
+    },
+    {
+      "id": "A.comments.edit-save-no-change-200",
+      "result": "pass"
+    },
+    {
+      "id": "A.dm.attach-file-chrome",
+      "result": "pass",
+      "note": "combo only"
+    },
+    {
+      "id": "A.dm.thread-render-1440-390-light-dark",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin-menu.contributor-author-no-menu-403",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin-menu.editor-sees-media-moderation-no-albums-collections",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.editor-block-album-viewer-pick-by-title",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.editor-block-media-player-browse-av-only-and-search",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.editor-pdf-viewer-hidden-from-inserter",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.pages-overview-settings-integrations-media-load",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.site-health-media-delivery-good-state",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.editor-media-grid-category-tag-searchable",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.legacy-typed-id-blocks-render-and-no-invalid-block",
+      "result": "pass"
+    },
+    {
+      "id": "A.admin.site-health-php-notice-http-status-and-apache-htaccess",
+      "result": "pass",
+      "note": "forced with deny-all .htaccess then restored; showed 'HTTP 403' and the Apache file"
+    },
+    {
+      "id": "A.admin.moderation-user-report-resolve",
+      "result": "pass"
+    },
+    {
+      "id": "P.documents.new-folder-panel-under-button-1440-390-light-dark",
+      "result": "pass"
+    },
+    {
+      "id": "P.documents.share-by-@handle",
+      "result": "pass"
+    },
+    {
+      "id": "P.challenges-tournaments.no-cover-banner-trophy-1440-390-light-dark",
+      "result": "pass"
+    },
+    {
+      "id": "P.competition-pages.body-class-not-blog",
+      "result": "pass"
+    },
+    {
+      "id": "P.stories.your-story-tile-list-roles-input-name-focus-ring",
+      "result": "pass"
+    },
+    {
+      "id": "P.instagram-layout.players-follow-allow-downloads",
+      "result": "pass"
+    },
+    {
+      "id": "C.core-1.upload-photo-appears-in-explore",
+      "result": "pass"
+    },
+    {
+      "id": "C.core-4.private-media-404-for-other-and-anon-page-and-REST",
+      "result": "pass"
+    },
+    {
+      "id": "C.matrix.subscriber-reign-explore-mymedia-upload-single-photo-video-1440-390-light-dark",
+      "result": "pass"
+    },
+    {
+      "id": "C.matrix.subscriber-buddyx-explore-mymedia-single-album-messages-docs-challenges-compete-1440-390-light-dark",
+      "result": "pass"
+    }
+  ],
+  "failures": [],
   "hard_fails": [],
-  "failures": [
-    {
-      "id": "runbook-drift",
-      "origin": "for",
-      "triage_note": "Same drift as 2.6.1 still true: runbook rows no longer match shipped behaviour. Not product defects; update the runbook.",
-      "expected": "Runbook matches shipped behaviour.",
-      "actual": "A2: 33 tables total (4 pro_ tables), not 36/13; /media/<slug>/ renders 200 with no 301 to /p/<id>; Settings has 12 sections; reaction/comment notifications are media_reaction/media_comment; bulk route needs media_ids (+privacy); Load More/lightbox selectors changed; the Display 'Layout' control saves mvs_thumbnail_style (mvs_layout_choice is only a transport); the runbook cannot be run on mediaverse.local for private-media rows unless mvs_allow_user_privacy is on.",
-      "url": "qa/runbooks/AGENT_SMOKE_RUNBOOK.md",
-      "screenshot": ""
-    },
-    {
-      "id": "X-streak-toast-missing-number",
-      "origin": "for",
-      "triage_note": "Text comes from WB Gamification, not MediaVerse.",
-      "expected": "'Streak milestone! 7 days ...'",
-      "actual": "Toast reads 'Streak milestone! days Keep showing up' (number missing).",
-      "url": "http://mediaverse.local/ after lightbox Share",
-      "screenshot": ""
-    }
-  ],
-  "accepted_by_design": [
-    {
-      "id": "X8.captions.provider-not-configured-for-video",
-      "note": "A video with no OpenAI key answers 503 'provider not configured' only after the type check; non-video answers 422 'videos only' first (the 2.6.2 contract)."
-    },
-    {
-      "id": "X1.toolbar-count-vs-header",
-      "note": "With the Instagram layout the toolbar says '1 item' (tiles) while the profile header says '3 media' (items visible to the viewer); both are consistent with their own unit."
-    },
-    {
-      "id": "X4.blocked-send-reason-generic",
-      "note": "Refusal text 'This action is unavailable between you and this member.' deliberately does not say who blocked whom."
-    },
-    {
-      "id": "C.anon.tag.unknown-tag-404",
-      "note": "Unknown tag URL answers a theme 404 rather than an empty state; no fatal."
-    },
-    {
-      "id": "X1.bp-clone-lightbox",
-      "note": "The second .mvs-lightbox on BuddyPress tabs is the intentional mvs-bp-lightbox-clone; the visible one is the clone."
-    },
-    {
-      "id": "X3.reply-in-lightbox",
-      "origin": "for",
-      "triage_note": "Opus re-verify: not a 2.6.2 regression. The lightbox has never had a Reply control (absent from v2.6.1 templates/partials/shared-ui-frame.php and view.js); replies come from REST/app or BuddyPress. Owner decision 13 Oct: ship 2.6.2, Reply + threaded replies planned for 2.7.0 (Basecamp 10399605789).",
-      "expected": "Reply control in the lightbox comment list; replies shown threaded under the parent.",
-      "actual": "No Reply button; a reply created with POST /media/{id}/comments {parent} is invisible in the lightbox list; delete prompt says 'Delete this comment and its reply?'.",
-      "url": "http://mediaverse.local/ (lightbox on any tile)",
-      "screenshot": ""
-    }
-  ],
   "debug_log_issues": [
     {
-      "section": "X_2_6_2_focus",
-      "level": "fatal",
-      "origin": "for",
-      "line": "Uncaught InvalidArgumentException: Service \"upload_service\" is not registered",
-      "file": "my WP-CLI seed probe (not plugin code)"
-    },
-    {
-      "section": "X_2_6_2_focus",
+      "section": "all",
       "level": "warning",
       "origin": "for",
-      "line": "wpdb::prepare called incorrectly / foreach() null (my own AS probe)",
-      "file": "WP-CLI eval"
+      "line": "Trying to access array offset on false in reign-panel.php line 33 (once, before BuddyPress pages existed)",
+      "file": "themes/reign-theme/template-parts/header/reign-panel.php"
+    }
+  ],
+  "observations": [
+    {
+      "id": "OBS-1",
+      "sev": "minor",
+      "where": "/messages/ as journey_subscriber, Reign, 1440 light",
+      "what": "After opening a conversation the list row shows a blue unread badge reading 0 instead of hiding it",
+      "shot": "c-sub-messages-1440-light.png"
     },
     {
-      "section": "C_core_flows",
-      "level": "deprecated",
-      "origin": "for",
-      "line": "str_getcsv(): the $escape parameter must be provided",
-      "file": "wb-gamification/libs/woocommerce/action-scheduler/.../ActionScheduler_WPCLI_Scheduler_command.php:138"
+      "id": "OBS-2",
+      "sev": "minor",
+      "where": "Pro Documents drive /my-media/documents/ as journey_subscriber",
+      "what": "Upload dialog title reads '1 files'; the sidebar Documents badge stays 0 until reload even though the list shows the new file",
+      "shot": "c-sub-docs-list-1440-light.png"
     },
     {
-      "section": "X_2_6_2_focus",
-      "level": "deprecated",
-      "origin": "for",
-      "line": "bp_get_groups_directory_permalink / bp_get_group_permalink deprecated (my Docker probe)",
-      "file": "Docker wp-includes/functions.php"
+      "id": "OBS-3",
+      "sev": "minor",
+      "where": "Pro Documents share field (Manage menu)",
+      "what": "Field is still labelled 'Username or email' although @handle now resolves (verified: @quiet-handle shared)",
+      "shot": "c-sub-docs-share-handle-1440-light.png"
+    },
+    {
+      "id": "OBS-4",
+      "sev": "minor",
+      "where": "Upload window mixed pick, 1440",
+      "what": "The red toast with the same sentence covers the Cancel/Upload buttons for a few seconds; the in-window note (the fix) is correct",
+      "shot": "c-sub-uploadwin-mixed-1440-light.png"
+    },
+    {
+      "id": "OBS-5",
+      "sev": "info",
+      "where": "seed-demo-data.php (unchanged in 2.6.3)",
+      "what": "Seeder writes reactions rows and stats but leaves mvs_media_index.reaction_count at 0, so the 'reactions' leaderboard is empty on a demo-seeded site. A reaction made through the UI updates the column correctly"
+    },
+    {
+      "id": "OBS-6",
+      "sev": "info",
+      "where": "comment PUT with identical content",
+      "what": "Returns 200 (card fixed) but still sets edited:true"
     }
   ],
   "untested": [
     {
-      "id": "C.anon.album-collection",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.bn-surfaces",
+      "reason": "BuddyNext not in these stacks (not requested): profile tab, lightbox and media screens drawn by BuddyNext"
     },
     {
-      "id": "C.anon.album-item-privacy",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.themes-buddyx-pro-kadence",
+      "reason": "BuddyX Pro and Kadence not installed (only Reign and BuddyX asked for)"
     },
     {
-      "id": "C.anon.private-community-case",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.migration-44-pre-2.6.2-messages",
+      "reason": "needs a site upgraded from 2.6.2 with old chat rows; covered only by wp mvs cert"
     },
     {
-      "id": "C.member.upload-public",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.imports-privacy",
+      "reason": "MediaPress / BuddyBoss / rtMedia source data not seeded"
     },
     {
-      "id": "C.member.upload-privacy-matrix",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.docs-album-privacy-and-followers",
+      "reason": "docs text lives in the repo docs, not on the stack; not walked"
     },
     {
-      "id": "C.member.upload-rejections",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.pdf-viewer-renders-real-pdf",
+      "reason": "only checked that a legacy pdf-viewer block opens valid; no real PDF rendered"
     },
     {
-      "id": "C.member.bulk-trash-restore-delete",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.journeys-runner",
+      "reason": "bin/run-journeys.sh only enumerates journeys and does not execute them; the journey files were not individually replayed, 2.6.3 handoff surfaces and CORE_PATHS 1,2,3,4,5,6,8,10,12 were walked instead"
     },
     {
-      "id": "C.member.albums-lifecycle",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.admin-ipad-and-1024",
+      "reason": "admin walked at 1440 light only; member pages at 1440 and 390, no 1024 pass"
     },
     {
-      "id": "C.member.lightbox-edit-modal",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.leaderboard-xp-tab",
+      "reason": "WB Gamification not installed: only the empty state was seen, not XP rows"
     },
     {
-      "id": "C.member.edit-categories-persist",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.stories-story-buttons",
+      "reason": "no stories posted: only the Your story tile (list roles, input name, focus ring) was checked, not other members' story buttons"
     },
     {
-      "id": "C.member.grid-thumbnail-size",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
+      "id": "X.quota-and-storage-switch",
+      "reason": "Pro core paths 13 and 14 not walked"
     },
     {
-      "id": "C.member.activity-composer-attach",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.activity-preview",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.streak-badge",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.follow-mention",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.public-media-cacheable",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.notifications.hook-contract",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.documents-drive",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.documents-privacy-and-sharing",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.documents-role-gate",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.documents-single-and-public",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.admin.documents-screen",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.admin.documents-settings",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.admin.settings-readers",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.admin.moderation-flow",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.admin.bulk-and-cli",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.notifications.email",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.bp-integration",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "C.member.grid-render-query-budget",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.rewrite-flush",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.bp-thumbnail-leak",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.streak-badge-aria",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.activity-button-icon-only",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.activity-privacy-alignment",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.activity-preview-hero-regression",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.bp-css-ownership",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.frontend-asset-bleed",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.cloud-privacy-gate",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.cloud-existence-head-vs-range",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.s3-key-encoding",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.pro-feed-layout-fallback",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.pro-block-layout-enqueue",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.shared-ui-shell-rename",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.privacy-fix-2026-05-07",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.i18n-textdomain-too-early",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.script-module-i18n",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.categories-cache-miss-drop",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.grid-thumb-size-default",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.public-media-cacheable-local",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.notification-hook-message-link",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.grid-render-n-plus-1",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.private-media-activity-row",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.documents-role-gate-hides-not-deletes",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.documents-config-matches-enforcement",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.documents-privacy-vocabulary",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.document-never-in-media-surface",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.media-trash-silent",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.drive-access-media-vs-doc",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.anon-doc-read-void",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.avatar-flag-contradiction",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.settings-unlabelled-controls",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.btn-primary-four-copies",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.touch-floor-scoped-to-one-viewport",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.block-empty-state-silent",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.bp-tab-asset-sweep",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.sideways-privacy-keeps-name",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "D.admin-confirm-own-label",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.tournaments.sparse-bracket",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.streaks",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.streaks.freeze-proportional-cost",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.streaks.daily-check-bounded",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.competitions.cron-bounded",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.battles.win-xp-configured",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.video-intelligence",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.cloud-storage",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.ai-providers",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.watermarking",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.quota",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.privacy-pro-ui",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.migration-importers",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.gamification.configured-xp",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.gamification.winners-notified",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.group-dm",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.collections-lifecycle",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E.feature-toggle-degradation",
-      "reason": "Not walked in this pass (focus on 2.6.2 rows; a full C/D/E sweep was not completed).",
-      "needs": "Next pass or QA role ladder walk; fixtures per runbook."
-    },
-    {
-      "id": "E2_environment",
-      "reason": "Environment rows (12) not walked.",
-      "needs": "docker-smoke / E2 checklist"
-    },
-    {
-      "id": "C.admin.documents-screen + documents-* (drive/privacy/role-gate/single)",
-      "reason": "Pro licence key blank on model site and no document fixtures walked.",
-      "needs": "Licensed Pro + document fixtures"
-    },
-    {
-      "id": "C.notifications.email",
-      "reason": "Mailpit API on :10096 returned a non-JSON response; no email evidence collected.",
-      "needs": "Mailpit up"
-    },
-    {
-      "id": "cloud-delete-and-privacy-edge-cache",
-      "reason": "Deleted/privacy-tightened items' Bunny CDN URLs still answered 200 (cdn-cache HIT, cached when I fetched them); could not prove origin deletion without Bunny storage listing.",
-      "needs": "Bunny storage-zone listing or purge test"
+      "id": "X.documents-unlicensed",
+      "reason": "stack was licensed; lapsed behaviour not walked"
     }
   ],
   "manual_required": [
-    "Firefox Desktop and Safari iOS 390px walk of Explore, lightbox, /messages/.",
-    "RTL walk of the List layout and the gallery badge.",
-    "Bunny CDN: confirm deleted / privacy-tightened items are purged from the edge cache (old URLs still HIT).",
-    "Touch access to the chat message menu on text bubbles (the three-dot button is hidden for text; menu is reachable by right-click)."
+    "Safari macOS and iOS: every upload action, and DM attach (card 10421712489 / 10421711437)"
   ],
-  "observations": [
-    "No UI anywhere to pin/unpin a conversation: togglePin exists in messaging.js but nothing calls it; the Pinned label only appears for rows pinned through PATCH /conversations/{id}.",
-    "BuddyPress profile/group Media-tab lightbox (mvs-lightbox-comment--vanilla) shows comments read-only: no Edit/Delete/Report on the member's own comment; the Explore lightbox has them.",
-    "Settings page repeats id=\"submit\" on 12 Save Changes inputs (duplicate ids).",
-    "Chat: sent bubble and send button are white on #0095f6 = 3.17:1, below WCAG AA 4.5:1 for normal text; after Esc on the message menu focus goes to body, not the trigger (the notification bell returns focus correctly).",
-    "Instagram profile toolbar counts tiles ('1 item') while header counts items ('3 media')."
-  ],
-  "rows": [
-    {
-      "id": "C.anon.explore-feed",
-      "result": "pass",
-      "evidence": "Explore (/) as visitor: 14 grid imgs, 0 broken (naturalWidth>0), none with page-URL src; private Smoke Gal A3 absent from HTML."
-    },
-    {
-      "id": "C.anon.search-empty-state",
-      "result": "pass",
-      "evidence": "/?q=zzznoresults999: heading with the term, 'Browse all media' link, 28 tag links."
-    },
-    {
-      "id": "C.anon.tag",
-      "result": "pass",
-      "evidence": "?mvs_tag=nature 301 -> /media-tag/nature/ 200 with 12 tiles; unknown tag answers 404 (no fatal)."
-    },
-    {
-      "id": "C.anon.single-media",
-      "result": "pass",
-      "evidence": "/media/smoke-gal-a1/ 200 (no 301, runbook drift), h1 'Smoke Gal A1', og:image/og:title/twitter:card present."
-    },
-    {
-      "id": "C.anon.user-profile",
-      "result": "pass",
-      "evidence": "/media/@journey_owner/ 200, h1 is member name; /media/@mina_aoki/page/2/ 200; no email/password strings in HTML; unknown user 404."
-    },
-    {
-      "id": "C.anon.album-collection",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.anon.album-item-privacy",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.anon.private-community-case",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.anon.dashboard-gate",
-      "result": "pass",
-      "evidence": "/my-media/ as visitor: Log in link with redirect_to=%2Fmy-media%2F."
-    },
-    {
-      "id": "C.member.upload-public",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.upload-privacy-matrix",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.upload-rejections",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.delete-own",
-      "result": "pass",
-      "evidence": "Deleted 5 smoke items via DELETE /media/{id} (204): index, meta, reactions, notifications rows 0; local files gone; CDN edge copy still HIT (see manual_required)."
-    },
-    {
-      "id": "C.member.bulk-trash-restore-delete",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.albums-lifecycle",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.lightbox",
-      "result": "pass",
-      "evidence": "Lightbox opens from tile, Esc closes, 6 reaction buttons aria-pressed, toolbar buttons labelled; Love toggle persisted (aria-pressed true, count 1)."
-    },
-    {
-      "id": "C.member.lightbox-edit-modal",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.edit-categories-persist",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.grid-thumbnail-size",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.video-poster-fallback",
-      "result": "pass",
-      "evidence": "Video Smoke Gal A2 REST thumbnail_url = bundled default-video-poster.svg; video itself plays (readyState 4, 2s)."
-    },
-    {
-      "id": "C.member.activity-composer-attach",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.activity-preview",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.streak-badge",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.reactions-favorites-comments",
-      "result": "pass",
-      "evidence": "Love reaction and a comment posted in lightbox as journey_other; DB: comment row + media_reaction/media_comment notifications for owner."
-    },
-    {
-      "id": "C.member.follow-mention",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.dm-send-receive",
-      "result": "pass",
-      "evidence": "Docker: new DM created, text + image + video sent (message rows 40-42+), unsend/delete confirms, block refusal; see X4 rows."
-    },
-    {
-      "id": "C.member.signed-url",
-      "result": "pass",
-      "evidence": "/serve with no token 400, tampered sig 403."
-    },
-    {
-      "id": "C.member.public-media-cacheable",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.notifications.hook-contract",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.documents-drive",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.documents-privacy-and-sharing",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.documents-role-gate",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.documents-single-and-public",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.admin.documents-screen",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.admin.documents-settings",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.admin.plugin-pages",
-      "result": "pass",
-      "evidence": "28 Free+Pro+Gamification admin pages fetched as admin: all 200, no Fatal/Warning/Notice in HTML; Settings has 12 sections incl. License."
-    },
-    {
-      "id": "C.admin.settings-readers",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.admin.moderation-flow",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.admin.bulk-and-cli",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.notifications",
-      "result": "pass",
-      "evidence": "Bell on /my-media/ lists 'Tomas Ruiz reacted to Smoke Gal A2 5 minutes ago'; opens, outside-click and Esc close (X5)."
-    },
-    {
-      "id": "C.notifications.email",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.cron",
-      "result": "pass",
-      "evidence": "wp cron: 8 mvs_* events scheduled (boost flush/expire, story cleanup, prune logs/views, play events, replaced docs, account deletions)."
-    },
-    {
-      "id": "C.bp-integration",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.member.grid-render-query-budget",
-      "result": "untested",
-      "evidence": "Not walked in this pass (time-boxed to the 2.6.2 focus rows); covered by earlier passes or needs fixtures noted in untested[]."
-    },
-    {
-      "id": "C.shortcodes",
-      "result": "pass",
-      "evidence": "27 [mvs_*] shortcodes rendered as visitor and member: populated or defined empty/login states; mvs_stats/usage_history/pdf_viewer blank for visitor (accepted 2.6.1)."
-    },
-    {
-      "id": "C.blocks",
-      "result": "pass",
-      "evidence": "23 mvs/* blocks rendered via render_block as visitor and admin: all produce output or a configured-state hint (admin only)."
-    },
-    {
-      "id": "D.rewrite-flush",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.bp-thumbnail-leak",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.esc-close-lightbox",
-      "result": "pass",
-      "evidence": "Esc closed the lightbox (no .mvs-lightbox visible after keypress)."
-    },
-    {
-      "id": "D.dashboard-anon-gate",
-      "result": "pass",
-      "evidence": "/my-media/ anon shows primary Log in link with redirect_to."
-    },
-    {
-      "id": "D.search-empty-state",
-      "result": "pass",
-      "evidence": "/?q=zzznoresults999 shows term heading, Browse all media, 28 tag chips."
-    },
-    {
-      "id": "D.streak-badge-aria",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.activity-button-icon-only",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.activity-privacy-alignment",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.activity-preview-hero-regression",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.bp-css-ownership",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.frontend-asset-bleed",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.share-no-prompt-fallback",
-      "result": "pass",
-      "evidence": "window.prompt trapped; lightbox Share clicked; prompt never called."
-    },
-    {
-      "id": "D.lightbox-reactions-a11y",
-      "result": "pass",
-      "evidence": "Reactions wrapper role=group aria-label=Reactions; 6 buttons labelled with aria-pressed; toolbar actions all have aria-label."
-    },
-    {
-      "id": "D.cloud-privacy-gate",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.cloud-existence-head-vs-range",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.s3-key-encoding",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.pro-feed-layout-fallback",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.pro-block-layout-enqueue",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.shared-ui-shell-rename",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.privacy-fix-2026-05-07",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.i18n-textdomain-too-early",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.script-module-i18n",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.categories-cache-miss-drop",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.grid-thumb-size-default",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.blank-video-poster",
-      "result": "pass",
-      "evidence": "Posterless video returns bundled default poster SVG from /media and /media/{id}."
-    },
-    {
-      "id": "D.public-media-cacheable-local",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.notification-hook-message-link",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.grid-render-n-plus-1",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.private-media-activity-row",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.documents-role-gate-hides-not-deletes",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.documents-config-matches-enforcement",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.documents-privacy-vocabulary",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.document-never-in-media-surface",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.media-trash-silent",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.drive-access-media-vs-doc",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.anon-doc-read-void",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.avatar-flag-contradiction",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.settings-unlabelled-controls",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.btn-primary-four-copies",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.touch-floor-scoped-to-one-viewport",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.block-empty-state-silent",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.bp-tab-asset-sweep",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.grid-lists-unapproved",
-      "result": "pass",
-      "evidence": "Admin rejected cover item; visitor grid dropped it (badge 3->2 items, file name absent); approve restored it (3 items)."
-    },
-    {
-      "id": "D.sideways-privacy-keeps-name",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.type-filter-hides-batch",
-      "result": "pass",
-      "evidence": "Mixed gallery (img,video,img,img): ?mvs_type=video lists the video; ?mvs_type=image shows one tile '3 items'."
-    },
-    {
-      "id": "D.type-filter-empty-dead-end",
-      "result": "pass",
-      "evidence": "Docker /explore-media/?mvs_type=audio (0 items): both selects kept, 'Nothing of this type' + Browse all media; no sideways scroll at 390."
-    },
-    {
-      "id": "D.bulk-privacy-one-list",
-      "result": "pass",
-      "evidence": "POST /media/bulk change_privacy 'banana' -> 400 mvs_privacy_unsupported, item stayed private."
-    },
-    {
-      "id": "D.admin-confirm-own-label",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "D.finished-battle-countdown",
-      "result": "pass",
-      "evidence": "Completed tab of /media/battles/: finished battles show no 'left' text."
-    },
-    {
-      "id": "E.compete-hub",
-      "result": "pass",
-      "evidence": "/compete/ 200, h1 Compete, three cards render."
-    },
-    {
-      "id": "E.battles",
-      "result": "pass",
-      "evidence": "/media/battles/ 200; Completed tab lists battles with votes; tabs Voting/Active/Pending/Completed work."
-    },
-    {
-      "id": "E.challenges",
-      "result": "pass",
-      "evidence": "/media/challenges/ 200, h1 Photo Challenges."
-    },
-    {
-      "id": "E.tournaments",
-      "result": "pass",
-      "evidence": "/media/tournaments/ 200, h1 Tournaments."
-    },
-    {
-      "id": "E.tournaments.sparse-bracket",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.boosts",
-      "result": "pass",
-      "evidence": "Boost button only on owner's public media page (public A1/A2 yes, private A3 no) and only own card in Instagram feed."
-    },
-    {
-      "id": "E.streaks",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.streaks.freeze-proportional-cost",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.streaks.daily-check-bounded",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.competitions.cron-bounded",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.battles.win-xp-configured",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.video-intelligence",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.cloud-storage",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.ai-providers",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.watermarking",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.quota",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.instagram-feed",
-      "result": "pass",
-      "evidence": "Instagram layout saved via Settings > Display; feed renders, owner-only Boost on own card."
-    },
-    {
-      "id": "E.privacy-pro-ui",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.migration-importers",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.gamification.configured-xp",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.gamification.winners-notified",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.group-dm",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.collections-lifecycle",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "E.feature-toggle-degradation",
-      "result": "untested",
-      "evidence": "Not walked in this pass."
-    },
-    {
-      "id": "F.chromium",
-      "result": "pass",
-      "evidence": "All checks ran in Playwright Chromium at 1440 and 390."
-    },
-    {
-      "id": "F.firefox-desktop and F.safari-ios",
-      "result": "untested",
-      "evidence": "Not walked; manual_required."
-    },
-    {
-      "id": "F.rtl",
-      "result": "untested",
-      "evidence": "Not walked; manual_required."
-    },
-    {
-      "id": "F.a11y",
-      "result": "untested",
-      "evidence": "Not walked; manual_required."
-    },
-    {
-      "id": "A1",
-      "result": "skipped",
-      "evidence": "Fresh install not run on the live model site; Docker docker-smoke stack not used in this pass."
-    },
-    {
-      "id": "A2",
-      "result": "skipped",
-      "evidence": "Fresh install not run on the live model site; Docker docker-smoke stack not used in this pass."
-    },
-    {
-      "id": "A3",
-      "result": "skipped",
-      "evidence": "Fresh install not run on the live model site; Docker docker-smoke stack not used in this pass."
-    },
-    {
-      "id": "A4",
-      "result": "skipped",
-      "evidence": "Fresh install not run on the live model site; Docker docker-smoke stack not used in this pass."
-    },
-    {
-      "id": "A5",
-      "result": "skipped",
-      "evidence": "Fresh install not run on the live model site; Docker docker-smoke stack not used in this pass."
-    },
-    {
-      "id": "B1",
-      "result": "skipped",
-      "evidence": "Upgrade walk not run on the live model site."
-    },
-    {
-      "id": "B2",
-      "result": "skipped",
-      "evidence": "Upgrade walk not run on the live model site."
-    },
-    {
-      "id": "B3",
-      "result": "skipped",
-      "evidence": "Upgrade walk not run on the live model site."
-    },
-    {
-      "id": "G",
-      "result": "skipped",
-      "evidence": "Post-release monitoring is after tag."
-    },
-    {
-      "id": "X1.explore-tile-badge",
-      "result": "pass",
-      "evidence": "Explore: 4 uploads = ONE tile (id 9172079), badge '4 items'; 390: badge inside tile, no overflow, lightbox buttons 44px."
-    },
-    {
-      "id": "X1.media-grid-block",
-      "result": "pass",
-      "evidence": "Page with <!-- wp:mvs/media-grid /-->: one tile, badge title '4 items' (owner) / '3 items' (visitor)."
-    },
-    {
-      "id": "X1.member-profile",
-      "result": "pass",
-      "evidence": "/media/@journey_owner/: one tile, badge 4/3 by viewer; h1 is member name."
-    },
-    {
-      "id": "X1.bp-profile-tab",
-      "result": "pass",
-      "evidence": "Docker /members/qa_member/media/: gallery tiles with badges (3 items, 2 items, 4 items)."
-    },
-    {
-      "id": "X1.bp-group-tab",
-      "result": "pass",
-      "evidence": "Docker /groups-2/smoke-private/media/ as member: gallery tile 'Smoke Grp 1' badge '3 items'."
-    },
-    {
-      "id": "X1.lightbox-steps-own-state",
-      "result": "pass",
-      "evidence": "Lightbox 1/4..4/4; item 2 showed its own Love 1 + comment while item 1 showed none; items do not share state."
-    },
-    {
-      "id": "X1.filter-fronting",
-      "result": "pass",
-      "evidence": "?mvs_type=video fronts the video (no badge); ?mvs_type=image tile '3 items' and lightbox steps 1/3,2/3,3/3 only; ?q=A3 fronts A3."
-    },
-    {
-      "id": "X1.private-item-badge",
-      "result": "pass",
-      "evidence": "Owner made item 3 private: visitor/other member badge 4->3, tile still listed, lightbox 1/3..3/3 skips it; owner still sees 4."
-    },
-    {
-      "id": "X2.list-explore",
-      "result": "pass",
-      "evidence": "Settings > Display > Layout 'List' saved (mvs_thumbnail_style=list): rows 96px thumb at 1440, 72px at 390, title, date, views/reactions/comments, uploader; scrollWidth==clientWidth."
-    },
-    {
-      "id": "X2.list-profile-block",
-      "result": "pass",
-      "evidence": "/media/@user/ and grid-block page: 96px / 72px thumbs, no sideways scroll."
-    },
-    {
-      "id": "X2.list-bp-member-tab",
-      "result": "pass",
-      "evidence": "Docker /members/qa_member/media/ and group tab: mvs-grid--list, 96px (1440) / 72px (390), no overflow."
-    },
-    {
-      "id": "X2.default-grid-restored",
-      "result": "pass",
-      "evidence": "After restoring 'original', Explore grid class is mvs-grid--original, gallery badge intact; options restored."
-    },
-    {
-      "id": "X3.main-comment-delete",
-      "result": "pass",
-      "evidence": "Comment posted in lightbox; reply added via REST (no UI); delete confirm 'Delete this comment and its reply?'; both comment rows and owner's 'commented on your media' notifications removed (reaction notification kept)."
-    },
-    {
-      "id": "X3.reply-in-lightbox",
-      "result": "fail",
-      "evidence": "Lightbox has no Reply control and does not show the reply that exists (list showed only the parent); the delete prompt still warns about 'its reply'."
-    },
-    {
-      "id": "X3.bp-activity-mirror",
-      "result": "pass",
-      "evidence": "Docker: lightbox comment mirrored to activity 85 as activity comment; reply threaded under it (secondary_item_id = parent's activity comment)."
-    },
-    {
-      "id": "X3.bp-edit-removes-copy",
-      "result": "pass",
-      "evidence": "Edit via Explore lightbox: activity copy and its threaded reply removed from bp_activity, MediaVerse comments intact."
-    },
-    {
-      "id": "X3.bp-delete",
-      "result": "pass",
-      "evidence": "Delete parent: confirm says 'and its reply'; wp_comments, activity copies, mvs notification and bp_notification all gone."
-    },
-    {
-      "id": "X4.new-message-row",
-      "result": "pass",
-      "evidence": "New message > Smoke Peer: list row with name 'Smoke Peer' and avatar appeared immediately."
-    },
-    {
-      "id": "X4.recipient-empty-hidden",
-      "result": "pass",
-      "evidence": "MessagingService::get_conversations for recipient = 0 rows while creator sees the empty conversation."
-    },
-    {
-      "id": "X4.pinned-label-only-pinned",
-      "result": "pass",
-      "evidence": "With conv 7 pinned via PATCH only 'admin' row shows 'Pinned'; other rows have hidden pin element."
-    },
-    {
-      "id": "X4.typing-clears",
-      "result": "pass",
-      "evidence": "typing_until set while typing, NULL after Send."
-    },
-    {
-      "id": "X4.image-opens-full",
-      "result": "pass",
-      "evidence": "Click on image bubble opened new tab 'serve (800x600)' (full size)."
-    },
-    {
-      "id": "X4.options-button-40px",
-      "result": "pass",
-      "evidence": "Image and video bubbles: .mvs-chat-msg__more 40x40 visible; text bubbles hide it."
-    },
-    {
-      "id": "X4.escape-closes-menu",
-      "result": "pass",
-      "evidence": "Menu opened (aria-expanded true) and Esc closed it (focus lands on body, not the button; see observations)."
-    },
-    {
-      "id": "X4.confirm-cancel-focused",
-      "result": "pass",
-      "evidence": "Unsend and Delete-for-everyone dialogs open with Cancel focused; Enter/Esc leave message rows intact in DB."
-    },
-    {
-      "id": "X4.blocked-pair",
-      "result": "pass",
-      "evidence": "Block via REST: send shows 'This action is unavailable between you and this member.', no message row, no online dot; unblocked after."
-    },
-    {
-      "id": "X4.read-clears-notifications",
-      "result": "pass",
-      "evidence": "/me/notifications: opening the attacker conversation flipped all that sender's new_message items to is_read=true, others untouched."
-    },
-    {
-      "id": "X4.messages-page",
-      "result": "pass",
-      "evidence": "/messages/ 200 on both sites, h1 'Messages', no 'Hello world!'."
-    },
-    {
-      "id": "X5.bell",
-      "result": "pass",
-      "evidence": "Bell on /my-media/ (BP off): opens, closes on outside click and Esc (focus on bell), items '5 minutes ago' / '2 weeks ago'."
-    },
-    {
-      "id": "X6.profile-heading",
-      "result": "pass",
-      "evidence": "/media/@journey_owner/ 200 with h1 'Amara Okonkwo'; nonexistent user 404."
-    },
-    {
-      "id": "X7.group-scope-rest",
-      "result": "pass",
-      "evidence": "?group=11 (private),12 (hidden): visitor 0, non-member 0, member 3/2; public group 13 non-member/visitor 0; unfiltered visitor feed has no group items."
-    },
-    {
-      "id": "X7.group-load-more",
-      "result": "pass",
-      "evidence": "Group tab with 14 items: Load More added 2, all 'Smoke GL/GPub' (group items only)."
-    },
-    {
-      "id": "X8.captions",
-      "result": "pass",
-      "evidence": "POST captions/generate on an image 422 'videos only'; on a video 503 provider not configured."
-    },
-    {
-      "id": "X8.boost-eligible",
-      "result": "pass",
-      "evidence": "Boost on owner's public media pages and own Instagram card; absent on private item and other users' cards."
-    },
-    {
-      "id": "X8.dribbble-flickr-counts",
-      "result": "pass",
-      "evidence": "Dribbble/Flickr profile header '3 media' for visitor (private item excluded), '4 media' for admin; matches visible items."
-    },
-    {
-      "id": "X8.license-screen",
-      "result": "pass",
-      "evidence": "Settings > License renders: Status Active, Plan Lifetime; no SDK notice, no fatal."
-    },
-    {
-      "id": "X9.dark-explore-list-lightbox",
-      "result": "pass",
-      "evidence": "With Reign's [data-bx-mode=dark]: list rows 9.0:1 / 6.3:1, lightbox sidebar 9.0:1, comment input 12:1; screenshot shows readable controls."
-    },
-    {
-      "id": "X9.dark-messages",
-      "result": "pass",
-      "evidence": "Docker /messages/ dark: names 21:1, previews 8.8:1, composer 17:1, options buttons visible; sent bubble white-on-blue is 3.17:1 (observations)."
-    },
-    {
-      "id": "X10.comment-save-unchanged",
-      "result": "pass",
-      "evidence": "Docker, PUT /mvs/v1/media/19/comments/{id} with the same text: 200, BuddyPress copy kept; changed text: 200."
-    },
-    {
-      "id": "X11.competition-pages-virtual-route",
-      "result": "pass",
-      "evidence": "mediaverse.local signed in: /media/battles/, /challenges/, /tournaments/, /compete/ answer 200, no blog/home body class, headings Photo Battles / Photo Challenges / Tournaments / Compete; /messages/ 200 with h1 Messages; /media/@varundubey/ 200 with the member name as h1; a missing page 404."
-    },
-    {
-      "id": "X12.import-album-privacy",
-      "result": "pass",
-      "evidence": "Docker reproduction through AlbumMarkerLookupTrait: private and friends photos filed in a no-privacy album stay private (album raised to private); before the fix both became public. Pro ImportAlbumPrivacyTest passes in the final full Pro suite and fails on the old code."
-    },
-    {
-      "id": "X13.integrations-claims",
-      "result": "pass",
-      "evidence": "Admin > MediaVerse > Integrations (mvs-integrations) answers 200 with the Learnomy row and none of the three removed claims; no fatal."
-    },
-    {
-      "id": "X14.pro-admin-empty-state",
-      "result": "pass",
-      "evidence": "mediaverse.local admin, MediaVerse > Stories (no stories): empty state renders 'Posted -> Viewed -> Expires (24h)' in bold after the wp_kses change; Tournaments/Challenges/Battles screens 200, no fatal."
-    }
-  ],
-  "top3": [
-    "2.6.2 focus rows hold: gallery tile + count badge, List layout (96/72px), comment delete cascade, group scope, messaging fixes, notification bell, profile heading and Pro captions/boost/licence all verified on both sites with no debug-log lines from our code.",
-    "One blocker-class gap for the owner to rule on: no Reply control in the lightbox while the delete prompt talks about replies (REST-only replies are invisible).",
-    "Not a full pass: C/D/E were sampled (17 C, 11 D, 6 E rows passed, the rest untested), A/B skipped; Bunny CDN edge copies of deleted/privacy-tightened files still answer 200 and need a purge check."
-  ],
-  "layer1_delta": [
-    "X3.reply-in-lightbox: walker filed as origin \"from\"; Opus re-check found the gap pre-dates 2.6.2 (same in v2.6.1) -> moved to accepted_by_design with an owner decision and a 2.7.0 card."
-  ],
-  "walk_ran_at": "2026-10-13T12:32:00Z",
-  "coverage": {
-    "branch_mode_delta": "After the full walk (walk_ran_at), four fixes landed; their surfaces were re-walked on the final heads (Free + Pro) as rows X10-X13, then ran_at was refreshed. Rows outside those surfaces were not re-walked. X14 re-walked after the Plugin Check escaping fix in Pro."
-  }
+  "verdict": "SHIP (no failures; observations are minor)"
 }

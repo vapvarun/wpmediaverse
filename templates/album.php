@@ -8,7 +8,7 @@
  * Override by copying to your-theme/wpmediaverse/album.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.3
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -270,13 +270,15 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						$dur_label = sprintf( '%d:%02d', floor( $d / 60 ), (int) $d % 60 );
 					}
 					$tracks[] = array(
-						'id'       => $track_media_id,
-						'title'    => $item_row['title'] ?? '',
-						'artist'   => $track_art ? $track_art : '',
-						'url'      => $alb_su ? $alb_su->generate( $track_media_id, $alb_uid ) : '',
-						'type'     => $item_row['file_type'] ?? '',
-						'duration' => $dur_label,
-						'link'     => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $track_media_id ),
+						'id'         => $track_media_id,
+						'title'      => $item_row['title'] ?? '',
+						'artist'     => $track_art ? $track_art : '',
+						'url'        => $alb_su ? $alb_su->generate( $track_media_id, $alb_uid ) : '',
+						'type'       => $item_row['file_type'] ?? '',
+						'duration'   => $dur_label,
+						'link'       => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $track_media_id ),
+						// album-playlist.js sets controlsList per track; the helper also loads the player guard.
+						'nodownload' => '' !== \WPMediaVerse\Core\TemplateHelpers::player_download_attr( $track_media_id ),
 					);
 				}
 				?>

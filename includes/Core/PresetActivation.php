@@ -211,20 +211,25 @@ final class PresetActivation {
 
 		update_option( 'wpmediaverse_license_key', self::PRESET_KEY, false );
 
-		$response = wp_remote_post(
-			'https://wbcomdesigns.com',
-			array(
-				'timeout' => self::TIMEOUT,
-				'body'    => array(
+		// Same host and fallback as update checks (mvs_licence_request() in wpmediaverse.php). The SDK's own
+		// timeout is 15s per host; cap it to the owner-accepted TIMEOUT for this call only.
+		$cap_timeout = static function ( array $args ): array {
+			$args['timeout'] = min( (float) ( $args['timeout'] ?? self::TIMEOUT ), (float) self::TIMEOUT );
+			return $args;
+		};
+		add_filter( 'http_request_args', $cap_timeout );
+		$reply = function_exists( 'mvs_licence_request' )
+			? mvs_licence_request(
+				array(
 					'edd_action' => 'activate_license',
 					'license'    => self::PRESET_KEY,
 					'item_id'    => self::ITEM_ID,
-					'url'        => home_url(),
-				),
+				)
 			)
-		);
+			: false;
+		remove_filter( 'http_request_args', $cap_timeout );
 
-		$body   = is_wp_error( $response ) ? null : json_decode( wp_remote_retrieve_body( $response ), true );
+		$body   = is_object( $reply ) ? get_object_vars( $reply ) : null;
 		$status = is_array( $body ) ? (string) ( $body['license'] ?? '' ) : '';
 
 		if ( 'valid' === $status ) {

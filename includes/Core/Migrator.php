@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 43;
+	const CURRENT_VERSION = 44;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -2733,5 +2733,46 @@ class Migrator {
 			}
 		}
 		$wpdb->show_errors( $prev );
+	}
+
+	/**
+	 * Migration v44 - move pre-2.6.2 chat files to attachment_id.
+	 *
+	 * Before 2.6.2 a file sent from the device was stored as a WordPress
+	 * attachment but its id was written to media_id, which points at the media
+	 * index. Those messages show the file as gone, and as the index grows the
+	 * stale ids start matching real media, which would show participants an
+	 * unrelated item. A row is moved only when its id is an attachment the
+	 * sender uploaded within a day of the message, and the index has no media
+	 * with that id from the same sender at that time.
+	 *
+	 * Idempotent: moved rows have media_id NULL and no longer match.
+	 *
+	 * @since 2.6.3
+	 */
+	private function migrate_to_44(): void {
+		global $wpdb;
+
+		$messages = $wpdb->prefix . 'mvs_messages';
+		$index    = $wpdb->prefix . 'mvs_media_index';
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$wpdb->query(
+			"UPDATE {$messages} m
+			 INNER JOIN {$wpdb->posts} p
+			    ON p.ID = m.media_id
+			   AND p.post_type = 'attachment'
+			   AND p.post_author = m.sender_id
+			   AND ABS( TIMESTAMPDIFF( HOUR, p.post_date_gmt, m.created_at ) ) <= 24
+			 LEFT JOIN {$index} i
+			    ON i.media_id = m.media_id
+			   AND i.post_author = m.sender_id
+			   AND ABS( TIMESTAMPDIFF( HOUR, i.created_at, m.created_at ) ) <= 24
+			 SET m.attachment_id = m.media_id, m.media_id = NULL
+			 WHERE m.media_id > 0
+			   AND ( m.attachment_id IS NULL OR m.attachment_id = 0 )
+			   AND m.message_type <> 'media_share'
+			   AND i.media_id IS NULL"
+		);
 	}
 }

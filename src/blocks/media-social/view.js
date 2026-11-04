@@ -479,6 +479,10 @@ const { state } = store( 'mvs/media-social', {
 			getContext().editRegenerateSlug = !! event.target.checked;
 		},
 
+		updateEditAllowDownload( event ) {
+			getContext().editAllowDownload = !! event.target.checked;
+		},
+
 		/* --- Owner Tag Input --- */
 		async updateTagInput( event ) {
 			const ctx = getContext();
@@ -531,6 +535,10 @@ const { state } = store( 'mvs/media-social', {
 			};
 			if ( ctx.type !== 'album' ) {
 				payload.tags = ctx.editTags;
+			}
+			// Only sent when the field is on the page (site-wide downloads on).
+			if ( document.querySelector( '.mvs-inline-edit .mvs-edit-allow-download' ) ) {
+				payload.allow_download = !! ctx.editAllowDownload;
 			}
 			// Slug stays put unless the user explicitly opted in via the
 			// "Update URL slug" checkbox. Read the DOM directly so the

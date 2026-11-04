@@ -259,7 +259,7 @@ Registered by the free plugin (in the **MediaVerse** block category):
 | Media Stats | Display a media statistics dashboard |
 | Explore Feed | A discover/explore feed showing trending and recent media |
 | Member Photos | A member's photos. Auto-detects the displayed BuddyPress member, the post author, or the current user |
-| PDF Viewer | Embed a PDF inline using the browser's native viewer, under the same privacy as other media |
+| PDF Viewer | Embed a PDF uploaded before PDF uploads were turned off, under the same privacy as other media. Hidden from the inserter; existing pages keep working |
 
 There is no Profile Edit block - profile editing ships as the `[mvs_profile_edit]` shortcode only.
 
@@ -284,7 +284,7 @@ Free shortcodes:
 | `[mvs_documents]` | A document drive listing (renders through Pro's Documents engine) |
 | `[mvs_explore_feed]` | Explore feed with search, tags and pagination |
 | `[mvs_member_photos]` | A member's photos |
-| `[mvs_pdf_viewer]` | Inline PDF viewer |
+| `[mvs_pdf_viewer]` | Inline viewer for a PDF uploaded before PDF uploads were turned off |
 | `[mvs_usage_history]` | The member's storage/usage history |
 
 Pro adds `[mvs_document]` plus its compete and connector-feed shortcodes.

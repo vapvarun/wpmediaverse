@@ -7,7 +7,7 @@
  * Override by copying to your-theme/wpmediaverse/profile-edit.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.3
  * @since   1.1.0
  */
 
@@ -67,6 +67,7 @@ $mvs_profile_ctx = array(
 	'displayName'     => $mvs_user->display_name,
 	'bio'             => $mvs_user->description,
 	'dmAccess'        => \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_user_id ),
+	'dmAccessHints'   => \WPMediaVerse\Services\ProfileService::dm_access_hints(),
 	'onlineStatus'    => get_user_meta( $mvs_user_id, '_mvs_show_online', true ) ?: get_option( 'mvs_show_online_status', 'everyone' ),
 	'emailActivity'   => 'off' === get_user_meta( $mvs_user_id, \WPMediaVerse\Services\EmailService::MEMBER_META, true ) ? 'off' : 'on',
 	'avatarUrl'       => $mvs_avatar_url,
@@ -192,13 +193,14 @@ wp_enqueue_script_module(
 		<?php if ( \WPMediaVerse\Core\Plugin::messaging_enabled() ) : ?>
 		<div class="mvs-profile-field">
 			<label for="mvs-dm-access"><?php esc_html_e( 'Who can message you', 'wpmediaverse' ); ?></label>
-			<select id="mvs-dm-access"
+			<select id="mvs-dm-access" aria-describedby="mvs-dm-access-hint"
 				data-wp-bind--value="context.dmAccess"
 				data-wp-on--change="actions.updateDmAccess">
 				<?php foreach ( \WPMediaVerse\Services\ProfileService::dm_access_options() as $mvs_dm_value => $mvs_dm_label ) : ?>
 					<option value="<?php echo esc_attr( $mvs_dm_value ); ?>"><?php echo esc_html( $mvs_dm_label ); ?></option>
 				<?php endforeach; ?>
 			</select>
+			<p class="mvs-field-hint" id="mvs-dm-access-hint" data-wp-text="state.dmAccessHint"><?php echo esc_html( \WPMediaVerse\Services\ProfileService::dm_access_hints()[ \WPMediaVerse\Services\ProfileService::effective_dm_access( $mvs_user_id ) ] ?? '' ); ?></p>
 		</div>
 
 		<div class="mvs-profile-field">

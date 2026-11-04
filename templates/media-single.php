@@ -6,7 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
- * @version 2.6.2
+ * @version 2.6.3
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -389,6 +389,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					<?php echo $mvs_video_aspect_style; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pre-escaped above. ?>
 				>
 					<video controls preload="metadata" data-wp-bind--hidden="context.failed"
+						<?php echo \WPMediaVerse\Core\TemplateHelpers::player_download_attr( (int) $mvs_media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed attribute string. ?>
 						<?php if ( (int) $mvs_width > 0 && (int) $mvs_height > 0 ) : ?>
 							width="<?php echo (int) $mvs_width; ?>" height="<?php echo (int) $mvs_height; ?>"
 						<?php endif; ?>
@@ -456,6 +457,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						</div>
 					<?php endif; ?>
 					<audio controls preload="metadata"
+						<?php echo \WPMediaVerse\Core\TemplateHelpers::player_download_attr( (int) $mvs_media_id ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fixed attribute string. ?>
 						data-wp-on--play="actions.onPlay"
 						data-wp-on--pause="actions.onPause"
 						data-wp-on--seeked="actions.onSeek"
@@ -647,6 +649,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				'editPrivacy'         => $current_privacy,
 				// Off by default — title edits leave the URL slug alone.
 				'editRegenerateSlug'  => false,
+				// The item's own setting; the site-wide switch hides the field.
+				'editAllowDownload'   => '0' !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'allow_download' ),
 				// Empty at SSR so the data-wp-each <template> matches hydration; the
 				// store's callbacks.init() fills editTags from initialTags (above).
 				'editTags'            => array(),
@@ -859,6 +863,18 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						</label>
 					</div>
 				</div>
+				<?php // Same switch as the lightbox edit form; it was missing here. ?>
+				<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
+				<div class="mvs-field mvs-field--checkbox">
+					<label>
+						<input type="checkbox" class="mvs-edit-allow-download"
+							data-wp-on--change="actions.updateEditAllowDownload"
+							data-wp-bind--checked="context.editAllowDownload" />
+						<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
+					</label>
+					<p class="mvs-field-hint"><?php esc_html_e( 'Uncheck to remove the Download button and the player\'s download option for this item. It cannot stop someone who can play or view it from saving or recording it. The site-wide download setting still applies.', 'wpmediaverse' ); ?></p>
+				</div>
+				<?php endif; ?>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
 					<div class="mvs-tag-input-wrap">

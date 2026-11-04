@@ -721,6 +721,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		get lightboxHideDownload() {
 			return ! state.lightboxAllowDownload;
 		},
+		// Same gate on the player itself: no Download in the browser's player
+		// menu, and the player guard refuses the right-click menu. false drops
+		// the attribute while no item is loaded.
+		get lightboxControlsList() {
+			return state.lightboxMediaData && state.lightboxHideDownload ? 'nodownload' : false;
+		},
 		get lightboxViewsText() {
 			const s = state.lightboxStats;
 			const views = s?.views || 0;
@@ -1218,9 +1224,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				group = 'audio/';
 			}
 			const valid = rawFiles.filter( ( f ) => ( f.type || '' ).startsWith( group ) );
-			const rejected = rawFiles.length - valid.length;
-			if ( rejected > 0 ) {
-				actions.showToast( rejected + ' file(s) skipped — upload one media type at a time.', 'error' );
+			// Name the files left out, and keep the note in the window: a toast
+			// alone faded before a member noticed one of three files was missing.
+			const skipped = rawFiles.filter( ( f ) => ! valid.includes( f ) ).map( ( f ) => f.name );
+			state.uploadModalError = skipped.length
+				? ( state.i18n?.filesSkippedType || 'Not added: %s. Upload one kind of media at a time: photos, videos or audio.' ).replace( '%s', skipped.join( ', ' ) )
+				: '';
+			if ( skipped.length ) {
+				actions.showToast( state.uploadModalError, 'error' );
 			}
 			if ( ! valid.length ) return;
 			// Picking more adds to the same kind (images become a gallery; videos

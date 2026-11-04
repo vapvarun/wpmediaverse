@@ -52,10 +52,10 @@ Albums and collections are CPTs (`mvs_album`, `mvs_collection`) whose *members* 
 `mvs_album_items` and the media index.
 
 - Ordering, cover selection, batch add/remove, audio-album playlist playback.
-- **Privacy inheritance (2.3.0)** — media added to a non-public album is clamped to the
-  more restrictive of (item, album). One-way: it never loosens. Filter:
-  `mvs_album_inherit_privacy`. Scope is deliberate — clamps on **add** only; changing an
-  album's privacy later does not re-clamp existing members.
+- **Album privacy (2.6.0)** — an item in an album shows with the album's privacy, in both
+  directions; its own choice is kept and returns when it leaves the album. Adding a more
+  private item or tightening the album asks first. Opt out (independent privacy, the
+  pre-2.3.0 behaviour) with `mvs_album_inherit_privacy` returning false.
 
 ### 2.3 Privacy and access control
 - Levels: `public`, `members`, `friends`, `group`, `private`, `custom`, plus `dm` for

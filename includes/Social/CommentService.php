@@ -259,6 +259,17 @@ class CommentService {
 			if ( ! $parent || self::COMMENT_TYPE !== $parent->comment_type || self::comment_media_id( $parent_id ) !== $media_id ) {
 				return new WP_Error( 'mvs_invalid_parent', __( 'Invalid parent comment.', 'wpmediaverse' ), array( 'status' => 400 ) );
 			}
+
+			// Threads show two levels (get_for_media()), so a reply to a reply
+			// joins its thread's top comment instead of disappearing below it.
+			for ( $hops = 0; (int) $parent->comment_parent > 0 && $hops < 50; $hops++ ) {
+				$grandparent = get_comment( (int) $parent->comment_parent );
+				if ( ! $grandparent ) {
+					break;
+				}
+				$parent = $grandparent;
+			}
+			$parent_id = (int) $parent->comment_ID;
 		}
 
 		// Duplicate guard. wp_insert_comment() below is a raw DB insert that

@@ -7,10 +7,19 @@
 	"category": "wpmediaverse",
 	"icon": "media-document",
 	"description": "Embed a PDF document inline using the browser's native PDF viewer. Pick a media item that's already been uploaded; the viewer respects the same privacy + access rules as other media.",
-	"keywords": [ "pdf", "document", "embed", "viewer" ],
+	"keywords": [
+		"pdf",
+		"document",
+		"embed",
+		"viewer"
+	],
 	"supports": {
 		"html": false,
-		"align": [ "wide", "full" ]
+		"align": [
+			"wide",
+			"full"
+		],
+		"inserter": false
 	},
 	"attributes": {
 		"mediaId": {

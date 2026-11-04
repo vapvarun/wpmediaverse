@@ -9,6 +9,7 @@ namespace WPMediaVerse\Tests\Unit;
 
 use WP_UnitTestCase;
 use WPMediaVerse\Core\Plugin;
+use WPMediaVerse\Core\TemplateHelpers;
 
 /**
  * The media-player block rendered a Download link with
@@ -53,5 +54,23 @@ class DownloadsAllowedTest extends WP_UnitTestCase {
 		$this->repo()->set_meta_many( 'allow_download', array( $id => '0' ) );
 
 		$this->assertFalse( $this->repo()->downloads_allowed( $id ) );
+	}
+
+	/**
+	 * The players follow the same answer: no attribute while downloads are
+	 * allowed, controlsList="nodownload" (plus the guard script) when either
+	 * gate is closed. Basecamp 10458760669.
+	 */
+	public function test_player_attribute_follows_both_gates(): void {
+		update_option( 'mvs_allow_downloads', true );
+		$open   = $this->media();
+		$locked = $this->media();
+		$this->repo()->set_meta_many( 'allow_download', array( $locked => '0' ) );
+
+		$this->assertSame( '', TemplateHelpers::player_download_attr( $open ) );
+		$this->assertSame( ' controlsList="nodownload"', TemplateHelpers::player_download_attr( $locked ) );
+
+		update_option( 'mvs_allow_downloads', '' );
+		$this->assertSame( ' controlsList="nodownload"', TemplateHelpers::player_download_attr( $open ) );
 	}
 }

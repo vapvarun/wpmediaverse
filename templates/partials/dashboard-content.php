@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.6.2
+ * @version 2.6.3
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -177,10 +177,10 @@ wp_interactivity_state(
 		// Sections reached from another panel (Favorites, from Collections)
 		// highlight that panel's rail item; same map the server uses below.
 		'railParents' => \WPMediaVerse\Core\DashboardSections::rail_parents(),
-		'activeTab' => get_query_var( 'mvs_doc_view' )
+		'activeTab'   => get_query_var( 'mvs_doc_view' )
 			? 'documents'
 			: \WPMediaVerse\Core\DashboardSections::resolve( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
-		'i18n'      => array(
+		'i18n'        => array(
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
 			'optImage'                => __( 'Image', 'wpmediaverse' ),
@@ -1599,6 +1599,18 @@ wp_interactivity_state(
 						</label>
 					</div>
 				</div>
+				<?php // Same switch as the lightbox edit form; it was missing here. ?>
+				<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
+				<div class="mvs-field mvs-field--checkbox">
+					<label>
+						<input type="checkbox" class="mvs-edit-allow-download"
+							data-wp-on--change="actions.setEditAllowDownload"
+							data-wp-bind--checked="state.editModal.allowDownload" />
+						<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
+					</label>
+					<p class="mvs-field-hint"><?php esc_html_e( 'Uncheck to remove the Download button and the player\'s download option for this item. It cannot stop someone who can play or view it from saving or recording it. The site-wide download setting still applies.', 'wpmediaverse' ); ?></p>
+				</div>
+				<?php endif; ?>
 				<div class="mvs-field">
 					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
 					<div class="mvs-tag-input-wrap">

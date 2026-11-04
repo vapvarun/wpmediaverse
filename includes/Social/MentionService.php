@@ -19,9 +19,13 @@ class MentionService {
 	/**
 	 * Regex pattern for @mentions.
 	 *
+	 * Handles may contain dots and hyphens (maya-chen, first.last) but never
+	 * end with one, so "@maya." at the end of a sentence still matches maya.
+	 * The lookbehind skips the @ inside an email address.
+	 *
 	 * @var string
 	 */
-	const MENTION_PATTERN = '/@([a-zA-Z0-9_]+)/';
+	const MENTION_PATTERN = '/(?<![\w.@])@([A-Za-z0-9_](?:[A-Za-z0-9_.-]*[A-Za-z0-9_])?)/';
 
 	/**
 	 * Parse text for @mentions and store them.
@@ -37,7 +41,7 @@ class MentionService {
 		$mentioned_ids = array();
 
 		foreach ( $usernames as $username ) {
-			$user = get_user_by( 'login', $username );
+			$user = $this->resolve_user( $username );
 			if ( ! $user ) {
 				continue;
 			}
@@ -91,7 +95,7 @@ class MentionService {
 
 		$new = array();
 		foreach ( $this->extract_usernames( wp_strip_all_tags( $description ) ) as $username ) {
-			$user = get_user_by( 'login', $username );
+			$user = $this->resolve_user( $username );
 			// Mentioning yourself in your own description is not a mention.
 			if ( ! $user || $author === (int) $user->ID || in_array( (int) $user->ID, $known, true ) ) {
 				continue;
@@ -106,6 +110,32 @@ class MentionService {
 		}
 
 		return $new;
+	}
+
+	/**
+	 * The member a mention names: login, then profile handle (nicename).
+	 *
+	 * @since 2.6.3
+	 *
+	 * @param string $name Mentioned name, without the @.
+	 * @return \WP_User|null
+	 */
+	private function resolve_user( string $name ): ?\WP_User {
+		$user = get_user_by( 'login', $name ) ?: get_user_by( 'slug', $name );
+
+		/**
+		 * Filters the member a typed name or @handle resolves to, so a
+		 * community plugin with its own handles (custom profile slugs) can
+		 * answer. Also used by Pro document sharing.
+		 *
+		 * @since 2.6.3
+		 *
+		 * @param \WP_User|null $user  The member found so far, or null.
+		 * @param string        $typed What was typed, without a leading @.
+		 */
+		$user = apply_filters( 'mvs_resolve_user', $user ?: null, $name );
+
+		return $user instanceof \WP_User ? $user : null;
 	}
 
 	/**

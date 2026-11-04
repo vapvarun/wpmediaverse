@@ -60,7 +60,7 @@ curl -X PUT https://yoursite.com/wp-json/mvs/v1/media/123 \
 
 Since 2.6.1, photos, video and audio are sent straight by your web server, without loading WordPress for each file. This keeps busy pages fast and uses far fewer PHP workers.
 
-Each stored file has a long random name (16 random characters) that cannot be guessed, and MediaVerse only gives the address to people allowed to see the item. When an item becomes more private (for example Public to Members, or Members to Only me), or is trashed, flagged or rejected, its files get new names, so any address shared earlier stops working. Making an item more public keeps its names.
+Each stored file has a long random name (16 random characters) that cannot be guessed, and MediaVerse only gives the address to people allowed to see the item. When an item becomes more private (for example Public to Members, or Members to Only me), or is trashed, flagged or rejected, its files get new names, so any address shared earlier stops working. Making an item more public keeps its names. Moving an item to the trash renames its files and stops its signed links, including links made for its owner, so a copied address stops working. Restoring the item brings it back under the new name; the old address stays dead.
 
 Some files always go through a permission check on every request, using a time-limited signed link (`/wp-json/mvs/v1/serve`):
 
