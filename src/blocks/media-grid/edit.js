@@ -4,14 +4,13 @@ import {
 	RangeControl,
 	SelectControl,
 	ToggleControl,
-	TextControl,
 	Spinner,
 	__experimentalNumberControl as NumberControl,
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { StandardInspectorPanels } from '../../shared/components';
+import { StandardInspectorPanels, TermPicker } from '../../shared/components';
 import { useUniqueId } from '../../shared/hooks';
 import './editor.css';
 
@@ -208,15 +207,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							setAttributes( { mediaType: val } )
 						}
 					/>
-					<TextControl
-						label={ __( 'Category Slug', 'wpmediaverse' ) }
+					<TermPicker
+						label={ __( 'Category', 'wpmediaverse' ) }
+						path="/wp/v2/mvs_category"
 						value={ category }
 						onChange={ ( val ) =>
 							setAttributes( { category: val } )
 						}
 					/>
-					<TextControl
-						label={ __( 'Tag Slug', 'wpmediaverse' ) }
+					<TermPicker
+						label={ __( 'Tag', 'wpmediaverse' ) }
+						path="/mvs/v1/tags"
 						value={ tag }
 						onChange={ ( val ) => setAttributes( { tag: val } ) }
 					/>

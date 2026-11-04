@@ -6,3 +6,4 @@ export { default as BorderRadiusControl } from './BorderRadiusControl';
 export { default as ColorHoverControl } from './ColorHoverControl';
 export { default as DeviceVisibility } from './DeviceVisibility';
 export { default as StandardInspectorPanels } from './StandardInspectorPanels';
+export { EntityPicker, useEntity, TermPicker } from './EntityPicker';
