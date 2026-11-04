@@ -8,7 +8,7 @@
  * Override by copying to your-theme/wpmediaverse/album.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.3
  */
 
 defined( 'ABSPATH' ) || exit;

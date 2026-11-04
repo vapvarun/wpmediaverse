@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.6.2
+ * @version 2.6.3
  */
 
 defined( 'ABSPATH' ) || exit;

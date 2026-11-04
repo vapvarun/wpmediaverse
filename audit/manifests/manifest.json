@@ -7054,7 +7054,9 @@
         "SignedUrlService::refuses_trashed(), refuse() (private)",
         "MentionService::resolve_user() (private) and filter mvs_resolve_user",
         "action mvs_users_primed after every batch user prime",
-        "src/shared/components/EntityPicker.js: EntityPicker, useEntity, TermPicker (Album Viewer, Media Player, Media Grid)"
+        "src/shared/components/EntityPicker.js: EntityPicker, useEntity, TermPicker (Album Viewer, Media Player, Media Grid)",
+        "Signed updates: MVS_LICENCE_HOST (updates.wbcomdesigns.com) and mvs_licence_request() (SDK API with fallback to wbcomdesigns.com); every licence call (PresetActivation, CompanionInstaller, Pro LicenseManager) goes through it",
+        "libs/edd-sl-sdk 1.0.4-wbcom.3 (Free and Pro copies); libs/package-signatures 1.0.1, Free registers wpmediaverse and wpmediaverse-pro (warn)"
       ],
       "changed": [
         "GET /mvs/v1/media media_type takes a comma list; a list naming document is refused",

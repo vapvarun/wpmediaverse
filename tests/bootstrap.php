@@ -18,6 +18,21 @@ define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname( __DIR__ ) . '/vendor/yoast/p
 
 require_once $_tests_dir . '/includes/functions.php';
 
+// Tests never reach the live store. Refuse both licence hosts so no test (or the admin_init preset activation)
+// can send an activation as http://example.org. Pro's suite loads this bootstrap too. Tests that need a store
+// reply add their own pre_http_request filter at a later priority, which overrides this one.
+tests_add_filter(
+	'pre_http_request',
+	static function ( $pre, $args, $url ) {
+		$host = (string) wp_parse_url( $url, PHP_URL_HOST );
+		return in_array( $host, array( 'wbcomdesigns.com', 'updates.wbcomdesigns.com' ), true )
+			? new WP_Error( 'mvs_tests_no_store', 'Tests do not call the live store.' )
+			: $pre;
+	},
+	1,
+	3
+);
+
 tests_add_filter( 'muplugins_loaded', function () {
 	require dirname( __DIR__ ) . '/wpmediaverse.php';
 

@@ -13,7 +13,7 @@
  * Expects: $mvs_current_user, $mvs_avatar_url, $mvs_has_custom, $mvs_dash_active.
  *
  * @package WPMediaVerse
- * @version 2.6.1
+ * @version 2.6.3
  * @since   2.4.0
  */
 

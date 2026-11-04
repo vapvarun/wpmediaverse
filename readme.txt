@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.6.2
+Stable tag: 2.6.3
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -138,15 +138,19 @@ Download settings that hold on every player and link, BuddyPress activity media 
 * Improve  - The BuddyPress post box shows Attach media as a plain tool beside Poll, with its label and a tooltip.
 * Improve  - Site Health says what the direct-delivery check returned and which Apache rule fixes it.
 * Improve  - The PDF Viewer block is no longer offered in the block inserter, since PDF uploads are turned off; pages that already use it keep working.
+* Improve  - Licence and update checks go to updates.wbcomdesigns.com and fall back to wbcomdesigns.com on their own when it cannot be reached.
 * Fix      - Attaching a file to a message works in Safari.
 * Fix      - Files sent in messages before 2.6.2 show again.
 * Fix      - Mentions of handles with dots or hyphens reach the right member.
 * Fix      - Media Player block search filters by what you type and lists only video and audio.
 * Fix      - Contributors and Authors no longer see Albums and Collections admin screens they cannot open.
 * Security - A signed link to an item moved to the trash stops working, including the owner's older links.
+* Security - Updates of MediaVerse and MediaVerse Pro are checked for Wbcom's release signature before they install; the result is logged and the update installs either way.
 * Dev      - New action `mvs_users_primed` fires after each batch of members is loaded, so avatar and profile plugins can batch their own queries.
 * Dev      - New filter `mvs_resolve_user` to match an @handle to a member.
+* Dev      - Bundled licensing SDK updated to 1.0.4-wbcom.3; every licence request goes through `mvs_licence_request()` on `MVS_LICENCE_HOST`.
 * Dev      - `GET /mvs/v1/media` accepts a comma-separated `media_type` list.
+* Dev      - Templates updated (2.6.3): album.php, media-single.php, partials/dashboard-content.php, partials/profile-edit-panel.php, partials/shared-ui-frame.php, profile-edit.php.
 
 = 2.6.2 - October 2026 =
 

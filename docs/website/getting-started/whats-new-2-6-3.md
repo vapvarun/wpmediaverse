@@ -48,6 +48,8 @@ See [Direct Messages](../features/direct-messages.md).
 - A signed link to an item moved to the trash stops working, including the owner's older links.
 - Contributors and Authors no longer see the Albums and Collections admin screens, which only site managers can open.
 - Site Health says what the direct-delivery check returned and which Apache rule fixes it.
+- License and update checks go to `updates.wbcomdesigns.com` and fall back to `wbcomdesigns.com` on their own. If your firewall limits outgoing requests, allow both addresses.
+- Before an update of MediaVerse or MediaVerse Pro installs, the package is checked for Wbcom's release signature. The result is recorded and the update installs either way.
 
 See [Common Issues](../troubleshooting/common-issues.md).
 

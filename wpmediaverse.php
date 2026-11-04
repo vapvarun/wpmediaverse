@@ -3,7 +3,7 @@
  * Plugin Name: MediaVerse
  * Plugin URI:  https://wbcomdesigns.com/downloads/mediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     2.6.2
+ * Version:     2.6.3
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '2.6.2' );
+define( 'MVS_VERSION', '2.6.3' );
 // Kept in step with the `Requires PHP` header above by `BootGuardTest`. WordPress
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
@@ -28,11 +28,13 @@ define( 'MVS_MIN_PHP', '8.1' );
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
 // on the free plugin in the other direction.
-define( 'MVS_MIN_PRO', '2.6.0' );
+define( 'MVS_MIN_PRO', '2.6.3' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );
 define( 'MVS_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
+// Licence and update host for MediaVerse and MediaVerse Pro; the SDK falls back to https://wbcomdesigns.com.
+define( 'MVS_LICENCE_HOST', 'https://updates.wbcomdesigns.com' );
 
 /**
  * Explain why the plugin did not boot, once, on the admin screens.
@@ -172,21 +174,71 @@ if ( file_exists( MVS_PLUGIN_DIR . 'libs/edd-sl-sdk/edd-sl-sdk.php' )
 		}
 	);
 }
+
+// Package Signatures (libs/package-signatures, vapvarun/package-signatures 1.0.1): checks that each MediaVerse
+// and MediaVerse Pro update package carries the release signature before WordPress installs it. Warn mode: the
+// result is logged (option package_signatures_log) and the update installs either way. Free registers Pro as
+// well, because WordPress loads wpmediaverse-pro/ before wpmediaverse/ and Pro could not call this itself.
+if ( file_exists( MVS_PLUGIN_DIR . 'libs/package-signatures/package-signatures.php' ) ) {
+	require_once MVS_PLUGIN_DIR . 'libs/package-signatures/package-signatures.php';
+	$mvs_signed_products = array(
+		'wpmediaverse'     => MVS_PLUGIN_BASENAME,
+		'wpmediaverse-pro' => 'wpmediaverse-pro/wpmediaverse-pro.php',
+	);
+	foreach ( $mvs_signed_products as $mvs_signed_product => $mvs_signed_plugin ) {
+		package_signatures_register(
+			array(
+				'product'  => $mvs_signed_product,
+				'plugin'   => $mvs_signed_plugin,
+				'hosts'    => array( 'wbcomdesigns.com', 'updates.wbcomdesigns.com' ),
+				'keys'     => array( 'wbcom-2026-1' => 'kr+2P1WqRbENpZw0BXZmwFnA2tMLi6MlHbBa6jB13U4=' ),
+				'mode'     => 'warn',
+				'fallback' => 'https://wbcomdesigns.com/package-signatures/{product}/{version}/',
+			)
+		);
+	}
+	unset( $mvs_signed_products, $mvs_signed_product, $mvs_signed_plugin );
+}
 add_action(
 	'edd_sl_sdk_registry',
 	function ( $registry ) {
 		$registry->register(
 			array(
-				'id'      => 'wpmediaverse',
-				'url'     => 'https://wbcomdesigns.com',
-				'item_id' => 1660826,
-				'version' => MVS_VERSION,
-				'file'    => MVS_PLUGIN_FILE,
-				'license' => 'wbcomfree7a9c2e5d1f8b4c6a3e0d9b2f7c1a8e44',
+				'id'           => 'wpmediaverse',
+				'url'          => MVS_LICENCE_HOST,
+				'fallback_url' => 'https://wbcomdesigns.com',
+				'item_id'      => 1660826,
+				'version'      => MVS_VERSION,
+				'file'         => MVS_PLUGIN_FILE,
+				'license'      => 'wbcomfree7a9c2e5d1f8b4c6a3e0d9b2f7c1a8e44',
 			)
 		);
 	}
 );
+
+/**
+ * One licence-server request (activate, deactivate, check or get_version) for MediaVerse and MediaVerse Pro.
+ *
+ * Goes through the bundled SDK, so it uses the same host as update checks and falls back to the old host when
+ * the new one cannot be reached. A licence "no" is a normal reply; false means no host answered (or the SDK
+ * is not loaded).
+ *
+ * @since 2.6.3
+ *
+ * @param array<string, mixed> $params EDD Software Licensing parameters (edd_action, license, item_id). The SDK adds url and environment.
+ * @return object|false
+ */
+function mvs_licence_request( array $params ) {
+	if ( ! class_exists( '\\EasyDigitalDownloads\\Updater\\Requests\\API' ) ) {
+		return false;
+	}
+	// Name the fallback here as well: on an early request (plugin activation) the SDK registry has not run yet.
+	if ( method_exists( '\\EasyDigitalDownloads\\Updater\\Requests\\API', 'set_fallback' ) ) {
+		\EasyDigitalDownloads\Updater\Requests\API::set_fallback( MVS_LICENCE_HOST, 'https://wbcomdesigns.com' );
+	}
+	$reply = ( new \EasyDigitalDownloads\Updater\Requests\API( MVS_LICENCE_HOST ) )->make_request( $params );
+	return is_object( $reply ) ? $reply : false;
+}
 
 // Lockstep compatibility check: warn when an OLDER WPMediaVerse Pro is active
 // next to this newer free build. Free keeps working; the notice nudges the admin

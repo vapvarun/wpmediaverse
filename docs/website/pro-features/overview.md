@@ -28,6 +28,8 @@ MediaVerse Pro extends the free plugin with advanced layout modes, cloud storage
 
 All Pro features run as soon as the plugin is activated. The license key unlocks automatic updates; it is not a feature switch.
 
+License checks and update checks go to `updates.wbcomdesigns.com` and fall back to `wbcomdesigns.com` on their own if that address cannot be reached. If your firewall limits outgoing requests, allow both addresses. Before an update of MediaVerse or MediaVerse Pro installs, the package is checked for Wbcom's release signature; the result is recorded and the update installs either way.
+
 There is exactly one exception: **Documents writes**. On a site whose licence has lapsed, existing documents stay readable, downloadable and previewable, but uploading, replacing, moving, sharing and folder changes are refused until the licence is active again. Nothing is migrated, converted or lost. See [Documents](documents.md). Every other Pro capability works regardless of license state.
 
 ## Updating Pro

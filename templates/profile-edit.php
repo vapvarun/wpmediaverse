@@ -7,7 +7,7 @@
  * Override by copying to your-theme/wpmediaverse/profile-edit.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.3
  * @since   1.1.0
  */
 

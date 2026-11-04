@@ -10,7 +10,7 @@
  * @package WPMediaVerse
  */
 
-foreach ( array( 'MVS_PLUGIN_DIR', 'MVS_PLUGIN_URL', 'MVS_PLUGIN_FILE', 'MVS_PLUGIN_BASENAME' ) as $mvs_const ) {
+foreach ( array( 'MVS_PLUGIN_DIR', 'MVS_PLUGIN_URL', 'MVS_PLUGIN_FILE', 'MVS_PLUGIN_BASENAME', 'MVS_LICENCE_HOST' ) as $mvs_const ) {
 	if ( ! defined( $mvs_const ) ) {
 		define( $mvs_const, '' );
 	}
