@@ -2370,6 +2370,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** None.
 - **Edge cases:** The taxonomy is registered on `mvs_album` only to keep this screen; albums never carry categories (no metabox, no column, no Quick Edit).
 
+#### MV-ADM-024 - Create and publish albums and collections in wp-admin
+- **Edition:** Free
+- **Who:** Administrator, or any role the owner granted `manage_mvs_settings`.
+- **Where:** MediaVerse > Albums > Add New, MediaVerse > Collections > Add New (`post-new.php?post_type=mvs_album` / `mvs_collection`).
+- **Setup:** None.
+- **Steps:** 1. As administrator open Add New Album, enter a title, click Publish. 2. Repeat for Add New Collection. 3. As an Editor and as an Author open `post-new.php?post_type=mvs_album`.
+- **Expected:** Administrator: the item publishes and the edit screen shows "Post published". Editor and Author: no menu entry and the new-item screen is refused.
+- **UX expectation:** No "Sorry, you are not allowed to edit this post" page for a site manager.
+- **Settings that change it:** The `manage_mvs_settings` capability (Permissions screen or `mvs_settings_sections` filter); no new setting.
+- **Edge cases:** Members still manage their own albums and collections in My Media through `mvs/v1`; this screen is not their entry point.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
