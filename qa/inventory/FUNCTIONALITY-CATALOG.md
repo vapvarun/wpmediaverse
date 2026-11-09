@@ -2433,8 +2433,19 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Steps:** 1. Click "Your story". 2. In the file picker choose a video, then a photo.
 - **Expected:** The picker lists images and videos; both post as a story and play in the viewer. The server already accepted video; only the picker filter hid it.
 - **UX expectation:** Unsupported types still show the server's own message.
-- **Settings that change it:** None. A Stories expiry setting is not in 2.6.4 (new setting, 2.7.0); expiry stays 24h and `duration_hours` (1-168) on the REST route is unchanged.
+- **Settings that change it:** Settings > Display > Stories > Story length (see MV-PRO-STORY-LENGTH).
 - **Edge cases:** Check: audio files still need the Free upload to allow them.
+
+#### MV-PRO-STORY-LENGTH - Owner sets how long stories last
+- **Edition:** Pro
+- **Who:** Site administrator (setting); any member posting a story.
+- **Where:** MediaVerse > Settings > Display > Stories > "Story length"; `POST /mvs-pro/v1/media/{id}/story`.
+- **Setup:** Pro active, Stories enabled.
+- **Steps:** 1. Choose 12 hours and save. 2. Post a story from the Stories block. 3. In the admin Stories screen check the Expires column. 4. Call the REST route with no `duration_hours`, then with 500, then with 6.
+- **Expected:** The default is 24 hours. The story expires 12 hours after posting; no value gives 12, 500 is capped to 12, 6 gives 6 (shorter is allowed, longer never). Stories already live keep the length they were posted with. Copy on the Stories screens no longer says "24-hour".
+- **UX expectation:** The field only shows while Stories is enabled; select fits at 390px.
+- **Settings that change it:** `mvs_stories_duration_hours` (6, 12, 24, 48 hours, 3 or 7 days; anything else reads as 24).
+- **Edge cases:** Check: changing the length does not end or extend live stories; "x ago" on a story posted before a length change can be skewed until it expires.
 
 #### MV-DEMO-SAFE - Demo data import and delete only touch demo accounts
 - **Edition:** Free
