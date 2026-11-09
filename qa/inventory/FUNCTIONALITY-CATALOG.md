@@ -2392,6 +2392,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** `mvs_parent_route` filter.
 - **Edge cases:** A collection the viewer cannot see still shows the branded 404 with no back link.
 
+#### MV-A11Y-NAMES - Accessible names on chat search, profile edit, media edit and tag remove
+- **Edition:** Free
+- **Who:** Any member, and anyone using a screen reader or voice control.
+- **Where:** Messages (conversation list, new conversation, group add-people search), My Media profile edit panel, single media and album inline edit forms.
+- **Setup:** A member with media, tags and at least one conversation.
+- **Steps:** 1. Inspect each field in the accessibility tree. 2. Click a field's label text and confirm the field takes focus. 3. In media edit, find the x on a tag.
+- **Expected:** Every field has a programmatic name (Search conversations, Search users, First Name, Last Name, Display Name, Bio, Title, Description, Privacy). The tag x is announced "Remove tag" and has a 44px target (`--mvs-touch-min`) without making the pill taller.
+- **UX expectation:** Pills look unchanged at 1280 and 390.
+- **Settings that change it:** None.
+- **Edge cases:** Check: tag pill height in a theme that overrides `.mvs-tag-pill`.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard

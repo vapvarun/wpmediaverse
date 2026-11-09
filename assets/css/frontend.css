@@ -3446,6 +3446,9 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-bg);
     cursor: pointer;
     font-size: 1em;
+    min-width: var(--mvs-touch-min, 44px);
+    min-height: var(--mvs-touch-min, 44px);
+    margin: calc(var(--mvs-touch-min, 44px) / -2 + 0.5em) 0;
     padding: 0;
     line-height: 1;
     opacity: 0.8;

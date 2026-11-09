@@ -8,7 +8,7 @@
  * Override by copying to your-theme/wpmediaverse/album.php
  *
  * @package WPMediaVerse
- * @version 2.6.3
+ * @version 2.6.4
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -187,20 +187,20 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						</div>
 						<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
 							<div class="mvs-field">
-								<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-								<input type="text" data-wp-bind--value="context.editTitle"
+								<label for="mvs-album-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+								<input id="mvs-album-edit-title" type="text" data-wp-bind--value="context.editTitle"
 									data-wp-on--input="actions.updateEditTitle" />
 							</div>
 							<div class="mvs-field">
-								<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-								<textarea data-wp-on--input="actions.updateEditDesc"
+								<label for="mvs-album-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+								<textarea id="mvs-album-edit-description" data-wp-on--input="actions.updateEditDesc"
 									data-wp-bind--value="context.editDesc"></textarea>
 							</div>
 							<?php // Hidden while the owner has locked privacy; Save re-sends the current level (context.editPrivacy), which the REST update accepts. Basecamp 10320619418. ?>
 							<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
 							<div class="mvs-field">
-								<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-								<select data-wp-on--change="actions.updateEditPrivacy">
+								<label for="mvs-album-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+								<select id="mvs-album-edit-privacy" data-wp-on--change="actions.updateEditPrivacy">
 									<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
 										<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $album_privacy, $opt ); ?>>
 											<?php echo esc_html( ucfirst( $opt ) ); ?>

@@ -3,7 +3,7 @@
  * New conversation — user search + recent contacts.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.4
  * @since   1.1.0
  */
 
@@ -76,6 +76,7 @@ defined( 'ABSPATH' ) || exit;
 		<input
 			class="mvs-chat-search__input"
 			type="text"
+			aria-label="<?php esc_attr_e( 'Search users', 'wpmediaverse' ); ?>"
 			placeholder="<?php esc_attr_e( 'Search users...', 'wpmediaverse' ); ?>"
 			data-wp-on--input="actions.updateSearchQuery"
 			data-wp-bind--value="state.searchQuery"

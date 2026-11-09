@@ -6,7 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
- * @version 2.6.3
+ * @version 2.6.4
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -829,13 +829,13 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 			<!-- Inline Edit Form -->
 			<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-					<input type="text" data-wp-bind--value="context.editTitle"
+					<label for="mvs-single-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
+					<input id="mvs-single-edit-title" type="text" data-wp-bind--value="context.editTitle"
 						data-wp-on--input="actions.updateEditTitle" />
 				</div>
 				<div class="mvs-field">
-					<label><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-					<textarea data-wp-on--input="actions.updateEditDesc"
+					<label for="mvs-single-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
+					<textarea id="mvs-single-edit-description" data-wp-on--input="actions.updateEditDesc"
 						data-wp-bind--value="context.editDesc"></textarea>
 				</div>
 				<!-- Privacy + slug-regenerate share a row to save vertical space.
@@ -843,8 +843,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<div class="mvs-field-row">
 					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
 					<div class="mvs-field mvs-field--inline">
-						<label><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select data-wp-on--change="actions.updateEditPrivacy">
+						<label for="mvs-single-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
+						<select id="mvs-single-edit-privacy" data-wp-on--change="actions.updateEditPrivacy">
 							<?php
 							// The shared labels, not bare "Public / Members / Private":
 							// "Members" alone reads as followers-only (Basecamp
@@ -883,6 +883,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 								<span class="mvs-tag-pill">
 									<span data-wp-text="context.item"></span>
 									<button type="button" class="mvs-tag-pill-remove"
+										aria-label="<?php esc_attr_e( 'Remove tag', 'wpmediaverse' ); ?>"
 										data-wp-bind--data-tag-name="context.item"
 										data-wp-on--click="actions.removeTag">&times;</button>
 								</span>
