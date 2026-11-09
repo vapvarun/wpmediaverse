@@ -853,6 +853,17 @@ class MediaController extends WP_REST_Controller {
 
 		$file = $files['file'];
 		if ( $file['error'] ) {
+			if ( in_array( (int) $file['error'], array( UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE ), true ) ) {
+				return new WP_Error(
+					'mvs_upload_error',
+					/* translators: %s: the server's maximum upload size, e.g. 2 MB. */
+					sprintf( __( 'This file is larger than the server allows (%s). Choose a smaller file.', 'wpmediaverse' ), size_format( wp_max_upload_size() ) ),
+					array( 'status' => 413 )
+				);
+			}
+			if ( UPLOAD_ERR_PARTIAL === (int) $file['error'] || UPLOAD_ERR_NO_FILE === (int) $file['error'] ) {
+				return new WP_Error( 'mvs_upload_error', __( 'The upload was interrupted. Please try again.', 'wpmediaverse' ), array( 'status' => 400 ) );
+			}
 			return new WP_Error( 'mvs_upload_error', __( 'File upload error.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 

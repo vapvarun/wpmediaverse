@@ -2447,6 +2447,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** None.
 - **Edge cases:** Demo members seeded before 2.6.4 keep their old `demo1234` password until deleted.
 
+#### MV-UP-SIZE - Oversized upload says how large a file may be
+- **Edition:** Free
+- **Who:** Any member who uploads.
+- **Where:** Upload popup, `POST /mvs/v1/media`.
+- **Setup:** A file larger than PHP `upload_max_filesize`.
+- **Steps:** 1. Upload the file. 2. Call the route with it.
+- **Expected:** HTTP 413 and "This file is larger than the server allows (N MB). Choose a smaller file." An interrupted upload says so and asks to retry; other PHP errors keep "File upload error." (code `mvs_upload_error` unchanged).
+- **UX expectation:** The popup shows the server message, not a generic one.
+- **Settings that change it:** PHP `upload_max_filesize` / `post_max_size`.
+- **Edge cases:** Check: when `post_max_size` is exceeded PHP drops the whole request and the route answers "No file was uploaded." (400).
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
