@@ -1791,6 +1791,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				break;
 
 			case 'album':
+			case 'collection':
 				$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : 0;
 				if ( $author_id ) {
 					$parent = array(

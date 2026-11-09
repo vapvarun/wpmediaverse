@@ -2381,6 +2381,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** The `manage_mvs_settings` capability (Permissions screen or `mvs_settings_sections` filter); no new setting.
 - **Edge cases:** Members still manage their own albums and collections in My Media through `mvs/v1`; this screen is not their entry point.
 
+#### MV-UI-BACK - Back link on album and collection pages
+- **Edition:** Free
+- **Who:** Anyone who can view the album or collection.
+- **Where:** A single album (`/album/{slug}/`) and a single collection (`/collection/{slug}/`).
+- **Setup:** One published album and one collection.
+- **Steps:** 1. Open an album, hover then keyboard-focus the back link. 2. Open a collection. 3. Repeat at 390px.
+- **Expected:** Both pages start with a back link to the author's profile (Explore when there is no author). The hover tooltip ("Back to Profile") opens below the link and is fully visible, not cut off by the card.
+- **UX expectation:** At 390px only the arrow shows, still 40px+ tall, tooltip not clipped.
+- **Settings that change it:** `mvs_parent_route` filter.
+- **Edge cases:** A collection the viewer cannot see still shows the branded 404 with no back link.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
