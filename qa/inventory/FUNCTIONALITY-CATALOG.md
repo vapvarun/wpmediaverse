@@ -2414,6 +2414,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** None.
 - **Edge cases:** An upload in progress also ignores outside clicks.
 
+#### MV-MSG-GROUPHINT - New group explains why Create is disabled
+- **Edition:** Free
+- **Who:** Any member with messaging on (standalone MediaVerse; BuddyNext replaces this screen when active).
+- **Where:** Messages > New group.
+- **Setup:** Messaging enabled, at least 2 other members.
+- **Steps:** 1. Open New group, enter a name only. 2. Add one person. 3. Add a second.
+- **Expected:** Steps 1-2 show "Add at least 2 people to create a group." under the chips and Create is disabled (the button points to the hint through aria-describedby). Step 3 hides the hint and enables Create.
+- **UX expectation:** Hint readable at 390px, muted but passing contrast.
+- **Settings that change it:** `mvs_messaging_enabled`.
+- **Edge cases:** Check: the group name stays optional.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
