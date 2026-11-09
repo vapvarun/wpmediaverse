@@ -984,6 +984,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 			actions.loadUserAlbums(); // fire-and-forget; "Add to album" options.
 		},
+		// Backdrop click: an accidental click outside must not discard picked files or typed details.
+		dismissUploadModal() {
+			const dirty = state.uploadModalUploading || state.uploadModalFiles.length > 0
+				|| state.uploadModalTitle || state.uploadModalDescription || state.uploadModalTags;
+			if ( ! dirty ) actions.closeUploadModal();
+		},
 		closeUploadModal() {
 			state.uploadModalVisible = false;
 			state.uploadModalFiles = [];

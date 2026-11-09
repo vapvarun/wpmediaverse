@@ -2403,6 +2403,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** None.
 - **Edge cases:** Check: tag pill height in a theme that overrides `.mvs-tag-pill`.
 
+#### MV-UP-BACKDROP - Upload popup keeps your work on an outside click
+- **Edition:** Free
+- **Who:** Any member who can upload.
+- **Where:** The upload popup (My Media, Explore, any page with the shared UI).
+- **Setup:** Logged in as a member.
+- **Steps:** 1. Open Upload. 2. Type a title or pick a file. 3. Click the dark area outside the popup. 4. Clear everything and click outside again. 5. Press Escape or the Close button with details entered.
+- **Expected:** Step 3 leaves the popup open with the entries intact. Step 4 closes it. Close, Cancel and Escape always close.
+- **UX expectation:** No lost drafts from a stray click or touch.
+- **Settings that change it:** None.
+- **Edge cases:** An upload in progress also ignores outside clicks.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard

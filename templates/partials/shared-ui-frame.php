@@ -9,7 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
- * @version 2.6.3
+ * @version 2.6.4
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -168,7 +168,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- Upload Modal Overlay. Dialog semantics, focus in/out (callbacks.uploadModalFocus), Tab trap and Escape (actions.handleLightboxKeydown). Basecamp 10320784059. -->
-	<div class="mvs-modal-overlay mvs-upload-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal"
+	<div class="mvs-modal-overlay mvs-upload-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.dismissUploadModal"
 		role="dialog" aria-modal="true" aria-labelledby="mvs-upload-modal-title" data-wp-watch="callbacks.uploadModalFocus">
 		<div class="mvs-modal" data-wp-on--click="actions.handleModalClick">
 			<!-- Modal Header -->
