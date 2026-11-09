@@ -2425,6 +2425,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** `mvs_messaging_enabled`.
 - **Edge cases:** Check: the group name stays optional.
 
+#### MV-PRO-STORY-VIDEO - Stories add tile accepts photos and videos
+- **Edition:** Pro
+- **Who:** A member who can post stories.
+- **Where:** The Stories block, "Your story" tile.
+- **Setup:** Pro active, Stories block on a page.
+- **Steps:** 1. Click "Your story". 2. In the file picker choose a video, then a photo.
+- **Expected:** The picker lists images and videos; both post as a story and play in the viewer. The server already accepted video; only the picker filter hid it.
+- **UX expectation:** Unsupported types still show the server's own message.
+- **Settings that change it:** None. A Stories expiry setting is not in 2.6.4 (new setting, 2.7.0); expiry stays 24h and `duration_hours` (1-168) on the REST route is unchanged.
+- **Edge cases:** Check: audio files still need the Free upload to allow them.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
