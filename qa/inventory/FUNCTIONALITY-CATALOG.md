@@ -2436,6 +2436,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** None. A Stories expiry setting is not in 2.6.4 (new setting, 2.7.0); expiry stays 24h and `duration_hours` (1-168) on the REST route is unchanged.
 - **Edge cases:** Check: audio files still need the Free upload to allow them.
 
+#### MV-DEMO-SAFE - Demo data import and delete only touch demo accounts
+- **Edition:** Free
+- **Who:** Site administrator (Overview > Import / Delete Demo Data, or the `seed-demo-data.php` / `cleanup-demo-data.php` scripts).
+- **Where:** MediaVerse Overview; WP-CLI `wp eval-file`.
+- **Setup:** A site with a real member whose address ends in `@demo.local`, and another real member with the login `mina_aoki`.
+- **Steps:** 1. Import demo data. 2. Log in as a demo user: the password is random, so only an admin switch-user works. 3. Delete demo data.
+- **Expected:** Demo members carry the `mvs_demo_user` meta and a random password. The real `mina_aoki` is not adopted (a warning is logged, demo items go to the admin). Delete removes tagged demo members, plus pre-2.6.4 demo members only when login and `@demo.local` address both match; the `@demo.local` real member and real `mina_aoki` stay.
+- **UX expectation:** The success message counts match what was removed.
+- **Settings that change it:** None.
+- **Edge cases:** Demo members seeded before 2.6.4 keep their old `demo1234` password until deleted.
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
