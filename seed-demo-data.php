@@ -1229,6 +1229,8 @@ foreach ( $created_media as $media ) {
 		array( '%d', '%s' ),
 		array( '%d' )
 	);
+	// The reactions leaderboard sorts on the index column, not the stats table.
+	\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'reaction_count', count( $reactors ) );
 }
 
 mvs_seed_log( "  Reactions: {$reaction_count}" );

@@ -1528,6 +1528,7 @@ const { state, actions } = store( 'mvs/messaging', {
 				const conv = state.activeConversation;
 				if ( conv ) {
 					conv.unread_count = 0;
+					conv.hasUnread    = false; // the list badge hides on this, not on the count
 					conv.last_read_at = new Date().toISOString();
 				}
 				yield actions.refreshUnreadCount();

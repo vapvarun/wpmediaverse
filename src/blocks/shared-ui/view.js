@@ -1248,15 +1248,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				group = 'audio/';
 			}
 			const valid = rawFiles.filter( ( f ) => ( f.type || '' ).startsWith( group ) );
-			// Name the files left out, and keep the note in the window: a toast
-			// alone faded before a member noticed one of three files was missing.
+			// Name the files left out in the window's role="alert" note only: it
+			// stays put and is announced, where a toast fades and covers the buttons.
 			const skipped = rawFiles.filter( ( f ) => ! valid.includes( f ) ).map( ( f ) => f.name );
 			state.uploadModalError = skipped.length
 				? ( state.i18n?.filesSkippedType || 'Not added: %s. Upload one kind of media at a time: photos, videos or audio.' ).replace( '%s', skipped.join( ', ' ) )
 				: '';
-			if ( skipped.length ) {
-				actions.showToast( state.uploadModalError, 'error' );
-			}
 			if ( ! valid.length ) return;
 			// Picking more adds to the same kind (images become a gallery; videos
 			// and audio upload as separate items). This kept only the LAST video,
@@ -1365,16 +1362,6 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.uploadModalDescription = '';
 				state.uploadModalTags = '';
 			}
-		},
-		filterFilesByMode( files ) {
-			const prefixes = { photo: 'image/', gallery: 'image/', video: 'video/', audio: 'audio/' };
-			const prefix = prefixes[ state.uploadModalMode ] || 'image/';
-			const valid = files.filter( ( f ) => f.type.startsWith( prefix ) );
-			const rejected = files.length - valid.length;
-			if ( rejected > 0 ) {
-				actions.showToast( rejected + ' file(s) not allowed for ' + state.uploadModalMode + ' upload.', 'error' );
-			}
-			return valid;
 		},
 		updateUploadTitle( event ) {
 			state.uploadModalTitle = event.target.value;

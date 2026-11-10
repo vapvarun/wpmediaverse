@@ -369,7 +369,7 @@ class CommentController extends WP_REST_Controller {
 				'content'     => $updated->comment_content,
 				'parent'      => (int) $updated->comment_parent,
 				'date'        => $updated->comment_date_gmt,
-				'edited'      => true,
+				'edited'      => 0 !== $result,
 			)
 		);
 	}

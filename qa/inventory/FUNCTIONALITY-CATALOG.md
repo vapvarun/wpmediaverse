@@ -435,7 +435,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Within the window: save succeeds, comment text updates in place. Past the window: edit is refused (403).
 - **UX expectation:** Success shows "Comment updated." toast, no reload. A refusal past the window should surface as an error, not a silent no-op — and the Edit control ideally is not offered at all once the window has closed (verify in browser; if it's still shown, that's a UX gap to flag).
 - **Settings that change it:** `mvs_comment_edit_window` (default 15 minutes; no field on any Settings tab; developers change it with code only).
-- **Edge cases:** A member with `moderate_mvs_media` capability can delete (not edit) others' comments — see MV-MED-007.
+- **Edge cases:** A member with `moderate_mvs_media` capability can delete (not edit) others' comments — see MV-MED-007. Saving with the text unchanged returns 200 with `edited: false`; only a real change returns `edited: true`.
 
 #### MV-MED-007 — Delete a comment
 - **Edition:** Free
@@ -626,7 +626,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** All files upload as one group (single activity/action group), each becoming its own media item.
 - **UX expectation:** Per-file thumbnail previews for every selected file, with a way to remove one before submitting (`removeUploadFile`). One combined success confirmation, not one toast per file.
 - **Settings that change it:** same as MV-UPL-002.
-- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts every member this viewer may see under the listing's filter (`gallery_tile_counts()` with `gallery_filter_args()`), the same set the lightbox opens through `/media/{id}/group` with that filter: a visitor, a follower and the owner can each see a different count, and under Explore > Videos a photo-plus-two-videos gallery is one tile fronted by its first video, badge 2, lightbox 1 / 2. Each step in the lightbox shows that item's own reactions and comments (owner decision 13 Oct 2026). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
+- **Edge cases:** Mixing file types keeps the first file's kind; the others are left out with a red note inside the window naming them ("Not added: <names>. Upload one kind of media at a time: photos, videos or audio."). No toast: the note is announced (role="alert") and Cancel/Upload stay uncovered. A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts every member this viewer may see under the listing's filter (`gallery_tile_counts()` with `gallery_filter_args()`), the same set the lightbox opens through `/media/{id}/group` with that filter: a visitor, a follower and the owner can each see a different count, and under Explore > Videos a photo-plus-two-videos gallery is one tile fronted by its first video, badge 2, lightbox 1 / 2. Each step in the lightbox shows that item's own reactions and comments (owner decision 13 Oct 2026). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
 
 #### MV-UPL-004 — Upload video / audio
 - **Edition:** Free
@@ -1300,9 +1300,9 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Setup:** An unread message waiting.
 - **Steps:** 1. Note the unread badge. 2. Open the conversation. 3. Check the badge again.
 - **Expected:** Opening the conversation marks it read and decrements the badge.
-- **UX expectation:** Badge updates without needing a full chat-panel reopen or page refresh.
+- **UX expectation:** Badge updates without needing a full chat-panel reopen or page refresh. The conversation's own row badge disappears; it never reads "0".
 - **Settings that change it:** none.
-- **Edge cases:** none.
+- **Edge cases:** With BuddyNext active, `/messages/` is BuddyNext's screen; this entry covers MediaVerse's own messages page.
 
 #### MV-MSG-010 — Message requests: accept / decline
 - **Edition:** Free
@@ -2134,7 +2134,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** MediaVerse > Overview > "Quick Start with Demo Content" card
 - **Setup:** A fresh/near-empty install (best demonstrated on one with no real content).
 - **Steps:** 1. Click "Import Demo Data". 2. Confirm the button shows "Importing..." state. 3. Wait for completion; confirm redirect to Explore page. 4. Re-run without cleaning up first.
-- **Expected:** AJAX action seeds 60 sample media items from 5 demo members, 5 albums/collections, reactions, comments, favorites and follows; each demo member gets a bundled profile photo (no grey default avatars). The card is offered only while `OverviewPage::demo_import_offered()` is true (no demo content and no published media; filter `mvs_show_demo_import`). A SECOND run while demo data already exists must return `wp_send_json_error()` (Coding Rule 20 — a refusal must never be a success envelope) with a clear message, not silently do nothing while claiming success.
+- **Expected:** AJAX action seeds 60 sample media items from 5 demo members, 5 albums/collections, reactions, comments, favorites and follows; each demo member gets a bundled profile photo (no grey default avatars), and each item's `reaction_count` matches its seeded reactions so the reactions leaderboard is filled. The card is offered only while `OverviewPage::demo_import_offered()` is true (no demo content and no published media; filter `mvs_show_demo_import`). A SECOND run while demo data already exists must return `wp_send_json_error()` (Coding Rule 20 — a refusal must never be a success envelope) with a clear message, not silently do nothing while claiming success.
 - **UX expectation:** "Importing..." replaces the button label during the request; a genuine failure shows "Import failed. The server returned an invalid response. Please check wp-content/debug.log." — not a blank failure. Success redirects to Explore so the owner immediately sees the seeded content, satisfying "what must NOT happen": the button must never report success while doing nothing.
 - **Settings that change it:** None (one-shot action, not a persisted setting).
 - **Edge cases:** Non-admin cannot trigger this even by crafting the AJAX call directly — `wp_send_json_error( 'Permission denied.' )`.
@@ -4481,7 +4481,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Setup:** Licence active; site accepts the file's type and size.
 - **Steps:** 1. Open drive. 2. Choose a file within allowed type/size. 3. Submit.
 - **Expected:** 201 with the new document row; permission check runs write-access check then the licence guard (licensed, passes). Document lands at the default privacy level unless `privacy` param sent.
-- **UX expectation:** Upload progress/success feedback follows the same pattern as media uploads elsewhere in the plugin; a rejected type/size must show the specific reason (below), never a bare "upload failed."
+- **UX expectation:** Upload progress/success feedback follows the same pattern as media uploads elsewhere in the plugin; a rejected type/size must show the specific reason (below), never a bare "upload failed." The queue dialog says "1 file" for one file and "N files" for more, and the sidebar Documents count updates when the drive refreshes, with no page reload.
 - **Settings that change it:** `mvs_pro_documents_max_size`, `mvs_pro_documents_allowed_types`, `mvs_pro_documents_default_privacy`.
 - **Edge cases:** `doc_type` param mismatch with actual file is refused, never silently corrected; oversized file → 400 `mvs_document_too_large`; disallowed type → 400 `mvs_document_type_not_allowed`; failed content scan → 400 `mvs_document_scan_failed`.
 
@@ -4710,7 +4710,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Who:** document owner, or anyone with drive-write authority for space drives.
 - **Where:** `POST /wp-json/mvs-pro/v1/documents/{id}/permissions`, `grantee_type=user`.
 - **Setup:** target member exists.
-- **Steps:** 1. Open share panel. 2. Type member's username/email. 3. Choose permission level (view/comment/edit). 4. Submit.
+- **Steps:** 1. Open share panel. 2. Type the member's username, @handle or email (the field's label says so). 3. Choose permission level (view/comment/edit). 4. Submit.
 - **Expected:** Grant created; feedback "Shared. They can reach it from 'Shared with me'." Grantee sees it at `GET /wp-json/mvs-pro/v1/me/shared`.
 - **UX expectation:** The type-ahead should only surface real, resolvable members — attempting to submit an unresolvable name must show a specific "unknown member" message, not a generic failure. Sharing with the document's own owner is a redundant no-op that should be caught with a clear message, not silently accepted.
 - **Settings that change it:** none.
