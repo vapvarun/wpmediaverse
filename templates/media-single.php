@@ -987,19 +987,18 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		</div>
 
 		<footer class="mvs-media-footer">
-			<?php if ( ! empty( $mvs_tag_names ) ) : ?>
-				<div class="mvs-media-tags">
-					<?php foreach ( $mvs_tag_names as $tag_name ) : ?>
-						<?php
-						$tag_term = get_term_by( 'name', $tag_name, 'mvs_tag' );
-						$tag_url  = $tag_term ? get_term_link( $tag_term ) : add_query_arg( 'mvs_tag', rawurlencode( $tag_name ), $mvs_archive_url );
-						?>
-						<a href="<?php echo esc_url( $tag_url ); ?>" class="mvs-tag">
-							<?php echo esc_html( $tag_name ); ?>
-						</a>
-					<?php endforeach; ?>
-				</div>
-			<?php endif; ?>
+			<?php // Always rendered: saving the first tag from the edit form fills this container in place. ?>
+			<div class="mvs-media-tags">
+				<?php foreach ( $mvs_tag_names as $tag_name ) : ?>
+					<?php
+					$tag_term = get_term_by( 'name', $tag_name, 'mvs_tag' );
+					$tag_url  = $tag_term ? get_term_link( $tag_term ) : add_query_arg( 'mvs_tag', rawurlencode( $tag_name ), $mvs_archive_url );
+					?>
+					<a href="<?php echo esc_url( $tag_url ); ?>" class="mvs-tag">
+						<?php echo esc_html( $tag_name ); ?>
+					</a>
+				<?php endforeach; ?>
+			</div>
 		</footer>
 			<?php endif; // End $mvs_can_view - social bar, comments, and tags footer. ?>
 	</article>

@@ -133,22 +133,22 @@
    Suppress Third-Party Notices on MVS Pages
    ========================================================================== */
 
-.toplevel_page_wpmediaverse .notice:not(.mvs-notice),
+.toplevel_page_wpmediaverse .notice:not(.mvs-notice):not(.settings-error),
 .toplevel_page_wpmediaverse .update-nag,
-.toplevel_page_wpmediaverse div.error:not(.mvs-notice),
-.toplevel_page_wpmediaverse div.updated:not(.mvs-notice),
-[class*="wpmediaverse_page"] .notice:not(.mvs-notice),
+.toplevel_page_wpmediaverse div.error:not(.mvs-notice):not(.settings-error),
+.toplevel_page_wpmediaverse div.updated:not(.mvs-notice):not(.settings-error),
+[class*="wpmediaverse_page"] .notice:not(.mvs-notice):not(.settings-error),
 [class*="wpmediaverse_page"] .update-nag,
-[class*="wpmediaverse_page"] div.error:not(.mvs-notice),
-[class*="wpmediaverse_page"] div.updated:not(.mvs-notice),
-.post-type-mvs_album .notice:not(.mvs-notice),
+[class*="wpmediaverse_page"] div.error:not(.mvs-notice):not(.settings-error),
+[class*="wpmediaverse_page"] div.updated:not(.mvs-notice):not(.settings-error),
+.post-type-mvs_album .notice:not(.mvs-notice):not(.settings-error),
 .post-type-mvs_album .update-nag,
-.post-type-mvs_album div.error:not(.mvs-notice),
-.post-type-mvs_album div.updated:not(.mvs-notice),
-.post-type-mvs_collection .notice:not(.mvs-notice),
+.post-type-mvs_album div.error:not(.mvs-notice):not(.settings-error),
+.post-type-mvs_album div.updated:not(.mvs-notice):not(.settings-error),
+.post-type-mvs_collection .notice:not(.mvs-notice):not(.settings-error),
 .post-type-mvs_collection .update-nag,
-.post-type-mvs_collection div.error:not(.mvs-notice),
-.post-type-mvs_collection div.updated:not(.mvs-notice) {
+.post-type-mvs_collection div.error:not(.mvs-notice):not(.settings-error),
+.post-type-mvs_collection div.updated:not(.mvs-notice):not(.settings-error) {
 	display: none !important;
 }
 
@@ -1272,8 +1272,8 @@ a.mvs-stat-card:focus {
    We render a single notice below the Save button instead. MediaVerse's own
    notices (.mvs-notice) stay visible: this also hid the Pro "needs WB
    Gamification" notice, which WordPress moves into the header. */
-.wpmediaverse-admin > .wrap > .notice:not(.mvs-notice),
-.wpmediaverse-admin .mvs-settings-page-header .notice:not(.mvs-notice) {
+.wpmediaverse-admin > .wrap > .notice:not(.mvs-notice):not(.settings-error),
+.wpmediaverse-admin .mvs-settings-page-header .notice:not(.mvs-notice):not(.settings-error) {
 	display: none;
 }
 
