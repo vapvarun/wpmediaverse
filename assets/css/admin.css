@@ -1915,7 +1915,19 @@ a.mvs-stat-card:focus {
 .mvs-text-muted { color: var(--mvs-text-muted); }
 .mvs-text-secondary { color: var(--mvs-text-secondary); margin: 0; }
 .mvs-mt-0 { margin-top: 0; }
-.mvs-setup-finish-form { margin-top: 24px; }
+.mvs-setup-finish-form {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin-top: 24px;
+}
+
+.mvs-setup-demo-note {
+	flex-basis: 100%;
+	margin: 0;
+}
 
 /* Dashboard-specific */
 /* ==========================================================================
