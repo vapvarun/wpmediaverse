@@ -888,7 +888,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 										data-wp-on--click="actions.removeTag">&times;</button>
 								</span>
 							</template>
-							<input type="text" class="mvs-tag-text-input" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
+							<input type="text" class="mvs-tag-text-input" aria-label="<?php esc_attr_e( 'Add tags', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
 								data-wp-bind--value="context.tagInput"
 								data-wp-on--input="actions.updateTagInput"
 								data-wp-on--keydown="actions.addTagFromInput" />

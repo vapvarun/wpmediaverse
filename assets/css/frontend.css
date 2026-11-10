@@ -3446,7 +3446,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-pill-remove {
     background: none;
     border: none;
-    color: var(--mvs-bg);
+    /* Match the pill's own text, whichever pill style (filled or outlined) wins. */
+    color: inherit;
     cursor: pointer;
     font-size: 1em;
     min-width: var(--mvs-touch-min, 44px);
@@ -7608,6 +7609,15 @@ a.mvs-dashboard-card-title:hover {
     font-size: 14px;
     line-height: 1.5;
     border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-lightbox-tags {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-lightbox-tags[hidden] {
+    display: none;
 }
 
 .mvs-lightbox-desc strong {

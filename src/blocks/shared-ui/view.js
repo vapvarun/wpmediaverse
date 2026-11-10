@@ -514,6 +514,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalPrivacy: 'public',
 		editModalAlbum: null, // { id, title, privacy } when the photo is in an album
 		editModalAllowDownload: true,
+		editModalTags: '',
 		// Off by default — title edits leave the URL slug alone. The user
 		// can opt in via the "Update URL slug from title" checkbox; the
 		// save handler will compute sanitize_title(title) on the JS side
@@ -684,6 +685,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get lightboxDescription() {
 			return state.lightboxMediaData?.description || '';
+		},
+		// Each tag links to Explore filtered by it, like the single media page.
+		get lightboxTags() {
+			const base = state.exploreUrl || '';
+			return ( state.lightboxMediaData?.tags || [] ).map( ( name ) => ( {
+				name,
+				url: base ? `${ base }${ base.includes( '?' ) ? '&' : '?' }mvs_tag=${ encodeURIComponent( name ) }` : '',
+			} ) );
+		},
+		get lightboxHasTags() {
+			return ( state.lightboxMediaData?.tags || [] ).length > 0;
 		},
 		get lightboxAuthor() {
 			return state.lightboxMediaData?.author_data?.name || '';
@@ -1084,6 +1096,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalPrivacy = data.privacy || 'public';
 				state.editModalAlbum = data.album || null;
 				state.editModalAllowDownload = data.allow_download !== false;
+				state.editModalTags = ( data.tags || [] ).join( ', ' );
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
 			}
@@ -1097,6 +1110,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalPrivacy = 'public';
 			state.editModalAlbum = null;
 			state.editModalAllowDownload = true;
+			state.editModalTags = '';
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
 			state.editModalSaving = false;
@@ -1109,6 +1123,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		updateEditDescription() {
 			state.editModalDescription = getElement().ref?.value || '';
+		},
+		updateEditTags() {
+			state.editModalTags = getElement().ref?.value || '';
 		},
 		updateEditPrivacy() {
 			state.editModalPrivacy = getElement().ref?.value || 'public';
@@ -1140,6 +1157,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					description: state.editModalDescription,
 					privacy: state.editModalPrivacy,
 					allow_download: state.editModalAllowDownload,
+					tags: String( state.editModalTags || '' ).split( ',' ).map( ( t ) => t.trim() ).filter( Boolean ),
 				};
 				// Only include `slug` when the admin explicitly opted into
 				// regenerating it from the new title. Leaving the field out
