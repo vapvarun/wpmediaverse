@@ -2134,10 +2134,11 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** MediaVerse > Overview > "Quick Start with Demo Content" card
 - **Setup:** A fresh/near-empty install (best demonstrated on one with no real content).
 - **Steps:** 1. Click "Import Demo Data". 2. Confirm the button shows "Importing..." state. 3. Wait for completion; confirm redirect to Explore page. 4. Re-run without cleaning up first.
-- **Expected:** AJAX action seeds ~12 sample media items, albums, reactions. A SECOND run while demo data already exists must return `wp_send_json_error()` (Coding Rule 20 — a refusal must never be a success envelope) with a clear message, not silently do nothing while claiming success.
+- **Expected:** AJAX action seeds 60 sample media items from 5 demo members, 5 albums/collections, reactions, comments, favorites and follows; each demo member gets a bundled profile photo (no grey default avatars). The card is offered only while `OverviewPage::demo_import_offered()` is true (no demo content and no published media; filter `mvs_show_demo_import`). A SECOND run while demo data already exists must return `wp_send_json_error()` (Coding Rule 20 — a refusal must never be a success envelope) with a clear message, not silently do nothing while claiming success.
 - **UX expectation:** "Importing..." replaces the button label during the request; a genuine failure shows "Import failed. The server returned an invalid response. Please check wp-content/debug.log." — not a blank failure. Success redirects to Explore so the owner immediately sees the seeded content, satisfying "what must NOT happen": the button must never report success while doing nothing.
 - **Settings that change it:** None (one-shot action, not a persisted setting).
 - **Edge cases:** Non-admin cannot trigger this even by crafting the AJAX call directly — `wp_send_json_error( 'Permission denied.' )`.
+- **Check:** Delete Demo Data (MV-ADM-003) also removes the demo members' profile photos (the attachments are authored by the demo member).
 
 #### MV-ADM-003 — Delete Demo Data
 - **Edition:** Free
@@ -2543,9 +2544,9 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Who:** Same as MV-WIZ-002.
 - **Where:** Setup wizard, step 3
 - **Setup:** Completed step 2.
-- **Steps:** 1. Reach Done. 2. Confirm links onward (e.g. to Overview/Explore) work.
+- **Steps:** 1. Reach Done. 2. Confirm links onward (e.g. to Overview/Explore) work. 3. On an empty site, click "Add demo content".
 - **Expected:** "Your Media Hub is Ready!" confirmation screen ending the flow.
-- **UX expectation:** From here, the admin should have an obvious next click (not a dead end). Confirmed: the Done screen shows "Visit Explore Page" and "My Dashboard" links (each only appearing if that page actually exists) plus a primary "Go to Overview" button — never a dead end.
+- **UX expectation:** From here, the admin should have an obvious next click (not a dead end). Confirmed: the Done screen shows "Visit Explore Page" and "My Dashboard" links (each only appearing if that page actually exists) plus a primary "Go to Overview" button — never a dead end. While the demo import is on offer (same check as MV-ADM-002), a note and an "Add demo content" button sit above "Go to Overview"; it finishes setup the same way and lands on the Overview demo card (`#mvs-demo-import`), where the owner clicks Import. Hidden once the site has media or demo content.
 - **Settings that change it:** None.
 - **Edge cases:** Revisiting `step=done` later (bookmarked) should not re-run any save logic, just render the confirmation.
 

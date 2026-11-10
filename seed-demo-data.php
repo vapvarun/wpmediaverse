@@ -923,6 +923,38 @@ foreach ( $demo_users as $du ) {
 
 mvs_seed_log( '  Demo users ready: ' . count( $demo_user_ids ) );
 
+// A profile photo for each demo member, so the people side of the demo is not a
+// row of grey placeholders. The attachment is authored by the member, so the
+// cleanup's wp_delete_user() removes it with them.
+$avatar_files = glob( $demo_dir . 'avatars/*.png' ) ?: array();
+$avatar_key   = \WPMediaVerse\Services\ProfileService::AVATAR_META_KEY;
+foreach ( array_values( $demo_user_ids ) as $i => $duid ) {
+	if ( ! get_user_meta( $duid, 'mvs_demo_user', true ) || get_user_meta( $duid, $avatar_key, true ) || empty( $avatar_files ) ) {
+		continue;
+	}
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	$tmp = wp_tempnam( 'mvs-seed-avatar' );
+	if ( ! $tmp || ! copy( $avatar_files[ $i % count( $avatar_files ) ], $tmp ) ) {
+		continue;
+	}
+	$avatar_id = media_handle_sideload(
+		array(
+			'name'     => 'demo-avatar-' . $duid . '.png',
+			'tmp_name' => $tmp,
+		),
+		0,
+		null,
+		array( 'post_author' => $duid )
+	);
+	if ( is_wp_error( $avatar_id ) ) {
+		mvs_seed_log( '  Avatar not set for #' . $duid . ': ' . $avatar_id->get_error_message(), 'warning' );
+		continue;
+	}
+	update_user_meta( $duid, $avatar_key, (int) $avatar_id );
+}
+
 // Fallback user for any unmapped items.
 $fallback_user_id = get_current_user_id();
 if ( ! $fallback_user_id ) {
