@@ -1422,27 +1422,40 @@
     background: linear-gradient(135deg, #1a5276, #1a1a2e);
 }
 
-/* Remove (×) button overlaid on each preview tile. */
+/* Remove (×) on each preview tile: the button is the full touch target in
+ * the tile's corner, the small dark circle inside it is only the visual.
+ * Sizing the button itself at 22px let the mobile touch floor stretch its
+ * height alone, which turned the circle into an oval. */
 #buddypress .mvs-activity-media-remove {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 0;
+    inset-inline-end: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: var(--mvs-touch-min, 44px);
+    height: var(--mvs-touch-min, 44px);
+    padding: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+#buddypress .mvs-activity-media-remove__icon {
     width: 22px;
     height: 22px;
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.65);
     color: var(--mvs-bg);
-    border: none;
-    cursor: pointer;
     font-size: 13px;
     line-height: 22px;
     text-align: center;
-    padding: 0;
     backdrop-filter: blur(4px);
     transition: background 0.15s;
 }
 
-#buddypress .mvs-activity-media-remove:hover {
+#buddypress .mvs-activity-media-remove:hover .mvs-activity-media-remove__icon,
+#buddypress .mvs-activity-media-remove:focus-visible .mvs-activity-media-remove__icon {
     background: var(--mvs-danger);
 }
 

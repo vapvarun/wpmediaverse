@@ -138,7 +138,11 @@
 			var removeBtn = document.createElement( 'button' );
 			removeBtn.type = 'button';
 			removeBtn.className = 'mvs-activity-media-remove';
-			removeBtn.textContent = '\u00D7';
+			var removeIcon = document.createElement( 'span' );
+			removeIcon.className = 'mvs-activity-media-remove__icon';
+			removeIcon.setAttribute( 'aria-hidden', 'true' );
+			removeIcon.textContent = '\u00D7';
+			removeBtn.appendChild( removeIcon );
 			removeBtn.setAttribute( 'aria-label', __( 'Remove media', 'wpmediaverse' ) );
 			removeBtn.addEventListener( 'click', function() {
 				attachedMedia.splice( idx, 1 ).forEach( releaseThumb );

@@ -6919,11 +6919,6 @@ a.mvs-dashboard-card-title:hover {
     flex-direction: row-reverse;
 }
 
-[dir="rtl"] .mvs-activity-media-remove {
-    right: auto;
-    left: 4px;
-}
-
 [dir="rtl"] .mvs-explore-header {
     text-align: right;
 }
