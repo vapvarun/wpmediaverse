@@ -4815,6 +4815,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_story_duration_hours",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $hours"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:905",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_privacy_labels",
       "type": "filter",
       "args_count": 1,

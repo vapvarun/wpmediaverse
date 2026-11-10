@@ -894,7 +894,15 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return string
 	 */
 	public static function story_length_label(): string {
-		$hours = class_exists( '\WPMediaVersePro\Stories\StoryService' ) ? \WPMediaVersePro\Stories\StoryService::duration_hours() : 24;
+		/**
+		 * Filter how many hours a story stays up. Pro answers with the owner's
+		 * Story length; without Pro there is no setting and it stays 24.
+		 *
+		 * @since 2.7.0
+		 *
+		 * @param int $hours Hours.
+		 */
+		$hours = max( 1, (int) apply_filters( 'mvs_story_duration_hours', 24 ) );
 		if ( $hours < 48 ) {
 			/* translators: %d: number of hours a story stays up. */
 			return sprintf( _n( '%d hour', '%d hours', $hours, 'wpmediaverse' ), $hours );
