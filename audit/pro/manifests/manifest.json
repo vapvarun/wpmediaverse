@@ -1361,6 +1361,18 @@
       "file": "includes/Core/Plugin.php:607; register includes/Admin/GamificationSettings.php:86,95"
     },
     {
+      "option": "mvs_stories_duration_hours",
+      "default": "24",
+      "controls": "How long a story stays up (6, 12, 24, 48, 72 or 168 hours); read by StoryService::duration_hours(), exposed to Free through the mvs_story_duration_hours filter",
+      "file": "includes/Admin/ProSettings.php (Stories section); includes/Stories/StoryService.php"
+    },
+    {
+      "option": "mvs_stories_post_roles",
+      "default": "[]",
+      "controls": "Transport only: which roles hold the post_mvs_stories capability (written through MediaCapabilities::apply_role_selection)",
+      "file": "includes/Admin/ProSettings.php (Stories section); includes/Admin/Sanitizers.php"
+    },
+    {
       "option": "mvs_connectors_enabled",
       "default": "0",
       "controls": "Platform connectors (Flickr), ConnectorManager, REST, dashboard tab",
