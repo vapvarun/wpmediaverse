@@ -513,7 +513,7 @@ class CollectionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		if ( (int) $post->post_author === $user_id || current_user_can( 'moderate_mvs_media' ) ) {
+		if ( (int) $post->post_author === $user_id || current_user_can( 'manage_mvs_settings' ) ) {
 			return true;
 		}
 
@@ -540,7 +540,7 @@ class CollectionController extends WP_REST_Controller {
 		$viewer   = get_current_user_id();
 		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
 		// Mirrors get_item_permissions_check: owner or a moderator may edit.
-		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'moderate_mvs_media' ) );
+		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'manage_mvs_settings' ) );
 
 		// Resolve a smart collection's matches ONCE — they drive both the cover
 		// and the item count. Manual membership lives in the favorites table.

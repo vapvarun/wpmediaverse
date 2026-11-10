@@ -681,7 +681,7 @@ class AlbumController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function update_item_permissions_check( $request ) {
-		return $this->owner_or_refuse( $request, 'edit_others_mvs_medias', __( 'You do not have permission to edit this album.', 'wpmediaverse' ) );
+		return $this->owner_or_refuse( $request, 'manage_mvs_settings', __( 'You do not have permission to edit this album.', 'wpmediaverse' ) );
 	}
 
 	/**
@@ -691,7 +691,7 @@ class AlbumController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function delete_item_permissions_check( $request ) {
-		return $this->owner_or_refuse( $request, 'delete_others_mvs_medias', __( 'You do not have permission to delete this album.', 'wpmediaverse' ) );
+		return $this->owner_or_refuse( $request, 'manage_mvs_settings', __( 'You do not have permission to delete this album.', 'wpmediaverse' ) );
 	}
 
 	/**
@@ -744,8 +744,8 @@ class AlbumController extends WP_REST_Controller {
 
 		$viewer   = get_current_user_id();
 		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
-		// Mirrors update_item_permissions_check: owner or edit_others_mvs_medias.
-		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'edit_others_mvs_medias' ) );
+		// Mirrors update_item_permissions_check: owner or a site manager.
+		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'manage_mvs_settings' ) );
 
 		$data = array(
 			'id'             => $album_id,

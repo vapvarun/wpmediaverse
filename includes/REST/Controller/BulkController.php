@@ -322,7 +322,7 @@ class BulkController extends WP_REST_Controller {
 
 		// Verify the current user owns or can edit the target album.
 		$album_user_id = get_current_user_id();
-		if ( (int) $album->post_author !== $album_user_id && ! current_user_can( 'edit_others_mvs_medias' ) ) {
+		if ( (int) $album->post_author !== $album_user_id && ! current_user_can( 'manage_mvs_settings' ) ) {
 			// A member who cannot even see the album gets the missing-album answer.
 			if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( $album_id, $album_user_id, \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 				return new WP_Error( 'mvs_not_found', __( 'Album not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
