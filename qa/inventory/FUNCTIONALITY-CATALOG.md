@@ -2447,6 +2447,39 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** `mvs_stories_duration_hours` (6, 12, 24, 48 hours, 3 or 7 days; anything else reads as 24).
 - **Edge cases:** Check: changing the length does not end or extend live stories; "x ago" on a story posted before a length change can be skewed until it expires.
 
+#### MV-PRO-STORY-REACT - Members react to a story; the author sees who reacted
+- **Edition:** Pro (block), uses Free reactions.
+- **Who:** Any signed-in member who can see the story; the story's author.
+- **Where:** The Stories viewer (MediaVerse pages, BuddyNext home feed, mobile web); `POST /mvs/v1/media/{id}/reactions`; `GET /mvs-pro/v1/stories/{id}/viewers`.
+- **Setup:** Pro active, Stories enabled, a story by someone you follow.
+- **Steps:** 1. Open the story as another member and tap Love. 2. Tap Like (it swaps), tap Like again (it clears). 3. Open it as the author and tap Seen by.
+- **Expected:** One reaction per person, the tapped one highlighted and announced as pressed. The author sees a count per reaction and each viewer's reaction beside their name; viewers who did not react show only the time. The author gets no reaction row on their own story. Reactions are bell-only.
+- **UX expectation:** 44px targets; the sheet fits at 390px; focus stays in the viewer.
+- **Settings that change it:** None.
+- **Edge cases:** Check: a reaction made before the story was posted still counts in the tally; Esc closes the sheet before the viewer.
+
+#### MV-PRO-STORY-OWNER - Author sees Seen by and can end a story
+- **Edition:** Pro
+- **Who:** The story's author. Others never see these controls.
+- **Where:** Stories viewer; `GET /mvs-pro/v1/stories/{id}/viewers`, `DELETE /mvs-pro/v1/media/{id}/story`.
+- **Setup:** Pro active, Stories enabled, a story with at least one viewer.
+- **Steps:** 1. Open your story. 2. Tap Seen by, close it. 3. Tap End story, choose Keep it, then End story.
+- **Expected:** The list names each viewer with "x ago". Ending asks first and removes the story for everyone; another member calling the routes gets 403. "x ago" uses the real start time.
+- **UX expectation:** Sheet capped to 440px on desktop, full width at 390px.
+- **Settings that change it:** `mvs_stories_duration_hours` does not change the label (it uses the stored start time).
+- **Edge cases:** Check: an unreadable viewers list shows a retry message, not a blank sheet.
+
+#### MV-PRO-STORY-CAP - "Post stories" permission
+- **Edition:** Free (grants) + Pro (column, gate).
+- **Who:** Site administrator (setting); members.
+- **Where:** MediaVerse > Permissions > "Post stories" (visible while Stories is enabled); upload checkbox; "Your story" tile; `POST /mvs-pro/v1/media/{id}/story`.
+- **Setup:** Pro active, Stories enabled.
+- **Steps:** 1. Untick Post stories for Subscriber and save. 2. As a Subscriber open an upload form and the feed. 3. Call the POST route.
+- **Expected:** Default is granted to every role that can upload, so nothing changes on update. When off, the checkbox and tile are gone and the route returns 403; viewing stories and ending your own still work.
+- **UX expectation:** Column fits the matrix at 390px.
+- **Settings that change it:** The `post_mvs_stories` capability via Permissions.
+- **Edge cases:** Check: with an older Free (no capability) posting stays open to everyone who can upload.
+
 #### MV-DEMO-SAFE - Demo data import and delete only touch demo accounts
 - **Edition:** Free
 - **Who:** Site administrator (Overview > Import / Delete Demo Data, or the `seed-demo-data.php` / `cleanup-demo-data.php` scripts).
