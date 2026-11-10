@@ -51,7 +51,7 @@ class Collection {
 			// it into the primitive list for edit_post / publish_post and never re-runs
 			// map_meta_cap on it, so a meta cap answered by a filter (mvs_settings_screen)
 			// can never pass and Publish fails for every administrator.
-			'capabilities'        => array( 'edit_posts' => 'manage_mvs_settings' ),
+			'capabilities'        => Album::manager_capabilities(),
 			'map_meta_cap'        => true,
 			'rewrite'             => array( 'slug' => 'collection' ),
 			'show_in_menu'        => 'wpmediaverse',

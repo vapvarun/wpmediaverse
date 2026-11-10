@@ -2380,6 +2380,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **UX expectation:** No "Sorry, you are not allowed to edit this post" page for a site manager.
 - **Settings that change it:** The `manage_mvs_settings` capability (Permissions screen or `mvs_settings_sections` filter); no new setting.
 - **Edge cases:** Members still manage their own albums and collections in My Media through `mvs/v1`; this screen is not their entry point.
+- **Other people's items:** An Editor cannot edit or delete a member's album or collection, in wp-admin or by direct URL (`post.php?post=<id>&action=edit` is refused); only a site manager can. Check as an Editor against an album a subscriber owns.
 
 #### MV-UI-BACK - Back link on album and collection pages
 - **Edition:** Free

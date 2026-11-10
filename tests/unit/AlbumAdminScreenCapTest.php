@@ -43,6 +43,29 @@ class AlbumAdminScreenCapTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * @dataProvider post_types
+	 *
+	 * @param string $post_type Post type.
+	 */
+	public function test_editor_cannot_edit_or_delete_a_members_item( string $post_type ): void {
+		$member  = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => $post_type,
+				'post_status' => 'publish',
+				'post_author' => $member,
+			)
+		);
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertFalse( current_user_can( 'edit_post', $post_id ) );
+		$this->assertFalse( current_user_can( 'delete_post', $post_id ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( current_user_can( 'edit_post', $post_id ) );
+	}
+
+	/**
 	 * The cap is copied into core's primitive list for edit_post / publish_post and
 	 * never re-mapped, so it must be a real primitive: an administrator who could
 	 * open the screen still got "not allowed to edit this post" on Publish.
