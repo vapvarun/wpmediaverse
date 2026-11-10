@@ -118,7 +118,7 @@ class CollectionController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::DELETABLE,
 					'callback'            => array( $this, 'delete_item' ),
-					'permission_callback' => array( $this, 'owner_permissions_check' ),
+					'permission_callback' => array( $this, 'delete_item_permissions_check' ),
 				),
 			)
 		);
@@ -506,6 +506,27 @@ class CollectionController extends WP_REST_Controller {
 	 * @return bool|WP_Error
 	 */
 	public function owner_permissions_check( $request ) {
+		return $this->owner_or_refuse( $request, 'manage_mvs_settings' );
+	}
+
+	/**
+	 * Permissions: delete. The owner, or a moderator taking the collection down.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return bool|WP_Error
+	 */
+	public function delete_item_permissions_check( $request ) {
+		return $this->owner_or_refuse( $request, 'moderate_mvs_media' );
+	}
+
+	/**
+	 * The owner, or anyone holding $others_cap, may act; anyone else is refused.
+	 *
+	 * @param WP_REST_Request $request    Request.
+	 * @param string          $others_cap Capability for anyone's collection.
+	 * @return bool|WP_Error
+	 */
+	private function owner_or_refuse( $request, string $others_cap ) {
 		$post    = get_post( $request->get_param( 'id' ) );
 		$user_id = get_current_user_id();
 
@@ -513,7 +534,7 @@ class CollectionController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_not_found', __( 'Collection not found.', 'wpmediaverse' ), array( 'status' => 404 ) );
 		}
 
-		if ( (int) $post->post_author === $user_id || current_user_can( 'manage_mvs_settings' ) ) {
+		if ( (int) $post->post_author === $user_id || current_user_can( $others_cap ) ) {
 			return true;
 		}
 
@@ -585,6 +606,7 @@ class CollectionController extends WP_REST_Controller {
 			'cover_url'   => $this->cover_from_media_ids( $cover_ids ),
 			'is_owner'    => $is_owner,
 			'can_edit'    => $can_edit,
+			'can_delete'  => $is_owner || ( $viewer > 0 && current_user_can( 'moderate_mvs_media' ) ),
 			'privacy'     => $this->collections->get_privacy( $post->ID ),
 			'total'       => $total,
 			'is_favorites' => (bool) \WPMediaVerse\Social\FavoriteService::favorites_owner( $post->ID ),

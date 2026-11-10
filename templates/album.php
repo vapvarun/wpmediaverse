@@ -54,6 +54,9 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 		$mvs_is_album_owner = is_user_logged_in() && (int) get_the_author_meta( 'ID' ) === get_current_user_id();
 		$mvs_is_playlist    = 'playlist' === $album_type;
 
+		// A moderator may take someone else's album down, never edit it.
+		$mvs_can_remove_album = $mvs_is_album_owner || ( is_user_logged_in() && current_user_can( 'moderate_mvs_media' ) );
+
 		// Media items in album order, status=publish only. Routes through
 		// AlbumService + MediaRepository::get_batch so the request-scope
 		// cache + privacy invariants apply uniformly.
@@ -129,14 +132,14 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 					<div class="mvs-collection-card-desc"><?php the_content(); ?></div>
 				<?php endif; ?>
 
-				<?php if ( $mvs_is_album_owner ) : ?>
+				<?php if ( $mvs_can_remove_album ) : ?>
 					<?php
 					$mvs_album_ctx = array(
 						'mediaId'            => get_the_ID(),
 						'restUrl'            => esc_url_raw( rest_url( 'mvs/v1/' ) ),
 						'nonce'              => wp_create_nonce( 'wp_rest' ),
 						'isLoggedIn'         => true,
-						'isOwner'            => true,
+						'isOwner'            => $mvs_is_album_owner,
 						'type'               => 'album',
 						'archiveUrl'         => esc_url( $mvs_archive_url ),
 						'initialTitle'       => get_the_title(),
@@ -170,6 +173,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						<?php echo wp_interactivity_data_wp_context( $mvs_album_ctx ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 						data-wp-init="callbacks.init">
 						<div class="mvs-owner-actions">
+							<?php if ( $mvs_is_album_owner ) : ?>
 							<button class="mvs-btn mvs-btn--small mvs-btn--secondary mvs-btn--icon-collapse" type="button"
 								data-wp-on--click="actions.toggleEdit"
 								data-mvs-tooltip="<?php esc_attr_e( 'Edit album', 'wpmediaverse' ); ?>"
@@ -177,6 +181,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 								<i data-lucide="pencil" aria-hidden="true"></i>
 								<span class="mvs-btn__label"><?php esc_html_e( 'Edit Album', 'wpmediaverse' ); ?></span>
 							</button>
+							<?php endif; ?>
 							<button class="mvs-btn mvs-btn--small mvs-btn--danger mvs-btn--icon-collapse" type="button"
 								data-wp-on--click="actions.confirmDelete"
 								data-mvs-tooltip="<?php esc_attr_e( 'Delete album', 'wpmediaverse' ); ?>"
@@ -185,6 +190,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 								<span class="mvs-btn__label"><?php esc_html_e( 'Delete Album', 'wpmediaverse' ); ?></span>
 							</button>
 						</div>
+						<?php if ( $mvs_is_album_owner ) : ?>
 						<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
 							<div class="mvs-field">
 								<label for="mvs-album-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
@@ -222,6 +228,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 								</button>
 							</div>
 						</div>
+						<?php endif; ?>
 					</div>
 				<?php endif; ?>
 			</div>
