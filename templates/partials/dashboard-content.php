@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.6.3
+ * @version 2.6.4
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -1469,13 +1469,13 @@ wp_interactivity_state(
 						<?php esc_html_e( 'Add media with the Save button on any media item.', 'wpmediaverse' ); ?>
 					</p>
 					<p class="mvs-field-hint" data-wp-bind--hidden="!state.isSmartType">
-						<?php esc_html_e( 'Define rules and media matching all conditions will appear automatically.', 'wpmediaverse' ); ?>
+						<?php esc_html_e( 'Media that matches your rules appears automatically. Different fields must all match; several values of the same field match any of them.', 'wpmediaverse' ); ?>
 					</p>
 				</div>
 
 				<!-- Smart Rules Builder -->
 				<div class="mvs-rules-builder" data-wp-bind--hidden="!state.isSmartType">
-					<label><?php esc_html_e( 'Rules (all must match)', 'wpmediaverse' ); ?></label>
+					<label><?php esc_html_e( 'Rules', 'wpmediaverse' ); ?></label>
 					<div class="mvs-rules-list">
 						<template data-wp-each--rule="state.collectionModal.rules">
 							<div class="mvs-rule-row" data-wp-bind--data-rule-index="context.rule.index">
