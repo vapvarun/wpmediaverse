@@ -229,6 +229,9 @@ class FieldRenderer {
 	 * @param array $args Field arguments.
 	 */
 	public static function render_upload_roles_field( array $args ): void {
+		// The capability the boxes show: uploads by default, or another per-role
+		// capability a caller passes in `cap` (Pro's "Who can post stories").
+		$cap = isset( $args['cap'] ) ? (string) $args['cap'] : 'upload_mvs_media';
 		// Sentinel: with every box unticked the list still posts.
 		printf( '<input type="hidden" name="%s[]" value="" />', esc_attr( $args['option'] ) );
 
@@ -241,7 +244,7 @@ class FieldRenderer {
 				esc_attr( $args['option'] . '-' . $slug ),
 				esc_attr( $args['option'] ),
 				esc_attr( (string) $slug ),
-				checked( $admin || ( $role && $role->has_cap( 'upload_mvs_media' ) ), true, false ),
+				checked( $admin || ( $role && $role->has_cap( $cap ) ), true, false ),
 				disabled( $admin, true, false ),
 				esc_html( translate_user_role( $label ) )
 			);

@@ -2472,13 +2472,13 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 #### MV-PRO-STORY-CAP - "Post stories" permission
 - **Edition:** Free (grants) + Pro (column, gate).
 - **Who:** Site administrator (setting); members.
-- **Where:** MediaVerse > Permissions > "Post stories" (visible while Stories is enabled); upload checkbox; "Your story" tile; `POST /mvs-pro/v1/media/{id}/story`.
+- **Where:** MediaVerse > Settings > Display > Stories > "Who can post stories" (visible while Stories is enabled); upload checkbox; "Your story" tile; `POST /mvs-pro/v1/media/{id}/story`.
 - **Setup:** Pro active, Stories enabled.
-- **Steps:** 1. Untick Post stories for Subscriber and save. 2. As a Subscriber open an upload form and the feed. 3. Call the POST route.
+- **Steps:** 1. Untick Subscriber under Who can post stories and save. 2. As a Subscriber open an upload form and the feed. 3. Call the POST route.
 - **Expected:** Default is granted to every role that can upload, so nothing changes on update. When off, the checkbox and tile are gone and the route returns 403; viewing stories and ending your own still work.
-- **UX expectation:** Column fits the matrix at 390px.
-- **Settings that change it:** The `post_mvs_stories` capability via Permissions.
-- **Edge cases:** Check: with an older Free (no capability) posting stays open to everyone who can upload.
+- **UX expectation:** The role boxes fit at 390px with no horizontal scroll; Administrator is ticked and locked.
+- **Settings that change it:** The `post_mvs_stories` capability, set per role here (same control as Settings > General > Who can upload media).
+- **Edge cases:** Check: the choice survives a plugin update (it is recorded as a role override); with an older Free (no capability) posting stays open to everyone who can upload.
 
 #### MV-DEMO-SAFE - Demo data import and delete only touch demo accounts
 - **Edition:** Free

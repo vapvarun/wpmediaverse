@@ -914,7 +914,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * May the signed-in member post a story right now?
 	 *
 	 * Stories must be available on the site and the member must hold the
-	 * "Post stories" capability (Permissions screen). Seeing stories needs
+	 * "Post stories" capability (Display > Stories > Who can post stories). Seeing stories needs
 	 * neither, so the viewer and the bar keep using stories_available().
 	 *
 	 * @since 2.7.0

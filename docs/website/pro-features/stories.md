@@ -37,7 +37,7 @@ The block renders nothing when Stories is not enabled, and shows only the "Your 
 
 **MediaVerse > Stories** lists every active story site-wide with its author, title, status, expiry time and **Seen by** count, and a **Force expire** action for moderation. Only users who can manage MediaVerse settings see this screen. A site owner never needs database access to pull down a story.
 
-**Who may post.** **MediaVerse > Permissions** has a **Post stories** column (shown while Stories is enabled). Every role that can upload keeps it by default, so no site loses the feature on update; untick a role to stop its members posting. Everyone can still view stories and end their own.
+**Who may post.** **MediaVerse > Settings > Display > Stories > Who can post stories** has a checkbox per role (shown while Stories is enabled). Every role that can upload keeps it by default, so no site loses the feature on update; untick a role to stop its members posting. Administrators always can. Everyone can still view stories and end their own.
 
 ## Where Story State Lives
 
