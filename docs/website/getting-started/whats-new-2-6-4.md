@@ -13,7 +13,7 @@ See [Setup Wizard](../getting-started/setup-wizard.md).
 
 ## Albums and collections
 
-- Only the owner and site managers can edit or delete an album or collection, over the REST API and in wp-admin. Editors could change other members' items before.
+- Only the owner and site managers can edit an album or collection, and only the owner and moderators can delete one, over the REST API and in wp-admin. Editors could change other members' items before.
 - Moderators can take down albums and collections without being able to edit them.
 - Administrators can create and publish albums and collections in wp-admin.
 - Collection pages have a back link, and the rule builder names the rule it applies.

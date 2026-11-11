@@ -144,7 +144,7 @@ Setup that offers demo content, tighter album and collection permissions, and ac
 * Fix      - The collection rule builder names the rule it really applies.
 * Fix      - Administrators can create and publish albums and collections in wp-admin.
 * Fix      - Moderators can take down albums and collections without being able to edit them.
-* Security - Only the owner and site managers can edit or delete an album or collection, over the REST API and in wp-admin; editors could change other members' items before.
+* Security - Only the owner and site managers can edit an album or collection, and only the owner and moderators can delete one, over the REST API and in wp-admin; editors could change other members' items before.
 * Dev      - New method `reaction_types_for_users()` on the media repository returns which reactions a list of members gave an item.
 * Dev      - New filter `mvs_story_duration_hours` sets how long a story lasts.
 * Dev      - Templates updated (2.6.4): album.php, collection.php, media-single.php, partials/chat-composer.php, partials/chat-conversation.php, partials/chat-list.php, partials/chat-message.php, partials/chat-new.php, partials/dashboard-content.php, partials/profile-edit-panel.php, partials/shared-ui-frame.php.
