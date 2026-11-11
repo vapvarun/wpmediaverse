@@ -281,16 +281,13 @@ class OverviewPage {
 							// cache, so it cannot go stale. `mvs_show_demo_import` restores the
 							// button on a site that already has media.
 							$mvs_seeded      = (bool) get_option( 'mvs_demo_seeded' );
-							$mvs_show_import = ! $mvs_seeded && (bool) apply_filters(
-								'mvs_show_demo_import',
-								0 === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->count_published()
-							);
+							$mvs_show_import = self::demo_import_offered();
 							?>
 							<?php if ( $mvs_show_import ) : ?>
-								<div class="mvs-demo-import mvs-section-divider">
+								<div class="mvs-demo-import mvs-section-divider" id="mvs-demo-import">
 									<h4 class="mvs-demo-title"><?php esc_html_e( 'Quick Start with Demo Content', 'wpmediaverse' ); ?></h4>
 									<p class="mvs-demo-desc">
-										<?php esc_html_e( 'Import 12 sample media items to see how everything works. Albums, reactions, and your explore page will come alive.', 'wpmediaverse' ); ?>
+										<?php esc_html_e( 'Adds sample photos from demo members, with albums, collections, reactions and comments, so your explore page shows MediaVerse in use. Remove it all later from this page; your own content is not touched.', 'wpmediaverse' ); ?>
 									</p>
 									<button type="button" class="mvs-btn mvs-btn--primary" id="mvs-import-demo-btn"
 										data-nonce="<?php echo esc_attr( wp_create_nonce( 'mvs_import_demo' ) ); ?>">
@@ -619,6 +616,30 @@ class OverviewPage {
 	private function get_recent_media(): array {
 		// Single source of truth — see AdminAggregatesService::recent_media.
 		return \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->recent_media();
+	}
+
+	/**
+	 * Whether the demo import is on offer: no demo content yet, and a site with
+	 * no published media (demo members and media would land beside real ones).
+	 * The setup wizard asks the same question, so the two never disagree.
+	 *
+	 * @return bool
+	 */
+	public static function demo_import_offered(): bool {
+		if ( get_option( 'mvs_demo_seeded' ) ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether the demo import is offered. Return true to offer it on
+		 * a site that already has media.
+		 *
+		 * @param bool $offer True when the site has no published media.
+		 */
+		return (bool) apply_filters(
+			'mvs_show_demo_import',
+			0 === \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->count_published()
+		);
 	}
 
 	/**

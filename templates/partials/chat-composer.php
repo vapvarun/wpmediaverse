@@ -16,7 +16,7 @@ defined( 'ABSPATH' ) || exit;
 			<strong data-wp-text="state.replyToName"></strong>
 			<span data-wp-text="state.replyToContent"></span>
 		</div>
-		<button class="mvs-chat-composer__reply-close" data-wp-on--click="actions.clearReply" type="button">&times;</button>
+		<button class="mvs-chat-composer__reply-close" data-wp-on--click="actions.clearReply" type="button" aria-label="<?php esc_attr_e( 'Cancel reply', 'wpmediaverse' ); ?>">&times;</button>
 	</div>
 
 	<!-- Attachment preview / upload state (image thumb, or a chip for video/PDF/other files) -->

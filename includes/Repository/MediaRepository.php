@@ -6636,6 +6636,41 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Reaction type for each of a set of users on one media item.
+	 *
+	 * One query for a whole page of people (the "Seen by" list on a story).
+	 *
+	 * @param int   $media_id Media ID.
+	 * @param int[] $user_ids User IDs.
+	 * @return array<int,string> Map of user_id => reaction_type. Absent key = no reaction.
+	 */
+	public function reaction_types_for_users( int $media_id, array $user_ids ): array {
+		$user_ids = array_values( array_filter( array_map( 'absint', $user_ids ) ) );
+		if ( ! $user_ids ) {
+			return array();
+		}
+		global $wpdb;
+		$table        = $wpdb->prefix . 'mvs_reactions';
+		$placeholders = implode( ',', array_fill( 0, count( $user_ids ), '%d' ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT user_id, reaction_type FROM {$table} WHERE media_id = %d AND user_id IN ({$placeholders})",
+				array_merge( array( $media_id ), $user_ids )
+			),
+			ARRAY_A
+		);
+		// phpcs:enable
+
+		$map = array();
+		foreach ( (array) $rows as $row ) {
+			$map[ (int) $row['user_id'] ] = (string) $row['reaction_type'];
+		}
+		return $map;
+	}
+
+	/**
 	 * Build a permalink for a media item.
 	 *
 	 * @param int $media_id Media ID.

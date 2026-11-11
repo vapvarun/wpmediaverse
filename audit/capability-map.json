@@ -24,6 +24,7 @@
         "read_mvs_media": "feature",
         "upload_mvs_media": "feature",
         "use_mvs_documents": "feature",
+        "post_mvs_stories": "feature",
         "publish_mvs_media": "own",
         "publish_mvs_medias": "own",
         "edit_mvs_media": "own",
@@ -67,7 +68,8 @@
             "read_mvs_media",
             "read_private_mvs_medias",
             "upload_mvs_media",
-            "use_mvs_documents"
+            "use_mvs_documents",
+            "post_mvs_stories"
         ],
         "editor": [
             "delete_mvs_media",
@@ -89,7 +91,8 @@
             "read_mvs_media",
             "read_private_mvs_medias",
             "upload_mvs_media",
-            "use_mvs_documents"
+            "use_mvs_documents",
+            "post_mvs_stories"
         ],
         "author": [
             "delete_mvs_media",
@@ -102,7 +105,8 @@
             "publish_mvs_medias",
             "read_mvs_media",
             "upload_mvs_media",
-            "use_mvs_documents"
+            "use_mvs_documents",
+            "post_mvs_stories"
         ],
         "contributor": [
             "delete_mvs_media",
@@ -113,7 +117,8 @@
             "publish_mvs_medias",
             "read_mvs_media",
             "upload_mvs_media",
-            "use_mvs_documents"
+            "use_mvs_documents",
+            "post_mvs_stories"
         ],
         "subscriber": [
             "delete_mvs_media",
@@ -124,7 +129,8 @@
             "publish_mvs_medias",
             "read_mvs_media",
             "upload_mvs_media",
-            "use_mvs_documents"
+            "use_mvs_documents",
+            "post_mvs_stories"
         ]
     },
     "bare_check_allowlist": {

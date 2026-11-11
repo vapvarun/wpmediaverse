@@ -435,7 +435,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** Within the window: save succeeds, comment text updates in place. Past the window: edit is refused (403).
 - **UX expectation:** Success shows "Comment updated." toast, no reload. A refusal past the window should surface as an error, not a silent no-op — and the Edit control ideally is not offered at all once the window has closed (verify in browser; if it's still shown, that's a UX gap to flag).
 - **Settings that change it:** `mvs_comment_edit_window` (default 15 minutes; no field on any Settings tab; developers change it with code only).
-- **Edge cases:** A member with `moderate_mvs_media` capability can delete (not edit) others' comments — see MV-MED-007.
+- **Edge cases:** A member with `moderate_mvs_media` capability can delete (not edit) others' comments — see MV-MED-007. Saving with the text unchanged returns 200 with `edited: false`; only a real change returns `edited: true`.
 
 #### MV-MED-007 — Delete a comment
 - **Edition:** Free
@@ -626,7 +626,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Expected:** All files upload as one group (single activity/action group), each becoming its own media item.
 - **UX expectation:** Per-file thumbnail previews for every selected file, with a way to remove one before submitting (`removeUploadFile`). One combined success confirmation, not one toast per file.
 - **Settings that change it:** same as MV-UPL-002.
-- **Edge cases:** Mixing file types not valid for the chosen upload mode is rejected client-side with a toast naming how many files were skipped ("N file(s) skipped — upload one media type at a time."). A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts every member this viewer may see under the listing's filter (`gallery_tile_counts()` with `gallery_filter_args()`), the same set the lightbox opens through `/media/{id}/group` with that filter: a visitor, a follower and the owner can each see a different count, and under Explore > Videos a photo-plus-two-videos gallery is one tile fronted by its first video, badge 2, lightbox 1 / 2. Each step in the lightbox shows that item's own reactions and comments (owner decision 13 Oct 2026). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
+- **Edge cases:** Mixing file types keeps the first file's kind; the others are left out with a red note inside the window naming them ("Not added: <names>. Upload one kind of media at a time: photos, videos or audio."). No toast: the note is announced (role="alert") and Cancel/Upload stay uncovered. A batch is one gallery: Explore and the feeds show one tile per gallery, the first item that viewer may see, and hide the rest behind it (`MediaRepository::gallery_hidden_clause()`). If the cover is made private, held for review, deleted or is another type than the filter, the next visible item fronts the gallery instead of the whole gallery vanishing; the owner still sees their private cover. The badge counts every member this viewer may see under the listing's filter (`gallery_tile_counts()` with `gallery_filter_args()`), the same set the lightbox opens through `/media/{id}/group` with that filter: a visitor, a follower and the owner can each see a different count, and under Explore > Videos a photo-plus-two-videos gallery is one tile fronted by its first video, badge 2, lightbox 1 / 2. Each step in the lightbox shows that item's own reactions and comments (owner decision 13 Oct 2026). Check: on a large site the Explore page stays fast after the 2.6.2 update (it relies on the index Migrator v42 adds).
 
 #### MV-UPL-004 — Upload video / audio
 - **Edition:** Free
@@ -1300,9 +1300,9 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Setup:** An unread message waiting.
 - **Steps:** 1. Note the unread badge. 2. Open the conversation. 3. Check the badge again.
 - **Expected:** Opening the conversation marks it read and decrements the badge.
-- **UX expectation:** Badge updates without needing a full chat-panel reopen or page refresh.
+- **UX expectation:** Badge updates without needing a full chat-panel reopen or page refresh. The conversation's own row badge disappears; it never reads "0".
 - **Settings that change it:** none.
-- **Edge cases:** none.
+- **Edge cases:** With BuddyNext active, `/messages/` is BuddyNext's screen; this entry covers MediaVerse's own messages page.
 
 #### MV-MSG-010 — Message requests: accept / decline
 - **Edition:** Free
@@ -2134,10 +2134,11 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** MediaVerse > Overview > "Quick Start with Demo Content" card
 - **Setup:** A fresh/near-empty install (best demonstrated on one with no real content).
 - **Steps:** 1. Click "Import Demo Data". 2. Confirm the button shows "Importing..." state. 3. Wait for completion; confirm redirect to Explore page. 4. Re-run without cleaning up first.
-- **Expected:** AJAX action seeds ~12 sample media items, albums, reactions. A SECOND run while demo data already exists must return `wp_send_json_error()` (Coding Rule 20 — a refusal must never be a success envelope) with a clear message, not silently do nothing while claiming success.
+- **Expected:** AJAX action seeds 60 sample media items from 5 demo members, 5 albums/collections, reactions, comments, favorites and follows; each demo member gets a bundled profile photo (no grey default avatars), and each item's `reaction_count` matches its seeded reactions so the reactions leaderboard is filled. The card is offered only while `OverviewPage::demo_import_offered()` is true (no demo content and no published media; filter `mvs_show_demo_import`). A SECOND run while demo data already exists must return `wp_send_json_error()` (Coding Rule 20 — a refusal must never be a success envelope) with a clear message, not silently do nothing while claiming success.
 - **UX expectation:** "Importing..." replaces the button label during the request; a genuine failure shows "Import failed. The server returned an invalid response. Please check wp-content/debug.log." — not a blank failure. Success redirects to Explore so the owner immediately sees the seeded content, satisfying "what must NOT happen": the button must never report success while doing nothing.
 - **Settings that change it:** None (one-shot action, not a persisted setting).
 - **Edge cases:** Non-admin cannot trigger this even by crafting the AJAX call directly — `wp_send_json_error( 'Permission denied.' )`.
+- **Check:** Delete Demo Data (MV-ADM-003) also removes the demo members' profile photos (the attachments are authored by the demo member).
 
 #### MV-ADM-003 — Delete Demo Data
 - **Edition:** Free
@@ -2370,6 +2371,139 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** None.
 - **Edge cases:** The taxonomy is registered on `mvs_album` only to keep this screen; albums never carry categories (no metabox, no column, no Quick Edit).
 
+#### MV-ADM-024 - Create and publish albums and collections in wp-admin
+- **Edition:** Free
+- **Who:** Administrator, or any role the owner granted `manage_mvs_settings`.
+- **Where:** MediaVerse > Albums > Add New, MediaVerse > Collections > Add New (`post-new.php?post_type=mvs_album` / `mvs_collection`).
+- **Setup:** None.
+- **Steps:** 1. As administrator open Add New Album, enter a title, click Publish. 2. Repeat for Add New Collection. 3. As an Editor and as an Author open `post-new.php?post_type=mvs_album`.
+- **Expected:** Administrator: the item publishes and the edit screen shows "Post published". Editor and Author: no menu entry and the new-item screen is refused.
+- **UX expectation:** No "Sorry, you are not allowed to edit this post" page for a site manager.
+- **Settings that change it:** The `manage_mvs_settings` capability (Permissions screen or `mvs_settings_sections` filter); no new setting.
+- **Edge cases:** Members still manage their own albums and collections in My Media through `mvs/v1`; this screen is not their entry point.
+- **Other people's items:** An Editor cannot edit or delete a member's album or collection, in wp-admin or by direct URL (`post.php?post=<id>&action=edit` is refused) nor over REST (PUT or DELETE on `mvs/v1/albums/{id}` and `mvs/v1/collections/{id}` answer 403 or 404); only the owner and a site manager can. Check as an Editor against an album a subscriber owns.
+
+#### MV-UI-BACK - Back link on album and collection pages
+- **Edition:** Free
+- **Who:** Anyone who can view the album or collection.
+- **Where:** A single album (`/album/{slug}/`) and a single collection (`/collection/{slug}/`).
+- **Setup:** One published album and one collection.
+- **Steps:** 1. Open an album, hover then keyboard-focus the back link. 2. Open a collection. 3. Repeat at 390px.
+- **Expected:** Both pages start with a back link to the author's profile (Explore when there is no author). The hover tooltip ("Back to Profile") opens below the link and is fully visible, not cut off by the card.
+- **UX expectation:** At 390px only the arrow shows, still 40px+ tall, tooltip not clipped.
+- **Settings that change it:** `mvs_parent_route` filter.
+- **Edge cases:** A collection the viewer cannot see still shows the branded 404 with no back link.
+
+#### MV-A11Y-NAMES - Accessible names on chat search, profile edit, media edit and tag remove
+- **Edition:** Free
+- **Who:** Any member, and anyone using a screen reader or voice control.
+- **Where:** Messages (conversation list, new conversation, group add-people search), My Media profile edit panel, single media and album inline edit forms.
+- **Setup:** A member with media, tags and at least one conversation.
+- **Steps:** 1. Inspect each field in the accessibility tree. 2. Click a field's label text and confirm the field takes focus. 3. In media edit, find the x on a tag.
+- **Expected:** Every field has a programmatic name (Search conversations, Search users, First Name, Last Name, Display Name, Bio, Title, Description, Privacy). The tag x is announced "Remove tag" and has a 44px target (`--mvs-touch-min`) without making the pill taller.
+- **UX expectation:** Pills look unchanged at 1280 and 390.
+- **Settings that change it:** None.
+- **Edge cases:** Check: tag pill height in a theme that overrides `.mvs-tag-pill`.
+
+#### MV-UP-BACKDROP - Upload popup keeps your work on an outside click
+- **Edition:** Free
+- **Who:** Any member who can upload.
+- **Where:** The upload popup (My Media, Explore, any page with the shared UI).
+- **Setup:** Logged in as a member.
+- **Steps:** 1. Open Upload. 2. Type a title or pick a file. 3. Click the dark area outside the popup. 4. Clear everything and click outside again. 5. Press Escape or the Close button with details entered.
+- **Expected:** Step 3 leaves the popup open with the entries intact. Step 4 closes it. Close, Cancel and Escape always close.
+- **UX expectation:** No lost drafts from a stray click or touch.
+- **Settings that change it:** None.
+- **Edge cases:** An upload in progress also ignores outside clicks.
+
+#### MV-MSG-GROUPHINT - New group explains why Create is disabled
+- **Edition:** Free
+- **Who:** Any member with messaging on (standalone MediaVerse; BuddyNext replaces this screen when active).
+- **Where:** Messages > New group.
+- **Setup:** Messaging enabled, at least 2 other members.
+- **Steps:** 1. Open New group, enter a name only. 2. Add one person. 3. Add a second.
+- **Expected:** Steps 1-2 show "Add at least 2 people to create a group." under the chips and Create is disabled (the button points to the hint through aria-describedby). Step 3 hides the hint and enables Create.
+- **UX expectation:** Hint readable at 390px, muted but passing contrast.
+- **Settings that change it:** `mvs_messaging_enabled`.
+- **Edge cases:** Check: the group name stays optional.
+
+#### MV-PRO-STORY-VIDEO - Stories add tile accepts photos and videos
+- **Edition:** Pro
+- **Who:** A member who can post stories.
+- **Where:** The Stories block, "Your story" tile.
+- **Setup:** Pro active, Stories block on a page.
+- **Steps:** 1. Click "Your story". 2. In the file picker choose a video, then a photo.
+- **Expected:** The picker lists images and videos; both post as a story and play in the viewer. The server already accepted video; only the picker filter hid it.
+- **UX expectation:** Unsupported types still show the server's own message.
+- **Settings that change it:** Settings > Display > Stories > Story length (see MV-PRO-STORY-LENGTH).
+- **Edge cases:** Check: audio files still need the Free upload to allow them.
+
+#### MV-PRO-STORY-LENGTH - Owner sets how long stories last
+- **Edition:** Pro
+- **Who:** Site administrator (setting); any member posting a story.
+- **Where:** MediaVerse > Settings > Display > Stories > "Story length"; `POST /mvs-pro/v1/media/{id}/story`.
+- **Setup:** Pro active, Stories enabled.
+- **Steps:** 1. Choose 12 hours and save. 2. Post a story from the Stories block. 3. In the admin Stories screen check the Expires column. 4. Call the REST route with no `duration_hours`, then with 500, then with 6.
+- **Expected:** The default is 24 hours. The story expires 12 hours after posting; no value gives 12, 500 is capped to 12, 6 gives 6 (shorter is allowed, longer never). Stories already live keep the length they were posted with. Copy on the Stories screens no longer says "24-hour".
+- **UX expectation:** The field only shows while Stories is enabled; select fits at 390px.
+- **Settings that change it:** `mvs_stories_duration_hours` (6, 12, 24, 48 hours, 3 or 7 days; anything else reads as 24).
+- **Edge cases:** Check: changing the length does not end or extend live stories; "x ago" on a story posted before a length change can be skewed until it expires.
+
+#### MV-PRO-STORY-REACT - Members react to a story; the author sees who reacted
+- **Edition:** Pro (block), uses Free reactions.
+- **Who:** Any signed-in member who can see the story; the story's author.
+- **Where:** The Stories viewer (MediaVerse pages, BuddyNext home feed, mobile web); `POST /mvs/v1/media/{id}/reactions`; `GET /mvs-pro/v1/stories/{id}/viewers`.
+- **Setup:** Pro active, Stories enabled, a story by someone you follow.
+- **Steps:** 1. Open the story as another member and tap Love. 2. Tap Like (it swaps), tap Like again (it clears). 3. Open it as the author and tap Seen by.
+- **Expected:** One reaction per person, the tapped one highlighted and announced as pressed. The author sees a count per reaction and each viewer's reaction beside their name; viewers who did not react show only the time. The author gets no reaction row on their own story. Reactions are bell-only.
+- **UX expectation:** 44px targets; the sheet fits at 390px; focus stays in the viewer.
+- **Settings that change it:** None.
+- **Edge cases:** Check: a reaction made before the story was posted still counts in the tally; Esc closes the sheet before the viewer.
+
+#### MV-PRO-STORY-OWNER - Author sees Seen by and can end a story
+- **Edition:** Pro
+- **Who:** The story's author. Others never see these controls.
+- **Where:** Stories viewer; `GET /mvs-pro/v1/stories/{id}/viewers`, `DELETE /mvs-pro/v1/media/{id}/story`.
+- **Setup:** Pro active, Stories enabled, a story with at least one viewer.
+- **Steps:** 1. Open your story. 2. Tap Seen by, close it. 3. Tap End story, choose Keep it, then End story.
+- **Expected:** The list names each viewer with "x ago". Ending asks first and removes the story for everyone; another member calling the routes gets 403. "x ago" uses the real start time.
+- **UX expectation:** Sheet capped to 440px on desktop, full width at 390px.
+- **Settings that change it:** `mvs_stories_duration_hours` does not change the label (it uses the stored start time).
+- **Edge cases:** Check: an unreadable viewers list shows a retry message, not a blank sheet.
+
+#### MV-PRO-STORY-CAP - "Post stories" permission
+- **Edition:** Free (grants) + Pro (column, gate).
+- **Who:** Site administrator (setting); members.
+- **Where:** MediaVerse > Settings > Display > Stories > "Who can post stories" (visible while Stories is enabled); upload checkbox; "Your story" tile; `POST /mvs-pro/v1/media/{id}/story`.
+- **Setup:** Pro active, Stories enabled.
+- **Steps:** 1. Untick Subscriber under Who can post stories and save. 2. As a Subscriber open an upload form and the feed. 3. Call the POST route.
+- **Expected:** Default is granted to every role that can upload, so nothing changes on update. When off, the checkbox and tile are gone and the route returns 403; viewing stories and ending your own still work.
+- **UX expectation:** The role boxes fit at 390px with no horizontal scroll; Administrator is ticked and locked.
+- **Settings that change it:** The `post_mvs_stories` capability, set per role here (same control as Settings > General > Who can upload media).
+- **Edge cases:** Check: the choice survives a plugin update (it is recorded as a role override); with an older Free (no capability) posting stays open to everyone who can upload.
+
+#### MV-DEMO-SAFE - Demo data import and delete only touch demo accounts
+- **Edition:** Free
+- **Who:** Site administrator (Overview > Import / Delete Demo Data, or the `seed-demo-data.php` / `cleanup-demo-data.php` scripts).
+- **Where:** MediaVerse Overview; WP-CLI `wp eval-file`.
+- **Setup:** A site with a real member whose address ends in `@demo.local`, and another real member with the login `mina_aoki`.
+- **Steps:** 1. Import demo data. 2. Log in as a demo user: the password is random, so only an admin switch-user works. 3. Delete demo data.
+- **Expected:** Demo members carry the `mvs_demo_user` meta and a random password. The real `mina_aoki` is not adopted (a warning is logged, demo items go to the admin). Delete removes tagged demo members, plus pre-2.6.4 demo members only when login and `@demo.local` address both match; the `@demo.local` real member and real `mina_aoki` stay.
+- **UX expectation:** The success message counts match what was removed.
+- **Settings that change it:** None.
+- **Edge cases:** Demo members seeded before 2.6.4 keep their old `demo1234` password until deleted.
+
+#### MV-UP-SIZE - Oversized upload says how large a file may be
+- **Edition:** Free
+- **Who:** Any member who uploads.
+- **Where:** Upload popup, `POST /mvs/v1/media`.
+- **Setup:** A file larger than PHP `upload_max_filesize`.
+- **Steps:** 1. Upload the file. 2. Call the route with it.
+- **Expected:** HTTP 413 and "This file is larger than the server allows (N MB). Choose a smaller file." An interrupted upload says so and asks to retry; other PHP errors keep "File upload error." (code `mvs_upload_error` unchanged).
+- **UX expectation:** The popup shows the server message, not a generic one.
+- **Settings that change it:** PHP `upload_max_filesize` / `post_max_size`.
+- **Edge cases:** Check: when `post_max_size` is exceeded PHP drops the whole request and the route answers "No file was uploaded." (400).
+
 ### Area: WIZ — Setup wizard, demo data, activation
 
 #### MV-WIZ-001 — First-activation redirect to Setup Wizard
@@ -2410,9 +2544,9 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Who:** Same as MV-WIZ-002.
 - **Where:** Setup wizard, step 3
 - **Setup:** Completed step 2.
-- **Steps:** 1. Reach Done. 2. Confirm links onward (e.g. to Overview/Explore) work.
+- **Steps:** 1. Reach Done. 2. Confirm links onward (e.g. to Overview/Explore) work. 3. On an empty site, click "Add demo content".
 - **Expected:** "Your Media Hub is Ready!" confirmation screen ending the flow.
-- **UX expectation:** From here, the admin should have an obvious next click (not a dead end). Confirmed: the Done screen shows "Visit Explore Page" and "My Dashboard" links (each only appearing if that page actually exists) plus a primary "Go to Overview" button — never a dead end.
+- **UX expectation:** From here, the admin should have an obvious next click (not a dead end). Confirmed: the Done screen shows "Visit Explore Page" and "My Dashboard" links (each only appearing if that page actually exists) plus a primary "Go to Overview" button — never a dead end. While the demo import is on offer (same check as MV-ADM-002), a note and an "Add demo content" button sit above "Go to Overview"; it finishes setup the same way and lands on the Overview demo card (`#mvs-demo-import`), where the owner clicks Import. Hidden once the site has media or demo content.
 - **Settings that change it:** None.
 - **Edge cases:** Revisiting `step=done` later (bookmarked) should not re-run any save logic, just render the confirmation.
 
@@ -4347,7 +4481,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Setup:** Licence active; site accepts the file's type and size.
 - **Steps:** 1. Open drive. 2. Choose a file within allowed type/size. 3. Submit.
 - **Expected:** 201 with the new document row; permission check runs write-access check then the licence guard (licensed, passes). Document lands at the default privacy level unless `privacy` param sent.
-- **UX expectation:** Upload progress/success feedback follows the same pattern as media uploads elsewhere in the plugin; a rejected type/size must show the specific reason (below), never a bare "upload failed."
+- **UX expectation:** Upload progress/success feedback follows the same pattern as media uploads elsewhere in the plugin; a rejected type/size must show the specific reason (below), never a bare "upload failed." The queue dialog says "1 file" for one file and "N files" for more, and the sidebar Documents count updates when the drive refreshes, with no page reload.
 - **Settings that change it:** `mvs_pro_documents_max_size`, `mvs_pro_documents_allowed_types`, `mvs_pro_documents_default_privacy`.
 - **Edge cases:** `doc_type` param mismatch with actual file is refused, never silently corrected; oversized file → 400 `mvs_document_too_large`; disallowed type → 400 `mvs_document_type_not_allowed`; failed content scan → 400 `mvs_document_scan_failed`.
 
@@ -4576,7 +4710,7 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Who:** document owner, or anyone with drive-write authority for space drives.
 - **Where:** `POST /wp-json/mvs-pro/v1/documents/{id}/permissions`, `grantee_type=user`.
 - **Setup:** target member exists.
-- **Steps:** 1. Open share panel. 2. Type member's username/email. 3. Choose permission level (view/comment/edit). 4. Submit.
+- **Steps:** 1. Open share panel. 2. Type the member's username, @handle or email (the field's label says so). 3. Choose permission level (view/comment/edit). 4. Submit.
 - **Expected:** Grant created; feedback "Shared. They can reach it from 'Shared with me'." Grantee sees it at `GET /wp-json/mvs-pro/v1/me/shared`.
 - **UX expectation:** The type-ahead should only surface real, resolvable members — attempting to submit an unresolvable name must show a specific "unknown member" message, not a generic failure. Sharing with the document's own owner is a redundant no-op that should be caught with a clear message, not silently accepted.
 - **Settings that change it:** none.

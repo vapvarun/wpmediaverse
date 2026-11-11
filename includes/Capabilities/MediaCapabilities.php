@@ -65,6 +65,16 @@ class MediaCapabilities {
 	const USE_DOCUMENTS_CAP = 'use_mvs_documents';
 
 	/**
+	 * Whether a member may post a story (Pro Stories).
+	 *
+	 * Granted to every role that can upload, so no site loses Stories on update;
+	 * the owner takes it away per role on the Permissions matrix. Defined here for
+	 * the same reason as USE_DOCUMENTS_CAP: this version-gated add_caps() is the
+	 * only thing that reaches roles that already exist. Pro owns the feature.
+	 */
+	const POST_STORIES_CAP = 'post_mvs_stories';
+
+	/**
 	 * Whether a member may edit one media item.
 	 *
 	 * The one rule for every edit (title, captions, chapters, privacy): the owner
@@ -110,6 +120,7 @@ class MediaCapabilities {
 			'administrator' => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,
+				self::POST_STORIES_CAP,
 				'edit_mvs_media',
 				'edit_others_mvs_media',
 				'delete_mvs_media',
@@ -134,6 +145,7 @@ class MediaCapabilities {
 			'editor'        => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,
+				self::POST_STORIES_CAP,
 				'edit_mvs_media',
 				'edit_others_mvs_media',
 				'delete_mvs_media',
@@ -156,6 +168,7 @@ class MediaCapabilities {
 			'author'        => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,
+				self::POST_STORIES_CAP,
 				'edit_mvs_media',
 				'delete_mvs_media',
 				'read_mvs_media',
@@ -169,6 +182,7 @@ class MediaCapabilities {
 			'contributor'   => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,
+				self::POST_STORIES_CAP,
 				'edit_mvs_media',
 				'delete_mvs_media',
 				'read_mvs_media',
@@ -190,6 +204,7 @@ class MediaCapabilities {
 			'subscriber'    => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,
+				self::POST_STORIES_CAP,
 				'read_mvs_media',
 				// MediaVerse is a community/social platform, NOT a blog/CMS:
 				// any logged-in member uploads media and it publishes
@@ -223,6 +238,7 @@ class MediaCapabilities {
 		return array(
 			'upload_mvs_media',
 			self::USE_DOCUMENTS_CAP,
+			self::POST_STORIES_CAP,
 			'edit_mvs_media',
 			'delete_mvs_media',
 			'read_mvs_media',

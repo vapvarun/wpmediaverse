@@ -9,7 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
- * @version 2.6.3
+ * @version 2.6.4
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -62,6 +62,7 @@ wp_interactivity_state(
 		'reportReasons'       => \WPMediaVerse\Social\ReportService::reason_labels(),
 		// Where a visitor goes to log in and come back to this page: the same
 		// URL as the lightbox's 'Log in to comment' link.
+		'exploreUrl'          => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url(),
 		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
 		'i18n'                => array(
 			'reportPrompt'         => __( 'Why are you reporting this?', 'wpmediaverse' ),
@@ -168,7 +169,7 @@ wp_interactivity_state(
 	</div>
 
 	<!-- Upload Modal Overlay. Dialog semantics, focus in/out (callbacks.uploadModalFocus), Tab trap and Escape (actions.handleLightboxKeydown). Basecamp 10320784059. -->
-	<div class="mvs-modal-overlay mvs-upload-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.closeUploadModal"
+	<div class="mvs-modal-overlay mvs-upload-modal-overlay" hidden data-wp-bind--hidden="!state.uploadModalVisible" data-wp-on--click="actions.dismissUploadModal"
 		role="dialog" aria-modal="true" aria-labelledby="mvs-upload-modal-title" data-wp-watch="callbacks.uploadModalFocus">
 		<div class="mvs-modal" data-wp-on--click="actions.handleModalClick">
 			<!-- Modal Header -->
@@ -381,6 +382,14 @@ wp_interactivity_state(
 						<textarea id="mvs-edit-description" rows="3" class="mvs-modal-field-input"
 							data-wp-on--input="actions.updateEditDescription"
 							data-wp-bind--value="state.editModalDescription"></textarea>
+					</div>
+					<div class="mvs-modal-field">
+						<label for="mvs-edit-tags"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
+						<input type="text" id="mvs-edit-tags" class="mvs-modal-field-input"
+							aria-describedby="mvs-edit-tags-hint"
+							data-wp-on--input="actions.updateEditTags"
+							data-wp-bind--value="state.editModalTags" />
+						<p id="mvs-edit-tags-hint" class="mvs-modal-field-hint"><?php esc_html_e( 'Separate tags with commas.', 'wpmediaverse' ); ?></p>
 					</div>
 					<!-- Privacy + slug-regenerate sit on the same row to save
 						vertical space — pure presentation, no functional pairing. -->
@@ -686,6 +695,12 @@ wp_interactivity_state(
 				<div class="mvs-lightbox-desc" data-wp-bind--hidden="!state.lightboxDescription">
 					<strong data-wp-text="state.lightboxAuthor"></strong>
 					<span data-wp-text="state.lightboxDescription"></span>
+				</div>
+
+				<div class="mvs-media-tags mvs-lightbox-tags" hidden data-wp-bind--hidden="!state.lightboxHasTags">
+					<template data-wp-each--tag="state.lightboxTags">
+						<a class="mvs-tag" data-wp-bind--href="context.tag.url" data-wp-text="context.tag.name"></a>
+					</template>
 				</div>
 
 				<!-- Comments -->

@@ -1375,6 +1375,12 @@ body.dark-mode {
 	color: var(--mvs-chat-text);
 }
 
+.mvs-chat-new__group-hint {
+	margin: 0 0 var(--mvs-space-2, 8px);
+	font-size: var(--mvs-font-sm, 0.875rem);
+	color: var(--mvs-text-muted, #6b7280);
+}
+
 .mvs-chat-new__group-actions {
 	display: flex;
 	gap: var(--mvs-space-2, 8px);

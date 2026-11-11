@@ -169,7 +169,7 @@ class CollectionMetaBox {
 		</p>
 
 		<div id="mvs-rules-wrap" class="mvs-metabox-rules-wrap<?php echo 'smart' !== $collection_type ? ' mvs-hidden' : ''; ?>">
-			<p><strong><?php esc_html_e( 'Rules (all must match):', 'wpmediaverse' ); ?></strong></p>
+			<p><strong><?php esc_html_e( 'Rules (different fields must all match; values of one field match any):', 'wpmediaverse' ); ?></strong></p>
 			<div id="mvs-rules-list">
 				<?php
 				if ( empty( $rules ) ) {

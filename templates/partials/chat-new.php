@@ -3,7 +3,7 @@
  * New conversation — user search + recent contacts.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.4
  * @since   1.1.0
  */
 
@@ -56,12 +56,14 @@ defined( 'ABSPATH' ) || exit;
 				</li>
 			</template>
 		</ul>
+		<p class="mvs-chat-new__group-hint" id="mvs-chat-new-group-hint" data-wp-bind--hidden="state.canCreateGroup"><?php esc_html_e( 'Add at least 2 people to create a group.', 'wpmediaverse' ); ?></p>
 		<div class="mvs-chat-new__group-actions">
 			<button
 				class="mvs-chat-new__group-create"
 				type="button"
 				data-wp-on--click="actions.createGroup"
 				data-wp-bind--disabled="!state.canCreateGroup"
+				aria-describedby="mvs-chat-new-group-hint"
 			><?php esc_html_e( 'Create', 'wpmediaverse' ); ?></button>
 			<button
 				class="mvs-chat-new__group-cancel"
@@ -76,6 +78,7 @@ defined( 'ABSPATH' ) || exit;
 		<input
 			class="mvs-chat-search__input"
 			type="text"
+			aria-label="<?php esc_attr_e( 'Search users', 'wpmediaverse' ); ?>"
 			placeholder="<?php esc_attr_e( 'Search users...', 'wpmediaverse' ); ?>"
 			data-wp-on--input="actions.updateSearchQuery"
 			data-wp-bind--value="state.searchQuery"

@@ -3,7 +3,7 @@
  * Plugin Name: MediaVerse
  * Plugin URI:  https://wbcomdesigns.com/downloads/mediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     2.6.3
+ * Version:     2.6.4
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '2.6.3' );
+define( 'MVS_VERSION', '2.6.4' );
 // Kept in step with the `Requires PHP` header above by `BootGuardTest`. WordPress
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
@@ -28,7 +28,7 @@ define( 'MVS_MIN_PHP', '8.1' );
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
 // on the free plugin in the other direction.
-define( 'MVS_MIN_PRO', '2.6.3' );
+define( 'MVS_MIN_PRO', '2.6.4' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );

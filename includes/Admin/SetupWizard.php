@@ -91,7 +91,9 @@ class SetupWizard {
 
 			case 'done':
 				update_option( 'mvs_setup_complete', true );
-				wp_safe_redirect( admin_url( 'admin.php?page=wpmediaverse' ) );
+				// "Add demo content" finishes the same way, then lands on the demo card.
+				$anchor = isset( $_POST['mvs_wizard_demo'] ) ? '#mvs-demo-import' : '';
+				wp_safe_redirect( admin_url( 'admin.php?page=wpmediaverse' ) . $anchor );
 				exit;
 		}
 	}
@@ -346,6 +348,15 @@ class SetupWizard {
 			<form method="post" class="mvs-setup-finish-form">
 				<?php wp_nonce_field( 'mvs_setup_wizard', 'mvs_wizard_nonce' ); ?>
 				<input type="hidden" name="mvs_wizard_step" value="done" />
+				<?php if ( OverviewPage::demo_import_offered() ) : ?>
+					<p class="mvs-setup-demo-note">
+						<?php esc_html_e( 'Starting from an empty site? Add demo content to see MediaVerse in use: sample photos from demo members, with albums and reactions. You can remove it all later from the Overview page.', 'wpmediaverse' ); ?>
+					</p>
+					<button type="submit" name="mvs_wizard_demo" value="1" class="mvs-btn">
+						<i data-lucide="download"></i>
+						<?php esc_html_e( 'Add demo content', 'wpmediaverse' ); ?>
+					</button>
+				<?php endif; ?>
 				<button type="submit" class="mvs-btn mvs-btn--primary mvs-btn--hero">
 					<?php esc_html_e( 'Go to Overview', 'wpmediaverse' ); ?>
 				</button>

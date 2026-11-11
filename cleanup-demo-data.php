@@ -3,7 +3,7 @@
  * WPMediaVerse Demo Data Cleanup.
  *
  * Removes demo data seeded by the demo data seeder. All deletions are scoped
- * to demo users (identified by the `@demo.local` email pattern) and the
+ * to demo users (identified by the `mvs_demo_user` meta) and the
  * content they own — real user data is never touched.
  *
  * Safe to run on production sites. Refuses to run unless the `mvs_demo_seeded`
@@ -47,12 +47,16 @@ $mvs_finish = static function ( string $message, bool $success = true ): void {
 	echo esc_html( $message ) . PHP_EOL;
 };
 
-// 1. Identify demo users by the seeder's `@demo.local` email pattern.
+// 1. Identify demo users by the `mvs_demo_user` meta the seeder sets. Accounts seeded before
+// that marker existed are matched only when BOTH the seeder's demo login and its
+// `@demo.local` address fit, so a real member on that domain is never deleted.
 // ID 1 (original admin) is always excluded as a defense-in-depth measure.
-// The presence of `@demo.local` users is the canonical marker for demo data —
-// the seeder creates them and no other code path creates users with this suffix.
 $demo_user_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	"SELECT ID FROM {$wpdb->users} WHERE user_email LIKE '%@demo.local' AND ID != 1" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	"SELECT u.ID FROM {$wpdb->users} u
+	LEFT JOIN {$wpdb->usermeta} m ON m.user_id = u.ID AND m.meta_key = 'mvs_demo_user'
+	WHERE u.ID != 1 AND ( m.meta_value = '1'
+		OR ( u.user_email LIKE '%@demo.local'
+			AND u.user_login IN ( 'mina_aoki', 'oliver_brooks', 'priya_sharma', 'liam_oconnor', 'emma_williams' ) ) )" // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 );
 $demo_user_ids = array_values( array_filter( array_map( 'intval', $demo_user_ids ) ) );
 

@@ -227,14 +227,15 @@
 	padding: 0 18px;
 	border: none;
 	border-radius: 6px;
-	background: var(--mvs-primary, #2271b1);
-	color: #fff;
+	background: var(--mvs-btn-primary-bg, var(--mvs-primary, #2271b1));
+	color: var(--mvs-btn-primary-fg, #fff);
 	font-weight: 600;
 	cursor: pointer;
 }
 
 .mvs-upload-confirm:hover {
-	background: var(--mvs-primary-hover, #135e96);
+	background: var(--mvs-btn-primary-bg-hover, var(--mvs-primary-hover, #135e96));
+	color: var(--mvs-btn-primary-fg-hover, #fff);
 }
 
 .mvs-upload-cancel {

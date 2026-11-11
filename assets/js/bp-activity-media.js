@@ -138,7 +138,11 @@
 			var removeBtn = document.createElement( 'button' );
 			removeBtn.type = 'button';
 			removeBtn.className = 'mvs-activity-media-remove';
-			removeBtn.textContent = '\u00D7';
+			var removeIcon = document.createElement( 'span' );
+			removeIcon.className = 'mvs-activity-media-remove__icon';
+			removeIcon.setAttribute( 'aria-hidden', 'true' );
+			removeIcon.textContent = '\u00D7';
+			removeBtn.appendChild( removeIcon );
 			removeBtn.setAttribute( 'aria-label', __( 'Remove media', 'wpmediaverse' ) );
 			removeBtn.addEventListener( 'click', function() {
 				attachedMedia.splice( idx, 1 ).forEach( releaseThumb );
@@ -378,8 +382,13 @@
 				btn.disabled = true;
 			}
 		} ).catch( function( err ) {
-			preview.textContent = '';
+			// Redraw what is still attached, then add the reason below it. The
+			// reason stays until the member's next upload, removal or post, so a
+			// long message is never cleared before it is read.
+			renderPreview();
+			preview.style.display = '';
 			var errText = document.createElement( 'span' );
+			errText.setAttribute( 'role', 'alert' );
 			// Show the specific server message (e.g. "PDF uploads are not
 			// supported.") instead of a generic line, so an unsupported-type
 			// upload tells the user WHY.
@@ -390,7 +399,6 @@
 			preview.appendChild( errText );
 			btn.disabled = false;
 			btn.style.opacity = '1';
-			setTimeout( function() { renderPreview(); }, 3000 );
 		} );
 
 		fileInput.value = '';

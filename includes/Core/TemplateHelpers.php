@@ -870,7 +870,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * @return void
 	 */
 	public static function story_toggle( string $on_change = '', bool $checked = false ): void {
-		if ( ! self::stories_available() ) {
+		if ( ! self::can_post_story() ) {
 			return;
 		}
 
@@ -878,8 +878,51 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			'<label class="mvs-upload-story-toggle"><input type="checkbox" class="mvs-upload-story-input"%s%s /><span>%s</span></label>',
 			'' !== $on_change ? ' data-wp-on--change="' . esc_attr( $on_change ) . '"' : '',
 			checked( $checked, true, false ),
-			esc_html__( 'Also share as a story (visible for 24 hours)', 'wpmediaverse' )
+			/* translators: %s: how long a story stays up, e.g. "24 hours" or "2 days". */
+			esc_html( sprintf( __( 'Also share as a story (visible for %s)', 'wpmediaverse' ), self::story_length_label() ) )
 		);
+	}
+
+	/**
+	 * How long a story stays up, as words ("24 hours", "2 days").
+	 *
+	 * The owner sets the length in Pro; this is the one place any surface,
+	 * including BuddyNext, reads it as words so no copy hard-codes "24 hours".
+	 *
+	 * @since 2.6.4
+	 *
+	 * @return string
+	 */
+	public static function story_length_label(): string {
+		/**
+		 * Filter how many hours a story stays up. Pro answers with the owner's
+		 * Story length; without Pro there is no setting and it stays 24.
+		 *
+		 * @since 2.6.4
+		 *
+		 * @param int $hours Hours.
+		 */
+		$hours = max( 1, (int) apply_filters( 'mvs_story_duration_hours', 24 ) );
+		if ( $hours < 48 ) {
+			/* translators: %d: number of hours a story stays up. */
+			return sprintf( _n( '%d hour', '%d hours', $hours, 'wpmediaverse' ), $hours );
+		}
+		return human_time_diff( 0, $hours * HOUR_IN_SECONDS );
+	}
+
+	/**
+	 * May the signed-in member post a story right now?
+	 *
+	 * Stories must be available on the site and the member must hold the
+	 * "Post stories" capability (Display > Stories > Who can post stories). Seeing stories needs
+	 * neither, so the viewer and the bar keep using stories_available().
+	 *
+	 * @since 2.6.4
+	 *
+	 * @return bool
+	 */
+	public static function can_post_story(): bool {
+		return self::stories_available() && current_user_can( \WPMediaVerse\Capabilities\MediaCapabilities::POST_STORIES_CAP );
 	}
 
 	/**
@@ -1791,6 +1834,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 				break;
 
 			case 'album':
+			case 'collection':
 				$author_id = isset( $args['author_id'] ) ? (int) $args['author_id'] : 0;
 				if ( $author_id ) {
 					$parent = array(

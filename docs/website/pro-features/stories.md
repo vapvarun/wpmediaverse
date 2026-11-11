@@ -4,15 +4,17 @@
 
 MediaVerse Pro adds WhatsApp-style ephemeral stories: mark any upload as a story and it is visible to your followers for a limited time, then disappears automatically.
 
-> Stories on MediaVerse's own pages and in the mobile app work today. A fuller stories front end, and stories inside BuddyNext, are planned for a later release and are not part of this one.
+> The stories bar and viewer are one block, so they look and behave the same on MediaVerse pages, in BuddyNext's home feed and on the mobile web. The mobile app uses the same API.
 
 ## How Stories Work
 
-1. Turn the feature on at **MediaVerse > Settings > Display > Stories** (tick **Enabled**). It is off by default. Once enabled, every upload form shows an **"Also share as a story (visible for 24 hours)"** checkbox, and the Stories block renders its bar.
-2. A member ticks that box when uploading. The upload becomes a story that lasts 24 hours. Photos, video and audio can be stories. (An app or API client can choose a different length, from 1 to 168 hours.)
+1. Turn the feature on at **MediaVerse > Settings > Display > Stories** (tick **Enabled**). It is off by default. Once enabled, every upload form shows an **"Also share as a story"** checkbox for members who may post stories, and the Stories block renders its bar. Choose how long stories last in **Story length** just below (6 hours to 7 days; 24 hours by default). The checkbox text shows the length you chose.
+2. A member ticks that box when uploading. The upload becomes a story for the length you set. Photos, video and audio can be stories. (An app or API client can ask for a shorter story, never a longer one.)
 3. Viewers see active stories from people they follow, plus their own, in a horizontal bar. Selecting one opens a full-screen viewer that advances on tap, with a progress bar per story. The viewer works with the keyboard.
 4. A view is recorded when a viewer opens a story. The author's own views are not counted.
-5. Stories are removed automatically by an hourly job. A site owner can end any story early from **MediaVerse > Stories**.
+5. Members can react to someone else's story with the same six reactions media has (like, love, haha, wow, sad, angry), one per person; tap again to remove it.
+6. On their own story the author sees **Seen by**, with each viewer's reaction beside their name and a tally of reactions, and **End story** to take it down for everyone at once.
+7. Stories are removed automatically by an hourly job. A site owner can end any story early from **MediaVerse > Stories**.
 
 Who can see a story follows the media's privacy. The author always sees their own. Other members see stories set to Public, and Members-only stories when they are signed in. Private items never appear.
 
@@ -20,7 +22,7 @@ The Instagram layout shows the stories bar at the top of the feed. The bar appea
 
 ## Gutenberg Block
 
-**`mvs/pro-stories`** renders the stories bar and the fullscreen viewer, built entirely on the WordPress Interactivity API. Logged-in visitors also see a "Your story" add tile at the start of the bar - picking an image uploads it and posts it as a story in place, no separate upload flow needed. The add tile accepts images only; to post video or audio as a story, use the upload form checkbox.
+**`mvs/pro-stories`** renders the stories bar and the fullscreen viewer, built entirely on the WordPress Interactivity API. Logged-in visitors also see a "Your story" add tile at the start of the bar - picking an image uploads it and posts it as a story in place, no separate upload flow needed. The add tile accepts photos and video; to post audio as a story, use the upload form checkbox. The tile only shows for members who hold the **Post stories** capability.
 
 **Block Settings:**
 
@@ -35,7 +37,7 @@ The block renders nothing when Stories is not enabled, and shows only the "Your 
 
 **MediaVerse > Stories** lists every active story site-wide with its author, title, status, expiry time and **Seen by** count, and a **Force expire** action for moderation. Only users who can manage MediaVerse settings see this screen. A site owner never needs database access to pull down a story.
 
-The "seen by" names, ending your own story early and a custom story length are available through the API and the mobile app. The website's viewer does not show them.
+**Who may post.** **MediaVerse > Settings > Display > Stories > Who can post stories** has a checkbox per role (shown while Stories is enabled). Every role that can upload keeps it by default, so no site loses the feature on update; untick a role to stop its members posting. Administrators always can. Everyone can still view stories and end their own.
 
 ## Where Story State Lives
 
@@ -89,11 +91,11 @@ List active stories - defaults to the viewer's network (people they follow, plus
 
 Mark a media item as a story.
 
-**Auth:** Owner/Admin
+**Auth:** Owner/Admin, and the member needs the Post stories capability
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `duration_hours` | int | `24` | Visibility window, 1-168 hours |
+| `duration_hours` | int | your Story length | Visibility window in hours. A value above your Story length is capped to it |
 
 **Response:** `{ "media_id": 42, "is_story": true, "expires_at": "2026-07-10T09:00:00Z" }`
 
@@ -124,7 +126,11 @@ Record a view receipt for the current user. The author's own views are never rec
 | `page` | int | `1` | Page number |
 | `per_page` | int | `50` | Items per page (max 100) |
 
-**Response:** `{ "viewers": [ { "user_id": 3, "name": "Alex", "avatar": "...", "profile_url": "...", "viewed_at": "2026-07-09T18:02:00Z" } ], "total": 12 }`
+**Response:** `{ "viewers": [ { "user_id": 3, "name": "Alex", "avatar": "...", "profile_url": "...", "viewed_at": "2026-07-09T18:02:00Z", "reaction": "love" } ], "total": 12, "reactions": { "love": 5, "like": 3 } }`. `reaction` is empty when the viewer did not react.
+
+### POST /media/{id}/reactions
+
+Reactions use the Free route `/wp-json/mvs/v1/media/{id}/reactions` with `{ "reaction_type": "love" }`; the same type again removes it.
 
 ## Hooks
 

@@ -46,11 +46,12 @@ class Collection {
 			'exclude_from_search' => true,
 			'supports'            => array( 'title', 'editor', 'author' ),
 			'capability_type'     => 'post',
-			// The admin list sits under MediaVerse, which needs mvs_settings_screen.
-			// Tied to edit_posts, an Author or Editor got a menu entry that answered
-			// 403. Members manage their own in My Media through mvs/v1, so the
-			// admin screens (and the core menu entry) are for site managers only.
-			'capabilities'        => array( 'edit_posts' => 'mvs_settings_screen' ),
+			// The admin screens are for site managers; members manage their own albums in
+			// My Media through mvs/v1. The value must be a PRIMITIVE capability: core copies
+			// it into the primitive list for edit_post / publish_post and never re-runs
+			// map_meta_cap on it, so a meta cap answered by a filter (mvs_settings_screen)
+			// can never pass and Publish fails for every administrator.
+			'capabilities'        => Album::manager_capabilities(),
 			'map_meta_cap'        => true,
 			'rewrite'             => array( 'slug' => 'collection' ),
 			'show_in_menu'        => 'wpmediaverse',

@@ -46,11 +46,12 @@ class Album {
 			'exclude_from_search' => true,
 			'supports'            => array( 'title', 'editor', 'author' ),
 			'capability_type'     => 'post',
-			// The admin list sits under MediaVerse, which needs mvs_settings_screen.
-			// Tied to edit_posts, an Author or Editor got a menu entry that answered
-			// 403. Members manage their own in My Media through mvs/v1, so the
-			// admin screens (and the core menu entry) are for site managers only.
-			'capabilities'        => array( 'edit_posts' => 'mvs_settings_screen' ),
+			// The admin screens are for site managers; members manage their own albums in
+			// My Media through mvs/v1. The value must be a PRIMITIVE capability: core copies
+			// it into the primitive list for edit_post / publish_post and never re-runs
+			// map_meta_cap on it, so a meta cap answered by a filter (mvs_settings_screen)
+			// can never pass and Publish fails for every administrator.
+			'capabilities'        => self::manager_capabilities(),
 			'map_meta_cap'        => true,
 			'rewrite'             => array( 'slug' => 'album' ),
 			'show_in_menu'        => 'wpmediaverse',
@@ -118,5 +119,22 @@ class Album {
 		 * @param int $album_id Deleted album post ID.
 		 */
 		do_action( 'mvs_album_deleted', $post_id );
+	}
+
+	/**
+	 * Every write capability on albums and collections, held by site managers only.
+	 *
+	 * An editor holds edit_others_posts and delete_others_posts, so mapping only
+	 * edit_posts let an editor change or delete a member's album. Members manage
+	 * their own items in My Media over mvs/v1, which checks ownership itself.
+	 *
+	 * @return array<string,string>
+	 */
+	public static function manager_capabilities(): array {
+		$caps = array();
+		foreach ( array( 'edit_posts', 'edit_others_posts', 'edit_published_posts', 'edit_private_posts', 'publish_posts', 'delete_posts', 'delete_others_posts', 'delete_published_posts', 'delete_private_posts' ) as $cap ) {
+			$caps[ $cap ] = 'manage_mvs_settings';
+		}
+		return $caps;
 	}
 }

@@ -4815,6 +4815,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_story_duration_hours",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $hours"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:905",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_privacy_labels",
       "type": "filter",
       "args_count": 1,
@@ -7064,6 +7074,23 @@
         "mvs/pdf-viewer block supports.inserter false (existing blocks and [mvs_pdf_viewer] unchanged)",
         "SignedUrlService::serve refuses trashed items and downloads turned off at serve time"
       ]
+    },
+    "refresh_2026_11_09": {
+      "scope": "2.6.4 targeted delta (hand-verified)",
+      "added": {
+        "hooks": [],
+        "rest_routes": [],
+        "cli": [],
+        "settings": [],
+        "tables": []
+      },
+      "changed": [
+        "PostTypes\\Album and Collection: edit_posts primitive mapped to manage_mvs_settings",
+        "MediaController::create_item: size and interrupted upload messages (code mvs_upload_error unchanged)",
+        "shared-ui view.js: action dismissUploadModal",
+        "seed/cleanup demo scripts: mvs_demo_user user meta"
+      ],
+      "note": "No new hook, route, CLI command, setting or table."
     }
   },
   "category_sources": {

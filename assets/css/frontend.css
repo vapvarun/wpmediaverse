@@ -880,6 +880,8 @@ body:has(.mvs-fab-container, .mvs-chat-trigger) {
     line-height: 1;
     padding: var(--mvs-space-2) var(--mvs-space-2);
     border-radius: var(--mvs-radius-sm);
+    border: 1px solid var(--mvs-border);
+    box-shadow: var(--mvs-shadow-md);
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;
@@ -892,6 +894,20 @@ body:has(.mvs-fab-container, .mvs-chat-trigger) {
 [data-mvs-tooltip]:focus-visible::after {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+}
+
+/* A back link sits at the top edge of its card, and a card clips overflow, so its
+   tooltip opens below the link, aligned to the start, where there is always room. */
+.mvs-back-link[data-mvs-tooltip]::after {
+    top: calc(100% + 6px);
+    bottom: auto;
+    left: 0;
+    transform: translateY(-4px);
+}
+
+.mvs-back-link[data-mvs-tooltip]:hover::after,
+.mvs-back-link[data-mvs-tooltip]:focus-visible::after {
+    transform: translateY(0);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2909,7 +2925,7 @@ body.dark-mode .mvs-skeleton::after {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--mvs-on-primary);
+    border: 2px solid var(--mvs-on-overlay);
     border-radius: var(--mvs-radius-sm);
     background: rgba(0, 0, 0, 0.45);
     color: transparent;
@@ -2919,6 +2935,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-card:hover .mvs-bulk-check,
+.mvs-grid-item:hover .mvs-bulk-check,
 .mvs-bulk-check:focus-visible,
 .mvs-bulk-check--on {
     opacity: 1;
@@ -3429,9 +3446,13 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-pill-remove {
     background: none;
     border: none;
-    color: var(--mvs-bg);
+    /* Match the pill's own text, whichever pill style (filled or outlined) wins. */
+    color: inherit;
     cursor: pointer;
     font-size: 1em;
+    min-width: var(--mvs-touch-min, 44px);
+    min-height: var(--mvs-touch-min, 44px);
+    margin: calc(var(--mvs-touch-min, 44px) / -2 + 0.5em) 0;
     padding: 0;
     line-height: 1;
     opacity: 0.8;
@@ -3450,15 +3471,11 @@ a.mvs-dashboard-card-title:hover {
     flex: 1;
 }
 
-.mvs-tag-text-input:focus-visible {
-    outline: 2px solid var(--mvs-primary, #0073aa);
-    outline-offset: -2px;
-}
-
-.mvs-tag-text-input:focus-visible {
-    outline: 2px solid var(--mvs-primary);
-    outline-offset: -2px;
-    border-radius: 2px;
+/* The box (.mvs-tag-pills:focus-within) draws the one focus ring; the input
+   inside must not add a second. */
+.mvs-tag-pills .mvs-tag-text-input:focus,
+.mvs-tag-pills .mvs-tag-text-input:focus-visible {
+    outline: none;
 }
 
 .mvs-tag-autocomplete {
@@ -4798,13 +4815,15 @@ a.mvs-dashboard-card-title:hover {
     gap: 6px;
 }
 
-.mvs-collection-meta-author a {
-    color: var(--mvs-danger);
+.mvs-collection-meta-author a,
+.mvs-collection-author-link {
+    color: var(--mvs-text);
     text-decoration: none;
     font-weight: 500;
 }
 
-.mvs-collection-meta-author a:hover {
+.mvs-collection-meta-author a:hover,
+.mvs-collection-author-link:hover {
     text-decoration: underline;
 }
 
@@ -5368,8 +5387,8 @@ a.mvs-dashboard-card-title:hover {
     position: absolute;
     inset-block-end: 4px;
     inset-inline-start: 4px;
-    background: rgba(0, 0, 0, 0.7);
-    color: var(--mvs-bg);
+    background: var(--mvs-overlay);
+    color: var(--mvs-on-overlay);
     border: none;
     border-radius: 4px;
     padding: 2px 8px;
@@ -6900,11 +6919,6 @@ a.mvs-dashboard-card-title:hover {
     flex-direction: row-reverse;
 }
 
-[dir="rtl"] .mvs-activity-media-remove {
-    right: auto;
-    left: 4px;
-}
-
 [dir="rtl"] .mvs-explore-header {
     text-align: right;
 }
@@ -7590,6 +7604,15 @@ a.mvs-dashboard-card-title:hover {
     font-size: 14px;
     line-height: 1.5;
     border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-lightbox-tags {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--mvs-border-light);
+}
+
+.mvs-lightbox-tags[hidden] {
+    display: none;
 }
 
 .mvs-lightbox-desc strong {

@@ -69,7 +69,7 @@ $allowed_types = get_option( 'mvs_allowed_file_types', 'image/jpeg,image/png,ima
 // mvs_stories_enabled at '1', so the toggle kept rendering on a Free-only site
 // where nothing consumes it — the upload succeeds but no story is ever created,
 // which reads as a broken feature rather than an absent one.
-$mvs_stories_on = \WPMediaVerse\Core\TemplateHelpers::stories_available();
+$mvs_stories_on = \WPMediaVerse\Core\TemplateHelpers::can_post_story();
 // Pre-check the toggle when arriving from the "Your story" tile (?mvs_story=1). Display-only, no action.
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 $mvs_prefill_story = $mvs_stories_on && isset( $_GET['mvs_story'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['mvs_story'] ) );

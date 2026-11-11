@@ -30,10 +30,8 @@ class AlbumAdminScreenCapTest extends WP_UnitTestCase {
 	 *
 	 * @param string $post_type Post type.
 	 */
-	public function test_list_screen_needs_the_settings_screen_cap( string $post_type ): void {
+	public function test_list_screen_is_for_site_managers_only( string $post_type ): void {
 		$cap = get_post_type_object( $post_type )->cap->edit_posts;
-
-		$this->assertSame( 'mvs_settings_screen', $cap );
 
 		foreach ( array( 'contributor', 'author', 'editor' ) as $role ) {
 			wp_set_current_user( self::factory()->user->create( array( 'role' => $role ) ) );
@@ -42,5 +40,57 @@ class AlbumAdminScreenCapTest extends WP_UnitTestCase {
 
 		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
 		$this->assertTrue( current_user_can( $cap ) );
+	}
+
+	/**
+	 * @dataProvider post_types
+	 *
+	 * @param string $post_type Post type.
+	 */
+	public function test_editor_cannot_edit_or_delete_a_members_item( string $post_type ): void {
+		$member  = self::factory()->user->create( array( 'role' => 'subscriber' ) );
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => $post_type,
+				'post_status' => 'publish',
+				'post_author' => $member,
+			)
+		);
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'editor' ) ) );
+		$this->assertFalse( current_user_can( 'edit_post', $post_id ) );
+		$this->assertFalse( current_user_can( 'delete_post', $post_id ) );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'administrator' ) ) );
+		$this->assertTrue( current_user_can( 'edit_post', $post_id ) );
+	}
+
+	/**
+	 * The cap is copied into core's primitive list for edit_post / publish_post and
+	 * never re-mapped, so it must be a real primitive: an administrator who could
+	 * open the screen still got "not allowed to edit this post" on Publish.
+	 *
+	 * @dataProvider post_types
+	 *
+	 * @param string $post_type Post type.
+	 */
+	public function test_administrator_can_edit_and_publish_a_new_item( string $post_type ): void {
+		$admin = self::factory()->user->create( array( 'role' => 'administrator' ) );
+		wp_set_current_user( $admin );
+
+		$post_id = self::factory()->post->create(
+			array(
+				'post_type'   => $post_type,
+				'post_status' => 'draft',
+				'post_author' => $admin,
+			)
+		);
+
+		$this->assertTrue( current_user_can( 'edit_post', $post_id ), 'administrator must edit a new draft' );
+		$this->assertTrue( current_user_can( get_post_type_object( $post_type )->cap->publish_posts ) );
+		$this->assertTrue( current_user_can( get_post_type_object( $post_type )->cap->create_posts ), 'administrator must create' );
+
+		wp_set_current_user( self::factory()->user->create( array( 'role' => 'author' ) ) );
+		$this->assertFalse( current_user_can( get_post_type_object( $post_type )->cap->create_posts ), 'an author must not create in wp-admin' );
 	}
 }

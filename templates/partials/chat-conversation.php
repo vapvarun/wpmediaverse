@@ -3,7 +3,7 @@
  * Chat conversation — active chat header, messages, and composer.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.4
  * @since   1.1.0
  */
 
@@ -99,6 +99,7 @@ defined( 'ABSPATH' ) || exit;
 		<input
 			type="text"
 			class="mvs-chat-search__input"
+			aria-label="<?php esc_attr_e( 'Search users', 'wpmediaverse' ); ?>"
 			placeholder="<?php esc_attr_e( 'Search users…', 'wpmediaverse' ); ?>"
 			data-wp-bind--value="state.groupAddQuery"
 			data-wp-on--input="actions.updateGroupAddQuery"

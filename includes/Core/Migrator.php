@@ -1822,17 +1822,25 @@ class Migrator {
 			update_option( 'mvs_cpt_id_collisions', $preserved, false );
 		}
 
+		// A clean install has nothing to move, so it logs nothing. Kept
+		// collisions need the owner's attention; a plain cleanup is info only.
+		if ( 0 === $migrated && empty( $preserved ) && 0 === $orphan_terms ) {
+			return;
+		}
+
 		if ( class_exists( '\\WPMediaVerse\\Services\\LoggerService' ) ) {
-			\WPMediaVerse\Services\LoggerService::error(
-				'migration',
-				'v26 evicted album/collection rows from mvs_media_index',
-				array(
-					'rows_removed'     => $migrated,
-					'collisions_kept'  => count( $preserved ),
-					'collision_ids'    => $preserved,
-					'orphan_term_rows' => $orphan_terms,
-				)
+			$message = 'v26 evicted album/collection rows from mvs_media_index';
+			$details = array(
+				'rows_removed'     => $migrated,
+				'collisions_kept'  => count( $preserved ),
+				'collision_ids'    => $preserved,
+				'orphan_term_rows' => $orphan_terms,
 			);
+			if ( empty( $preserved ) ) {
+				\WPMediaVerse\Services\LoggerService::info( 'migration', $message, $details );
+			} else {
+				\WPMediaVerse\Services\LoggerService::warning( 'migration', $message, $details );
+			}
 		}
 	}
 

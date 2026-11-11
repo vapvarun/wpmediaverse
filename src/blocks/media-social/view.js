@@ -528,6 +528,13 @@ const { state } = store( 'mvs/media-social', {
 			const ctx = getContext();
 			ctx.saving = true;
 			const ep = endpoint( ctx );
+			// A tag typed but not yet confirmed with Enter is still the member's
+			// intent when they press Save.
+			const pendingTag = ( ctx.tagInput || '' ).trim();
+			if ( pendingTag && ctx.type !== 'album' && ! ctx.editTags.includes( pendingTag ) ) {
+				ctx.editTags = [ ...ctx.editTags, pendingTag ];
+				ctx.tagInput = '';
+			}
 			const payload = {
 				title: ctx.editTitle,
 				description: ctx.editDesc,

@@ -6,7 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/collection.php
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.4
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -64,6 +64,8 @@ require MVS_PLUGIN_DIR . 'templates/partials/router-region-open.php';
 		?>
 
 		<article id="mvs-collection-<?php the_ID(); ?>" <?php post_class( 'mvs-collection-article' ); ?>>
+			<?php \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_back_link( 'collection', array( 'author_id' => (int) get_the_author_meta( 'ID' ) ) ); ?>
+
 			<!-- Info Card -->
 			<div class="mvs-collection-card-info">
 				<h1 class="mvs-collection-card-title"><?php the_title(); ?></h1>

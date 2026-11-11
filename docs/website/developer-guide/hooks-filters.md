@@ -253,6 +253,8 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_pro_compete_points_url` | filter | Pro | 1.8.0 |
 | `mvs_users_primed` | action | Free + Pro | 2.6.3 |
 | `mvs_resolve_user` | filter | Free + Pro | 2.6.3 |
+| `mvs_story_duration_hours` | filter | Free + Pro | 2.6.4 |
+| `mvs_story_keep_item` | filter | Pro | 2.6.4 |
 
 ---
 
@@ -390,6 +392,35 @@ add_filter( 'mvs_resolve_user', function ( $user, string $typed ) {
 |---|---|---|
 | `$user` | `WP_User\|null` | The member found so far, or null. |
 | `$typed` | `string` | What was typed, without a leading @. |
+
+### `mvs_story_duration_hours` **(New in 2.6.4)**
+
+Filters how many hours a story stays up. Free uses the answer to word the story length in its screens. Pro answers it from the Story length setting (6 hours to 7 days), so a host or theme only needs to read it.
+
+```php
+add_filter( 'mvs_story_duration_hours', function ( int $hours ) {
+    return 48;
+} );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$hours` | `int` | Hours a story lasts. Default 24. |
+
+### `mvs_story_keep_item` **(New in 2.6.4, Pro)**
+
+Filters whether a story-only upload is kept when its story ends. An upload made only for a story is deleted with its story unless an album or the author's own collection holds it. A host that can attach media to its own content, such as BuddyNext posts, returns true when it holds the item, so ending the story never empties that content.
+
+```php
+add_filter( 'mvs_story_keep_item', function ( bool $kept, int $media_id ) {
+    return $kept || my_plugin_uses_media( $media_id );
+}, 10, 2 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$kept` | `bool` | True when an album or the author's collection holds it. |
+| `$media_id` | `int` | Media ID. |
 
 ---
 

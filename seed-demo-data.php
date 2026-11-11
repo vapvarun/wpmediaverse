@@ -888,8 +888,15 @@ $demo_user_ids = array();
 foreach ( $demo_users as $du ) {
 	$existing_user = get_user_by( 'login', $du['login'] );
 	if ( $existing_user ) {
-		$demo_user_ids[ $du['login'] ] = $existing_user->ID;
-		mvs_seed_log( "  User already exists: {$du['display']} (#{$existing_user->ID})" );
+		// Only adopt an account this seeder made. A real member who happens to use the
+		// same login keeps their account and is never given (or later stripped of) demo media.
+		if ( get_user_meta( $existing_user->ID, 'mvs_demo_user', true ) ) {
+			$demo_user_ids[ $du['login'] ] = $existing_user->ID;
+			mvs_seed_log( "  User already exists: {$du['display']} (#{$existing_user->ID})" );
+		} else {
+			$demo_user_ids[ $du['login'] ] = get_current_user_id() ? get_current_user_id() : 1;
+			mvs_seed_log( "  Login {$du['login']} belongs to a real account (#{$existing_user->ID}); demo items go to the current admin instead.", 'warning' );
+		}
 		continue;
 	}
 
@@ -897,7 +904,7 @@ foreach ( $demo_users as $du ) {
 		array(
 			'user_login'   => $du['login'],
 			'user_email'   => $du['email'],
-			'user_pass'    => 'demo1234',
+			'user_pass'    => wp_generate_password( 24 ),
 			'display_name' => $du['display'],
 			'description'  => $du['bio'],
 			'role'         => 'author',
@@ -909,11 +916,44 @@ foreach ( $demo_users as $du ) {
 		continue;
 	}
 
+	update_user_meta( $new_user_id, 'mvs_demo_user', 1 );
 	$demo_user_ids[ $du['login'] ] = $new_user_id;
 	mvs_seed_log( "  Created user: {$du['display']} (#{$new_user_id})", 'success' );
 }
 
 mvs_seed_log( '  Demo users ready: ' . count( $demo_user_ids ) );
+
+// A profile photo for each demo member, so the people side of the demo is not a
+// row of grey placeholders. The attachment is authored by the member, so the
+// cleanup's wp_delete_user() removes it with them.
+$avatar_files = glob( $demo_dir . 'avatars/*.png' ) ?: array();
+$avatar_key   = \WPMediaVerse\Services\ProfileService::AVATAR_META_KEY;
+foreach ( array_values( $demo_user_ids ) as $i => $duid ) {
+	if ( ! get_user_meta( $duid, 'mvs_demo_user', true ) || get_user_meta( $duid, $avatar_key, true ) || empty( $avatar_files ) ) {
+		continue;
+	}
+	require_once ABSPATH . 'wp-admin/includes/image.php';
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	require_once ABSPATH . 'wp-admin/includes/media.php';
+	$tmp = wp_tempnam( 'mvs-seed-avatar' );
+	if ( ! $tmp || ! copy( $avatar_files[ $i % count( $avatar_files ) ], $tmp ) ) {
+		continue;
+	}
+	$avatar_id = media_handle_sideload(
+		array(
+			'name'     => 'demo-avatar-' . $duid . '.png',
+			'tmp_name' => $tmp,
+		),
+		0,
+		null,
+		array( 'post_author' => $duid )
+	);
+	if ( is_wp_error( $avatar_id ) ) {
+		mvs_seed_log( '  Avatar not set for #' . $duid . ': ' . $avatar_id->get_error_message(), 'warning' );
+		continue;
+	}
+	update_user_meta( $duid, $avatar_key, (int) $avatar_id );
+}
 
 // Fallback user for any unmapped items.
 $fallback_user_id = get_current_user_id();
@@ -1189,6 +1229,8 @@ foreach ( $created_media as $media ) {
 		array( '%d', '%s' ),
 		array( '%d' )
 	);
+	// The reactions leaderboard sorts on the index column, not the stats table.
+	\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'reaction_count', count( $reactors ) );
 }
 
 mvs_seed_log( "  Reactions: {$reaction_count}" );
@@ -1694,7 +1736,7 @@ if ( $play_count > 0 ) {
 
 // Record that demo data has been seeded so the cleanup script and UI can
 // detect the presence of demo content without relying solely on the
-// `@demo.local` email heuristic.
+// `mvs_demo_user` user meta.
 update_option( 'mvs_demo_seeded', time(), false );
 
 // Invalidate Overview page stat caches so the toggle between "Import Demo

@@ -13,7 +13,7 @@
  * Expects: $mvs_current_user, $mvs_avatar_url, $mvs_has_custom, $mvs_dash_active.
  *
  * @package WPMediaVerse
- * @version 2.6.3
+ * @version 2.6.4
  * @since   2.4.0
  */
 
@@ -98,15 +98,15 @@ $mvs_deferred  = $mvs_community['fields'];
 				<div class="mvs-profile-field-row">
 					<?php if ( ! in_array( 'first_name', $mvs_deferred, true ) ) : ?>
 					<div class="mvs-profile-field">
-						<label><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
-						<input type="text" data-wp-bind--value="context.firstName"
+						<label for="mvs-dash-pe-first-name"><?php esc_html_e( 'First Name', 'wpmediaverse' ); ?></label>
+						<input id="mvs-dash-pe-first-name" type="text" data-wp-bind--value="context.firstName"
 							data-wp-on--input="actions.updateFirstName" />
 					</div>
 					<?php endif; ?>
 					<?php if ( ! in_array( 'last_name', $mvs_deferred, true ) ) : ?>
 					<div class="mvs-profile-field">
-						<label><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
-						<input type="text" data-wp-bind--value="context.lastName"
+						<label for="mvs-dash-pe-last-name"><?php esc_html_e( 'Last Name', 'wpmediaverse' ); ?></label>
+						<input id="mvs-dash-pe-last-name" type="text" data-wp-bind--value="context.lastName"
 							data-wp-on--input="actions.updateLastName" />
 					</div>
 					<?php endif; ?>
@@ -114,14 +114,14 @@ $mvs_deferred  = $mvs_community['fields'];
 				<?php endif; ?>
 				<?php if ( ! in_array( 'display_name', $mvs_deferred, true ) ) : ?>
 				<div class="mvs-profile-field">
-					<label><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
-					<input type="text" data-wp-bind--value="context.displayName"
+					<label for="mvs-dash-pe-display-name"><?php esc_html_e( 'Display Name', 'wpmediaverse' ); ?></label>
+					<input id="mvs-dash-pe-display-name" type="text" data-wp-bind--value="context.displayName"
 						data-wp-on--input="actions.updateDisplayName" />
 				</div>
 				<?php endif; ?>
 				<div class="mvs-profile-field">
-					<label><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
-					<textarea rows="3" maxlength="500"
+					<label for="mvs-dash-pe-bio"><?php esc_html_e( 'Bio', 'wpmediaverse' ); ?></label>
+					<textarea id="mvs-dash-pe-bio" rows="3" maxlength="500"
 						data-wp-on--input="actions.updateBio"
 						data-wp-bind--value="context.bio"></textarea>
 				</div>

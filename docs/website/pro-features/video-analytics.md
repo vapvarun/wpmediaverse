@@ -18,7 +18,7 @@ The Media Player block fires events to the REST API as viewers interact with a v
 | `pause` | Playback is paused |
 | `seek` | User jumps to a new position |
 | `complete` | Playback reaches the end of the video |
-| `buffer` | Player enters a buffering state |
+| `buffer` | Accepted by the endpoint; the built-in player does not send it |
 
 Events are written to the `mvs_play_events` database table.
 
@@ -60,7 +60,7 @@ Record a single play event. Authentication is not required - anonymous events ar
 
 `event_type` must be one of `play`, `pause`, `seek`, `complete`, `buffer`. `session_id` should be a stable string generated client-side per browser session (e.g. a UUID stored in `sessionStorage`). Events are rate-limited per session inside the service.
 
-**Response:** `204 No Content`.
+**Response:** `200` with `{ "recorded": true }`, or `{ "recorded": false }` when the event was not stored (for example media the viewer cannot see).
 
 ### GET /media/{id}/analytics
 
