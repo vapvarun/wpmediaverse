@@ -889,7 +889,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * The owner sets the length in Pro; this is the one place any surface,
 	 * including BuddyNext, reads it as words so no copy hard-codes "24 hours".
 	 *
-	 * @since 2.7.0
+	 * @since 2.6.4
 	 *
 	 * @return string
 	 */
@@ -898,7 +898,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		 * Filter how many hours a story stays up. Pro answers with the owner's
 		 * Story length; without Pro there is no setting and it stays 24.
 		 *
-		 * @since 2.7.0
+		 * @since 2.6.4
 		 *
 		 * @param int $hours Hours.
 		 */
@@ -917,7 +917,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * "Post stories" capability (Display > Stories > Who can post stories). Seeing stories needs
 	 * neither, so the viewer and the bar keep using stories_available().
 	 *
-	 * @since 2.7.0
+	 * @since 2.6.4
 	 *
 	 * @return bool
 	 */

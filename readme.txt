@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.6.3
+Stable tag: 2.6.4
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -124,6 +124,30 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
 
 == Changelog ==
+
+= 2.6.4 - November 2026 =
+
+Setup that offers demo content, tighter album and collection permissions, and accessibility and upload polish. Lockstep with WPMediaVerse Pro 2.6.4 - install and test both together.
+
+* New      - The setup wizard offers demo content, and demo members get photos.
+* Improve  - When the server rejects an upload for size, the message says how large an upload may be.
+* Improve  - The upload window stays open on an outside click while it holds files.
+* Improve  - Lightbox tags have a visible remove control, and chat search, profile edit, media edit fields and tag remove have accessible names.
+* Improve  - Collection pages have a back link, and tooltips open below so they no longer clip the album card.
+* Improve  - New group explains why Create is disabled.
+* Improve  - Demo content seeding and cleanup are safe to run on a live site.
+* Fix      - Settings errors are no longer hidden, and a pending tag is saved with the media.
+* Fix      - The unread badge on a chat row, the toast for a mixed photo and video pick, the edited flag on comments and the demo reaction counts show correctly.
+* Fix      - The remove button in the activity composer stays round and has a full touch target.
+* Fix      - Upload errors stay on screen, and the upgrade to 2.6 no longer fills the log.
+* Fix      - Tag focus rings hold against theme input styles, the bulk-select box shows when you hover an item, and overlay controls and the upload button keep contrast in dark mode.
+* Fix      - The collection rule builder names the rule it really applies.
+* Fix      - Administrators can create and publish albums and collections in wp-admin.
+* Fix      - Moderators can take down albums and collections without being able to edit them.
+* Security - Only the owner and site managers can edit or delete an album or collection, over the REST API and in wp-admin; editors could change other members' items before.
+* Dev      - New method `reaction_types_for_users()` on the media repository returns which reactions a list of members gave an item.
+* Dev      - New filter `mvs_story_duration_hours` sets how long a story lasts.
+* Dev      - Templates updated (2.6.4): album.php, collection.php, media-single.php, partials/chat-composer.php, partials/chat-conversation.php, partials/chat-list.php, partials/chat-message.php, partials/chat-new.php, partials/dashboard-content.php, partials/profile-edit-panel.php, partials/shared-ui-frame.php.
 
 = 2.6.3 - November 2026 =
 
