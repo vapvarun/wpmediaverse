@@ -54,7 +54,7 @@ Every Pro feature ships as a Gutenberg block, configurable in the editor. The co
 | Dribbble Feed | `mvs/pro-dribbble-feed` | Dribbble-style card grid layout. |
 | Leaderboard | `mvs/pro-leaderboard` | Top performers across competitions. |
 | Compete Hub | `mvs/pro-compete-hub` | Combined challenges + battles + tournaments dashboard. |
-| Stories | `mvs/pro-stories` | 24-hour ephemeral stories bar + fullscreen viewer, with a same-screen "Your story" upload tile. Added in 1.9.0. |
+| Stories | `mvs/pro-stories` | Ephemeral stories bar (24 hours by default) + fullscreen viewer, with a same-screen "Your story" upload tile. Added in 1.9.0. |
 | Document | `mvs/pro-document-embed` | Embeds one document. See [Documents](documents.md). |
 | Document List | `mvs/pro-document-list` | Lists documents. See [Documents](documents.md). |
 
@@ -79,7 +79,7 @@ The migration tool admin page has one card per platform (rtMedia, MediaPress, Bu
 | AI Providers | [ai-providers.md](ai-providers.md) | Google Cloud Vision, AWS Rekognition, and Claude (Anthropic) support |
 | Advanced Privacy | [advanced-privacy.md](advanced-privacy.md) | Multi-level privacy, presets, album inheritance, and bulk updates |
 | Connected Accounts | [connected-accounts.md](connected-accounts.md) | Connect Flickr to import/export photos and auto-push new uploads |
-| Stories | [stories.md](stories.md) | 24-hour ephemeral stories with a tap-to-advance viewer and "seen by" receipts |
+| Stories | [stories.md](stories.md) | Ephemeral stories (24 hours by default) with a tap-to-advance viewer and "seen by" receipts |
 | Save to Collections | [collections.md](collections.md) | A dedicated Save control for adding media to any number of named collections, separate from favoriting |
 | Mobile App | [mobile-app.md](mobile-app.md) | White-label branding, feed layout, push notifications, and a leaderboard endpoint for the native app |
 

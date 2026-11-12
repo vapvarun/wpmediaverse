@@ -41,7 +41,7 @@ Free and Pro release in lockstep and share the same version number. See the [cha
 | Albums with cover photos | Yes | Yes |
 | Collections (smart collections built from rules) | Yes | Yes |
 | Manual collections with the Save picker | -- | Yes |
-| Stories (24-hour ephemeral posts, seen-by receipts) | -- | Yes |
+| Stories (ephemeral posts, seen-by receipts and reactions) | -- | Yes |
 | Gallery groups (multi-photo posts) | Yes | Yes |
 | **Privacy & Moderation** | | |
 | Public / Members Only / Private | Yes | Yes |
