@@ -8,7 +8,7 @@ The Media Upload block includes an **"Also share as a story"** checkbox next to 
 
 ## What Pro Adds
 
-See [Stories (Pro)](../pro-features/stories.md) for the full feature: 24-hour default expiry (1-168h configurable per story), a tap-to-advance viewer, "seen by" receipts, and the `mvs-pro/v1` REST routes that drive it (`GET /stories`, `POST /media/{id}/story`, `DELETE /media/{id}/story`, `POST /stories/{id}/view`, `GET /stories/{id}/viewers`).
+See [Stories (Pro)](../pro-features/stories.md) for the full feature: a 24-hour default length that the owner can set from 6 hours to 7 days, a tap-to-advance viewer, "seen by" receipts, and the `mvs-pro/v1` REST routes that drive it (`GET /stories`, `POST /media/{id}/story`, `DELETE /media/{id}/story`, `POST /stories/{id}/view`, `GET /stories/{id}/viewers`).
 
 ## Hooks
 
