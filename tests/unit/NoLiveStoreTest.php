@@ -40,8 +40,11 @@ class NoLiveStoreTest extends WP_UnitTestCase {
 
 	public function test_both_products_are_registered_for_signature_checks(): void {
 		$products = \Package_Signatures_Guard::products();
-		foreach ( array( 'wpmediaverse' => 'plugin:' . MVS_PLUGIN_BASENAME, 'wpmediaverse-pro' => 'plugin:wpmediaverse-pro/wpmediaverse-pro.php' ) as $slug => $key ) {
+		foreach ( array( 'mediaverse' => 'plugin:' . MVS_PLUGIN_BASENAME, 'mediaverse-pro' => 'plugin:wpmediaverse-pro/wpmediaverse-pro.php' ) as $slug => $key ) {
 			$this->assertArrayHasKey( $key, $products, "{$slug} is not registered for signature checks." );
+			// The product name must be the store slug: the edge and the release signatures use it, and a
+			// different name fails every signature check as wrong_product (MediaVerse 2.6.3 shipped wpmediaverse).
+			$this->assertSame( $slug, $products[ $key ]['product'] );
 			$this->assertSame( 'warn', $products[ $key ]['mode'] );
 			$this->assertSame( array( 'wbcomdesigns.com', 'updates.wbcomdesigns.com' ), $products[ $key ]['hosts'] );
 		}
