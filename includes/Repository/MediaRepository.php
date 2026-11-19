@@ -6971,6 +6971,38 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Published photos, videos and audio held on one space's drive.
+	 *
+	 * For a community plugin deleting a space: documents on the same drive are the
+	 * document engine's own to clear, so only the media types are returned. Rides
+	 * KEY drive_listing, so a space with thousands of items costs one indexed read.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param int $space_id Space id.
+	 * @param int $limit    Rows to return, 1 to 500.
+	 * @return int[] Media ids, oldest first.
+	 */
+	public function space_drive_media_ids( int $space_id, int $limit = 100 ): array {
+		global $wpdb;
+
+		if ( $space_id <= 0 ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA );
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$this->index_table()} WHERE drive_type = 'space' AND drive_id = %d AND status = 'publish' AND {$type_sql} ORDER BY media_id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_merge( array( $space_id ), $type_params, array( max( 1, min( 500, $limit ) ) ) )
+			)
+		);
+
+		return array_map( 'intval', $ids );
+	}
+
+	/**
 	 * Soft-delete a media item by setting its status to 'trash'.
 	 *
 	 * @param int $media_id Media ID.
