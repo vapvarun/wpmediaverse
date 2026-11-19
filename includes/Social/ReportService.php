@@ -613,6 +613,21 @@ class ReportService {
 			)
 		);
 
-		return array_map( 'intval', $ids );
+		$ids = array_map( 'intval', $ids );
+
+		/**
+		 * Filters the members hidden from a viewer by a block, either way.
+		 *
+		 * Every list, count and feed reads this one answer, so a community plugin
+		 * with its own block list adds its ids here and the whole plugin follows.
+		 *
+		 * @since 2.6.5
+		 *
+		 * @param int[] $ids     Member ids in a block relationship with the viewer.
+		 * @param int   $user_id The viewer.
+		 */
+		$ids = (array) apply_filters( 'mvs_blocked_either_way_ids', $ids, $user_id );
+
+		return array_values( array_unique( array_map( 'intval', $ids ) ) );
 	}
 }
