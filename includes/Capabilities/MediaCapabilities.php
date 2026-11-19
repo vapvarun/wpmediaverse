@@ -116,6 +116,21 @@ class MediaCapabilities {
 	 * @return array<string, string[]>
 	 */
 	public static function get_role_caps(): array {
+		$own_media = array(
+			'upload_mvs_media',
+			self::USE_DOCUMENTS_CAP,
+			self::POST_STORIES_CAP,
+			'edit_mvs_media',
+			'delete_mvs_media',
+			'read_mvs_media',
+			'publish_mvs_media',
+			'edit_mvs_medias',
+			'edit_published_mvs_medias',
+			'delete_mvs_medias',
+			'delete_published_mvs_medias',
+			'publish_mvs_medias',
+		);
+
 		return array(
 			'administrator' => array(
 				'upload_mvs_media',
@@ -142,39 +157,11 @@ class MediaCapabilities {
 				'publish_mvs_medias',
 				'read_private_mvs_medias',
 			),
-			// A blog Editor is a content role, not a community moderator: the same own-media
-			// rights as an Author. Moderation, others' content and private media belong to
-			// the roles the owner grants them to in Settings > Permissions. Before 2.6.5 this
-			// entry held every moderator cap, so an Editor could delete any member's album or
-			// read their private media.
-			'editor'        => array(
-				'upload_mvs_media',
-				self::USE_DOCUMENTS_CAP,
-				self::POST_STORIES_CAP,
-				'edit_mvs_media',
-				'delete_mvs_media',
-				'read_mvs_media',
-				'publish_mvs_media',
-				'edit_mvs_medias',
-				'edit_published_mvs_medias',
-				'delete_mvs_medias',
-				'delete_published_mvs_medias',
-				'publish_mvs_medias',
-			),
-			'author'        => array(
-				'upload_mvs_media',
-				self::USE_DOCUMENTS_CAP,
-				self::POST_STORIES_CAP,
-				'edit_mvs_media',
-				'delete_mvs_media',
-				'read_mvs_media',
-				'publish_mvs_media',
-				'edit_mvs_medias',
-				'edit_published_mvs_medias',
-				'delete_mvs_medias',
-				'delete_published_mvs_medias',
-				'publish_mvs_medias',
-			),
+			// A blog Editor is a content role, not a community moderator: the same
+			// own-media rights as an Author. Moderation, others' content and private
+			// media are granted to roles in Settings > Permissions.
+			'editor'        => $own_media,
+			'author'        => $own_media,
 			'contributor'   => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,

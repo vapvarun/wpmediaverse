@@ -52,10 +52,7 @@ $album = $mvs_album_post;
 // one thing a privacy gate must not disclose. Coding Rule 11 wants the editor
 // told about mistakes, not the visitor told about content.
 //
-// The id is an ALBUM post id, so say so: media ids and album ids are two number
-// sequences that collide, and the default lookup lets a media item with the same
-// number decide. That hid a public album behind a private draft and showed a
-// private album because a public photo shared its number.
+// The id is an ALBUM id: say so, or a photo that shares its number decides.
 if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $album_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 	return;
 }
