@@ -389,7 +389,7 @@ class ReportService {
 		global $wpdb;
 
 		$before = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare( "SELECT reporter_id, status FROM {$wpdb->prefix}mvs_reports WHERE id = %d", $report_id )
+			$wpdb->prepare( "SELECT reporter_id, target_type, target_id, status FROM {$wpdb->prefix}mvs_reports WHERE id = %d", $report_id )
 		);
 
 		$updated = $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -415,11 +415,50 @@ class ReportService {
 			 * @param int    $report_id   Report id.
 			 * @param int    $reporter_id Who reported it.
 			 * @param string $status      resolved | dismissed.
+			 * @param string $target_type What was reported (media, user, comment, message). Since 2.6.5.
+			 * @param int    $target_id   Id of what was reported. Since 2.6.5.
 			 */
-			do_action( 'mvs_report_resolved', $report_id, (int) $before->reporter_id, $status );
+			do_action( 'mvs_report_resolved', $report_id, (int) $before->reporter_id, $status, (string) $before->target_type, (int) $before->target_id );
 		}
 
 		return $changed;
+	}
+
+	/**
+	 * Close every pending report on one target.
+	 *
+	 * For a community plugin whose moderator acted in its own queue, so the same
+	 * report is not left open here. Each row goes through update_status(), so the
+	 * menu badge and the resolved hook behave exactly as for a click in this plugin.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string $target_type Target type.
+	 * @param int    $target_id   Target id.
+	 * @param string $status      resolved | dismissed.
+	 * @return int Rows closed.
+	 */
+	public function close_pending_for_target( string $target_type, int $target_id, string $status ): int {
+		global $wpdb;
+
+		if ( ! in_array( $status, array( 'resolved', 'dismissed' ), true ) ) {
+			return 0;
+		}
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT id FROM {$wpdb->prefix}mvs_reports WHERE target_type = %s AND target_id = %d AND status = 'pending'",
+				$target_type,
+				$target_id
+			)
+		);
+
+		$closed = 0;
+		foreach ( $ids as $id ) {
+			$closed += $this->update_status( (int) $id, $status ) ? 1 : 0;
+		}
+
+		return $closed;
 	}
 
 	/**
