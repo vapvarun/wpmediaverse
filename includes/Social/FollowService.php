@@ -51,6 +51,23 @@ class FollowService {
 			return false;
 		}
 
+		/**
+		 * Filters whether a follow may be recorded.
+		 *
+		 * A community plugin that owns who may follow whom (a private account
+		 * turns a follow into a request, a limit refuses it) answers here, so
+		 * no follow is written that it would take back a moment later.
+		 *
+		 * @since 2.6.5
+		 *
+		 * @param bool $can          True to record the follow.
+		 * @param int  $follower_id  The user doing the following.
+		 * @param int  $following_id The user being followed.
+		 */
+		if ( ! apply_filters( 'mvs_can_follow', true, $follower_id, $following_id ) ) {
+			return false;
+		}
+
 		// Use INSERT IGNORE to handle race conditions — if two concurrent requests
 		// both pass the check, only one will succeed; the other silently no-ops.
 		$table  = $wpdb->prefix . 'mvs_follows';
