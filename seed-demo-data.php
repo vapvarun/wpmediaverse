@@ -192,7 +192,7 @@ $images = array(
 		'user'        => 'liam_oconnor',
 	),
 	array(
-		'file'        => 'rooftop-bar.jpg',
+		'file'        => 'angular-glass-facade.jpg',
 		'title'       => 'Reflections in Steel',
 		'description' => 'Cloud reflections distorted across the curved glass panels of a skyscraper, blending nature with urban engineering.',
 		'type'        => 'image',
