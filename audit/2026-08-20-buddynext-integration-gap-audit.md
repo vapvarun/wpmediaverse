@@ -1,5 +1,12 @@
 # MediaVerse ↔ BuddyNext integration — gap audit
 
+> **Status, 2026-11-19: history. Gaps 1 to 4 are wired on the BuddyNext side.** Documents and space
+> drives answer through `mvs_document_drive_access`, `_visible`, `_drives_for_user` and `_label`
+> (`WPMediaVerseBridge`); space privacy for media is answered there too; reactions and mentions reach the
+> BuddyNext bell through `mvs_notification_created` (`IntegrationNotificationListener`). Read the sections
+> below as the state on 2026-08-20 against MediaVerse 2.4.0, not as open work. Seams added since:
+> `mvs_can_follow`, `mvs_blocked_either_way_ids` and the `mvs_report_resolved` target (2.6.5).
+
 **Run 2026-08-20** against WPMediaVerse 2.4.0 + Pro 2.4.0 and BuddyNext on branch `1.1.6`
 (content identical to `v1.1.5`; the 1.1.6 branch carries no work yet).
 
