@@ -45,5 +45,5 @@ A role editor plugin works too.
 ## Important Notes
 
 - The `moderate_mvs_media` capability grants access to the moderation queue and the ability to see all media regardless of privacy level.
-- The MediaVerse admin pages are open to administrators (core `manage_options`). Settings, Overview and Logs also open for a role that has `manage_mvs_settings`; Moderation, All Media and Tags also open for a role that has `moderate_mvs_media`. By default administrators have both, and editors have `moderate_mvs_media`.
+- The MediaVerse admin pages are open to administrators (core `manage_options`). Settings, Overview and Logs also open for a role that has `manage_mvs_settings`; Moderation, All Media and Tags also open for a role that has `moderate_mvs_media`. By default administrators have both. Editors do not have `moderate_mvs_media` (a WordPress Editor is a content role, not a media moderator); to let Editors moderate, grant it to the Editor role in the Permissions matrix.
 - Capabilities are stored in the WordPress `wp_user_roles` option and persist after plugin deactivation.

@@ -74,25 +74,16 @@
         "editor": [
             "delete_mvs_media",
             "delete_mvs_medias",
-            "delete_others_mvs_media",
-            "delete_others_mvs_medias",
-            "delete_private_mvs_medias",
             "delete_published_mvs_medias",
             "edit_mvs_media",
             "edit_mvs_medias",
-            "edit_others_mvs_media",
-            "edit_others_mvs_medias",
-            "edit_private_mvs_medias",
             "edit_published_mvs_medias",
-            "manage_mvs_access",
-            "moderate_mvs_media",
+            "post_mvs_stories",
             "publish_mvs_media",
             "publish_mvs_medias",
             "read_mvs_media",
-            "read_private_mvs_medias",
             "upload_mvs_media",
-            "use_mvs_documents",
-            "post_mvs_stories"
+            "use_mvs_documents"
         ],
         "author": [
             "delete_mvs_media",

@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 44;
+	const CURRENT_VERSION = 45;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -152,6 +152,15 @@ class Migrator {
 			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		}
 		return \WP_Upgrader::create_lock( $name, 10 * MINUTE_IN_SECONDS );
+	}
+
+	/**
+	 * Migration v45 - a plain WordPress Editor stops being a media moderator.
+	 *
+	 * @since 2.6.5
+	 */
+	private function migrate_to_45(): void {
+		\WPMediaVerse\Capabilities\MediaCapabilities::strip_editor_moderation();
 	}
 
 	/**
