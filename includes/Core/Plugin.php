@@ -2518,6 +2518,44 @@ class Plugin {
 		 */
 		$plugin_data = apply_filters( 'mvs_theme_json', $plugin_data );
 
+		// update_with() REPLACES a preset list, it does not append to it. Handing it
+		// only the mvs-* entries swapped WordPress's own default colours, font sizes
+		// and spacing for ours, so black, vivid red and the rest vanished from every
+		// site's global styles and any Cover overlay or button using one lost its
+		// colour. Read what is already there and add ours after it.
+		$current = $theme_json->get_data();
+		foreach ( array(
+			array( 'color', 'palette' ),
+			array( 'typography', 'fontSizes' ),
+			array( 'spacing', 'spacingSizes' ),
+		) as $path ) {
+			list( $group, $key ) = $path;
+			if ( empty( $plugin_data['settings'][ $group ][ $key ] ) || ! is_array( $plugin_data['settings'][ $group ][ $key ] ) ) {
+				continue;
+			}
+
+			// Core hands presets over keyed by origin ( palette.default = [ ... ] ); a plain
+			// list is accepted too. Read whichever it is, and write back the same shape.
+			$present   = isset( $current['settings'][ $group ][ $key ] ) && is_array( $current['settings'][ $group ][ $key ] )
+				? $current['settings'][ $group ][ $key ]
+				: array();
+			$by_origin = isset( $present['default'] ) && is_array( $present['default'] );
+			$existing  = $by_origin ? $present['default'] : $present;
+			$taken     = array_column( $existing, 'slug' );
+			$added     = array_filter(
+				$plugin_data['settings'][ $group ][ $key ],
+				static fn( $entry ) => is_array( $entry ) && ! in_array( $entry['slug'] ?? '', $taken, true )
+			);
+			$merged    = array_values( array_merge( $existing, $added ) );
+
+			$plugin_data['settings'][ $group ][ $key ] = $by_origin ? array( 'default' => $merged ) : $merged;
+		}
+
+		// A plugin does not set the site's content width: themes and core own it. Left
+		// in, it narrowed every constrained block to 720px on a theme with no
+		// theme.json of its own.
+		unset( $plugin_data['settings']['layout'] );
+
 		$theme_json->update_with( $plugin_data );
 
 		return $theme_json;
