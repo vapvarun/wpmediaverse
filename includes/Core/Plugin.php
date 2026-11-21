@@ -1451,6 +1451,10 @@ class Plugin {
 	 * tracking silently did nothing. One filter here fixes
 	 * every block rather than each render.php remembering to ask.
 	 *
+	 * The main stylesheet has the same limit (it loads only on MediaVerse's own pages), so a Media Grid
+	 * or Explore Feed on a home page rendered as unstyled full-width images with a bare list. Pro's
+	 * stylesheet depends on it, which hid this on sites with Pro and left every Free-only site bare.
+	 *
 	 * @param string $content Rendered block HTML, passed through untouched.
 	 * @param array  $block   Parsed block.
 	 * @return string
@@ -1458,6 +1462,8 @@ class Plugin {
 	public static function enqueue_rest_client_for_block( $content, $block ) {
 		if ( 0 === strpos( (string) ( $block['blockName'] ?? '' ), 'mvs/' ) ) {
 			wp_enqueue_script( 'mvs-rest' );
+			// The handle is registered on every front-end request (register_bp_shared_styles, priority 1).
+			wp_enqueue_style( 'mvs-frontend' );
 		}
 
 		return $content;
