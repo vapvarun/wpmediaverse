@@ -359,10 +359,13 @@
     --mvs-shadow-md: var(--bn-shadow-md, 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 16px rgba(16, 24, 40, 0.06));
     --mvs-shadow-lg: var(--bn-shadow-lg, 0 8px 16px rgba(16, 24, 40, 0.06), 0 24px 48px rgba(16, 24, 40, 0.08));
 
-    /* Radii — BuddyNext first, then hardcoded fallback */
-    --mvs-radius-sm: var(--r-sm, 6px);
-    --mvs-radius-md: var(--r-md, 8px);
-    --mvs-radius-lg: var(--r-lg, 12px);
+    /* Radii — BuddyNext first, then the theme's shared --global-border-radius (Reign and BuddyX set it in
+       the Customizer), then 6 / 8 / 12px. At the theme default of 8px the three steps are exactly 6 / 8 / 12px,
+       so a site that sets nothing sees no change. The pill stays a pill. */
+    --mvs-radius-xs: calc(var(--mvs-radius-md) * 0.5);
+    --mvs-radius-sm: var(--r-sm, calc(var(--global-border-radius, 8px) * 0.75));
+    --mvs-radius-md: var(--r-md, var(--global-border-radius, 8px));
+    --mvs-radius-lg: var(--r-lg, calc(var(--global-border-radius, 8px) * 1.5));
     --mvs-radius-pill: var(--r-full, 100px);
 
     /*
@@ -1045,7 +1048,7 @@ body.dark-mode .mvs-skeleton::after {
        the text inherited the ambient theme colour and went unreadable in dark
        mode (measured 1.07-1.38:1). */
     color: var(--mvs-text);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -1192,7 +1195,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-media-article {
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1499,7 +1502,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-album-article {
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 24px;
@@ -1618,7 +1621,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-grid-item {
     position: relative;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface-2);
     /* Pair the foreground with the background this component sets; without it
        the text inherited the ambient theme colour and went unreadable in dark
@@ -1858,7 +1861,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-media-grid.mvs-grid--list .mvs-grid-item > a {
     aspect-ratio: 1;
     height: auto;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     overflow: hidden;
 }
 
@@ -1979,7 +1982,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-feed .mvs-grid-item {
     aspect-ratio: auto;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     overflow: hidden;
     background: var(--mvs-bg);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -2078,7 +2081,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-grid-item-author-link:focus-visible {
     outline: 2px solid var(--mvs-primary, currentColor);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
 }
 
 /* On touch screens the author row is a tap target: reach the plugin's touch
@@ -2100,7 +2103,7 @@ body.dark-mode .mvs-skeleton::after {
     background: rgba(0, 0, 0, 0.6);
     color: var(--mvs-bg);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.8em;
     font-weight: 600;
     pointer-events: none;
@@ -2125,7 +2128,7 @@ body.dark-mode .mvs-skeleton::after {
     background: rgba(0, 0, 0, 0.6);
     color: var(--mvs-surface);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.8em;
     font-weight: 600;
     pointer-events: none;
@@ -2159,7 +2162,7 @@ body.dark-mode .mvs-skeleton::after {
     display: inline-block;
     padding: 8px 14px;
     background: var(--mvs-surface-2);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     text-decoration: none;
     color: var(--mvs-text);
     font-size: 0.9em;
@@ -2192,7 +2195,7 @@ body.dark-mode .mvs-skeleton::after {
     max-width: 400px;
     margin: 0 auto;
     background: var(--mvs-overlay);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     overflow: hidden;
     aspect-ratio: 9/16;
 }
@@ -2274,7 +2277,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-stat-card {
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     padding: 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     text-align: center;
@@ -2434,7 +2437,7 @@ body.dark-mode .mvs-skeleton::after {
     padding: 10px 12px;
     background-color: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     resize: none;
     min-height: 40px;
     font-family: inherit;
@@ -2446,7 +2449,7 @@ body.dark-mode .mvs-skeleton::after {
     background: var(--mvs-primary);
     color: var(--mvs-btn-primary-fg, #fff);
     border: none;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     cursor: pointer;
     font-size: 0.9em;
     align-self: flex-end;
@@ -2903,7 +2906,7 @@ body.dark-mode .mvs-skeleton::after {
     display: flex;
     flex-direction: column;
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: box-shadow 0.2s;
@@ -3391,7 +3394,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 8px 12px;
     background-color: var(--mvs-bg);
     border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
     box-sizing: border-box;
@@ -3423,7 +3426,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 4px;
     padding: 6px;
     border: 1px solid var(--mvs-border-light);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     min-height: 38px;
     align-items: center;
     cursor: text;
@@ -3442,7 +3445,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 2px 8px;
     background: var(--mvs-btn-primary-bg);
     color: var(--mvs-btn-primary-fg);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     font-size: 0.8em;
 }
 
@@ -3534,7 +3537,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-confirm {
     background: var(--mvs-bg);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 28px;
     max-width: 380px;
     width: 90%;
@@ -3562,7 +3565,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 12px 0;
     font-size: 14px;
     border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     background-color: var(--mvs-surface-2);
     color: var(--mvs-text);
 }
@@ -3608,14 +3611,14 @@ a.mvs-dashboard-card-title:hover {
     overflow-y: auto;
     padding: 8px;
     border: 1px solid var(--mvs-border-light);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     margin-top: 8px;
 }
 
 .mvs-media-picker-item {
     position: relative;
     aspect-ratio: 1;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     overflow: hidden;
     cursor: pointer;
     border: 2px solid transparent;
@@ -3889,7 +3892,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
     box-sizing: border-box;
@@ -3908,7 +3911,7 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 24px;
     background: var(--mvs-bg, #fff);
     border: 1px solid var(--mvs-border-light, #dcdcde);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 20px;
 }
 
@@ -3920,7 +3923,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 0 0 1rem;
     padding: 28px 20px;
     border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
     background: var(--mvs-surface-2);
@@ -3954,7 +3957,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 12px;
     padding: 12px;
     background: var(--mvs-surface-2);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
 }
 
 .mvs-dashboard-upload-fields input[type="text"],
@@ -3963,7 +3966,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
     box-sizing: border-box;
@@ -4018,7 +4021,7 @@ a.mvs-dashboard-card-title:hover {
        it, so an outline here would be the third edge in a row (border contract
        rule 1). */
     background: var(--mvs-bg-subtle, #f6f7f8);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
 }
 
 /* Respect the HTML [hidden] attribute set by data-wp-bind--hidden. The
@@ -4146,7 +4149,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 20px;
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border-light);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
 }
 
 /* The dropzone itself. Every sibling above was already unscoped here for
@@ -4164,7 +4167,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     padding: 20px 24px;
     border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface-2);
     text-align: center;
     cursor: pointer;
@@ -4218,7 +4221,7 @@ a.mvs-dashboard-card-title:hover {
     width: 80px;
     height: 80px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     border: 1px solid var(--mvs-border-light);
 }
 
@@ -4239,7 +4242,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-bp-upload-status {
     margin-top: 10px;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 13px;
     background: var(--mvs-info-bg);
     color: var(--mvs-primary-text, var(--mvs-primary));
@@ -4281,7 +4284,7 @@ a.mvs-dashboard-card-title:hover {
  * source of truth so width/height/object-fit can't drift. Border-radius
  * applies to the wrapper so it clips the letterbox bars too. */
 .mvs-media-video {
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     overflow: hidden;
 }
 
@@ -4600,7 +4603,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 14px;
     padding: 40px 32px;
     background: var(--mvs-bg, #ffffff);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
 }
 
 .mvs-lightbox-document .mvs-doc-card__glyph {
@@ -4648,7 +4651,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 20px auto;
     background: var(--mvs-surface-2);
     border: 1px solid var(--mvs-border-light);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
 }
 
@@ -4789,7 +4792,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-card-info {
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border-light);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 24px 28px;
     margin-bottom: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -4941,7 +4944,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-pill {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.75em;
     background: rgba(var(--mvs-primary-rgb), 0.15);
     color: var(--mvs-primary-text, var(--mvs-primary));
@@ -4953,7 +4956,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     gap: 0;
     border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     overflow: hidden;
     width: fit-content;
 }
@@ -5038,7 +5041,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-row input {
     padding: 8px 10px;
     border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.9em;
 }
 
@@ -5058,7 +5061,7 @@ a.mvs-dashboard-card-title:hover {
     width: 32px;
     height: 32px;
     border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     background: var(--mvs-bg);
     color: var(--mvs-danger);
     font-size: 1.2em;
@@ -5080,7 +5083,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 12px;
     padding: 10px 14px;
     background: var(--mvs-success-bg);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     color: var(--mvs-success);
     font-weight: 500;
@@ -5168,7 +5171,7 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(0, 0, 0, 0.7);
     color: #fff;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -5256,7 +5259,7 @@ a.mvs-dashboard-card-title:hover {
     overflow-y: auto;
     background: var(--mvs-bg, #fff);
     border: 1px solid var(--mvs-border-light, #ddd);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     box-shadow: var(--mvs-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.18));
     z-index: 998;
     margin-top: 8px;
@@ -5326,7 +5329,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     padding: 8px;
     border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.9em;
     resize: vertical;
     box-sizing: border-box;
@@ -5349,7 +5352,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-follow-btn {
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     padding: 6px 16px;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -5393,7 +5396,7 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-overlay);
     color: var(--mvs-on-overlay);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     padding: 2px 8px;
     min-block-size: 24px; /* WCAG 2.2 target-size floor on fine pointers; 44px on touch below. */
     font-size: 11px;
@@ -5449,7 +5452,7 @@ a.mvs-dashboard-card-title:hover {
     left: 4px;
     background: var(--mvs-btn-primary-bg);
     color: var(--mvs-btn-primary-fg);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     padding: 2px 8px;
     font-size: 11px;
     font-weight: 700;
@@ -5464,7 +5467,7 @@ a.mvs-dashboard-card-title:hover {
     inset-inline: 4px;
     bottom: 4px;
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     background: var(--mvs-overlay);
     color: var(--mvs-on-overlay);
     font-size: 11px;
@@ -5521,7 +5524,7 @@ a.mvs-dashboard-card-title:hover {
     display: inline-block;
     padding: 8px 14px;
     border: 1px solid var(--mvs-border-light);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     text-decoration: none;
     font-size: 13px;
     color: var(--mvs-text);
@@ -5557,7 +5560,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-upload-dropzone {
     border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     padding: 40px 20px;
     text-align: center;
     cursor: pointer;
@@ -5590,7 +5593,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 12px;
     padding: 6px 12px;
     border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 13px;
 }
 
@@ -5611,7 +5614,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 13px;
     box-sizing: border-box;
 }
@@ -5627,7 +5630,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-media-content img {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
 }
 
 /* ONE declaration. There were two, at identical specificity with no media
@@ -5822,7 +5825,7 @@ a.mvs-dashboard-card-title:hover {
 /* Messages */
 .mvs-profile-message {
     padding: 0.75rem 1rem;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     margin-bottom: 1rem;
     font-size: 0.875rem;
 }
@@ -5847,7 +5850,7 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 2rem;
     padding: 1.5rem;
     background: var(--mvs-surface-2);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
 }
 
 .mvs-profile-avatar-preview {
@@ -5921,7 +5924,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-field textarea {
     padding: 0.625rem 0.75rem;
     border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9375rem;
     font-family: inherit;
     transition: border-color 0.2s;
@@ -5975,7 +5978,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     gap: 0.375rem;
     padding: 0.625rem 1.25rem;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
@@ -6066,7 +6069,7 @@ a.mvs-dashboard-card-title:hover {
     background: none;
     border: none;
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     color: var(--mvs-text-secondary);
     transition: background 0.15s, color 0.15s;
 }
@@ -6244,7 +6247,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     padding: 12px 16px;
     border: 1px solid var(--mvs-border-light);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     margin-bottom: 8px;
     text-decoration: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -6311,7 +6314,7 @@ a.mvs-dashboard-card-title:hover {
        near-black in dark mode (dark text on purple). Keep it white. */
     color: #fff;
     padding: 14px 24px;
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     margin: 0 auto 20px;
     max-width: var(--mvs-content-width, 1200px);
     position: relative;
@@ -6594,7 +6597,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 10px;
     background: var(--mvs-warning-bg);
     border: 1px solid var(--mvs-warning);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     padding: 10px 16px;
     margin-bottom: 16px;
     font-size: 0.875rem;
@@ -7016,7 +7019,7 @@ a.mvs-dashboard-card-title:hover {
        a theme that doesn't define a dark variant. The outer overlay scrim
        handles the page-backdrop dimming. */
     background: transparent;
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     overflow: hidden;
     animation: mvs-slide-up 0.3s ease;
 }
@@ -7187,7 +7190,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-audio {
     width: min(400px, 80%);
     display: block;
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 8px;
     filter: invert(1);
 }
@@ -7259,7 +7262,7 @@ a.mvs-dashboard-card-title:hover {
     background: rgba(0, 0, 0, .6);
     color: var(--mvs-surface);
     padding: 4px 12px;
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     font-size: 13px;
 }
 
@@ -7388,7 +7391,7 @@ a.mvs-dashboard-card-title:hover {
        theme's web font was still loading (2.6.0 member walk). */
     padding: 6px 0;
     text-align: center;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     text-decoration: none;
     color: var(--mvs-text);
     /* Overflow is handled on .mvs-lightbox-action__label, not here. A bare text
@@ -8031,7 +8034,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 8px;
     background: var(--mvs-surface-2, #f5f5f5);
     border-left: 3px solid var(--mvs-primary, #2271b1);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 13px;
     color: var(--mvs-text-secondary, #555);
 }
