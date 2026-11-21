@@ -11,7 +11,7 @@
 
 .mvs-frontend-confirm-dialog {
 	border: 1px solid var( --mvs-border, #dcdcde );
-	border-radius: 12px;
+	border-radius: var(--mvs-radius-lg, 12px);
 	padding: 0;
 	max-width: 440px;
 	width: calc( 100% - 32px );
@@ -47,7 +47,7 @@
 .mvs-frontend-confirm-dialog .mvs-frontend-confirm-ok {
 	min-height: 40px;
 	padding: 8px 18px;
-	border-radius: 6px;
+	border-radius: var(--mvs-radius-sm, 6px);
 	font-size: 14px;
 	font-weight: 600;
 	cursor: pointer;
@@ -145,7 +145,7 @@ body.dark-mode .mvs-frontend-confirm-dialog .mvs-frontend-confirm-cancel:hover {
 	.mvs-frontend-confirm-dialog {
 		max-width: 100%;
 		margin: 0 12px;
-		border-radius: 14px;
+		border-radius: calc(var(--mvs-radius-lg, 12px) * 7 / 6);
 	}
 
 	.mvs-frontend-confirm-dialog__form {

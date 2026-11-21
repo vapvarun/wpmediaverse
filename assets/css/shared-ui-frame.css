@@ -139,7 +139,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 .mvs-modal {
 	background: var(--mvs-surface);
-	border-radius: 16px;
+	border-radius: calc(var(--mvs-radius-lg, 12px) * 4 / 3);
 	width: 90vw;
 	max-width: 560px;
 	max-height: 90vh;
@@ -264,7 +264,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 /* ─── Dropzone ─── */
 .mvs-modal-dropzone {
 	border: 2px dashed var(--mvs-border);
-	border-radius: 12px;
+	border-radius: var(--mvs-radius-lg, 12px);
 	padding: 32px;
 	text-align: center;
 	cursor: pointer;
@@ -326,7 +326,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	width: 80px;
 	height: 80px;
 	object-fit: cover;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	border: 2px solid var(--mvs-border-light);
 }
 
@@ -350,7 +350,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-preview-icon {
 	width: 80px;
 	height: 80px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	border: 2px dashed var(--mvs-border-light);
 	background: var(--mvs-surface-2, #f6f7f7);
 	display: flex;
@@ -462,7 +462,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	width: 100%;
 	padding: 10px 12px;
 	border: 1px solid var(--mvs-border);
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	transition: border-color 0.15s;
 	box-sizing: border-box;
@@ -554,7 +554,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
     background: var(--mvs-bg, #fff);
     color: var(--mvs-text, #1d2327);
 	border: 1px solid var(--mvs-border, #c3c4c7);
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 }
 
@@ -565,7 +565,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	background: var(--mvs-bg, #fff);
     color: var(--mvs-text, #1d2327);
 	border: 1px solid var(--mvs-border, #c3c4c7);
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 }
 
@@ -604,7 +604,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	color: var(--mvs-btn-primary-fg, var(--mvs-on-primary, #ffffff));
 	border: none;
 	padding: 10px 24px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
@@ -620,7 +620,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	color: var(--mvs-text);
 	border: none;
 	padding: 10px 24px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
@@ -667,7 +667,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	bottom: calc(var(--mvs-fab-bottom) + var(--mvs-fab-diameter) + 12px + env(safe-area-inset-bottom, 0px));
 	right: 24px;
 	padding: 12px 20px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	/* One above the chat panel (messaging.css, also 100000). Both are fixed
 	   children of the root stacking context and both print on wp_footer, so at
@@ -877,7 +877,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	padding: 8px 12px;
 	font-size: 14px;
 	border: 1px solid var( --mvs-border, #c3c4c7 );
-	border-radius: 6px;
+	border-radius: var(--mvs-radius-sm, 6px);
 	background: var( --mvs-bg, #fff );
 	color: var( --mvs-text, #1d2327 );
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -969,7 +969,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	height: 32px;
 	padding: 0;
 	border: 1px solid var( --mvs-border );
-	border-radius: 6px;
+	border-radius: var(--mvs-radius-sm, 6px);
 	background: transparent;
 	color: var( --mvs-text-muted, #757575 );
 	cursor: pointer;
@@ -1019,7 +1019,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-error {
 	background: rgba( 214, 54, 56, 0.08 );
 	border: 1px solid rgba( 214, 54, 56, 0.2 );
-	border-radius: 6px;
+	border-radius: var(--mvs-radius-sm, 6px);
 	padding: 8px 12px;
 	color: var( --mvs-danger, #d63638 );
 	font-size: 13px;
