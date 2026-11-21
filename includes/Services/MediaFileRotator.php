@@ -102,6 +102,23 @@ final class MediaFileRotator {
 	}
 
 	/**
+	 * Rotate one item now if it is waiting for the end of the request.
+	 *
+	 * Anything that builds an item's links for a response calls this first, so a reply to a privacy
+	 * change carries the new link rather than the one that is about to stop working.
+	 *
+	 * @param int $media_id Media id.
+	 * @return void
+	 */
+	public static function settle( int $media_id ): void {
+		if ( ! isset( self::$pending[ $media_id ] ) ) {
+			return;
+		}
+		unset( self::$pending[ $media_id ] );
+		self::rotate_many( array( $media_id ) );
+	}
+
+	/**
 	 * Rotate what was queued: a few inline, the rest in background chunks
 	 * (Action Scheduler when present, else a single WP-Cron event per chunk).
 	 *

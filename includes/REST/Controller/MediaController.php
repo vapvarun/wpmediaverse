@@ -2265,6 +2265,18 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * An item's stored fields, read after any rename queued earlier in this request is done, so the
+	 * links in a reply never point at files a privacy change has just moved.
+	 *
+	 * @param int $media_id Media id.
+	 * @return array
+	 */
+	private function get_all_settled( int $media_id ): array {
+		\WPMediaVerse\Services\MediaFileRotator::settle( $media_id );
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
+	}
+
+	/**
 	 * Prepare a media item for REST response.
 	 *
 	 * Builds the response entirely from the mvs_media_index and mvs_media_meta
@@ -2278,7 +2290,7 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		$media_id = (int) $media_id;
-		$all      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
+		$all      = $this->get_all_settled( $media_id );
 
 		if ( empty( $all ) ) {
 			return null;
