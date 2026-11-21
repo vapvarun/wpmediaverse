@@ -37,7 +37,9 @@ class ActivityContentIntegration {
 		add_filter( 'bp_get_activity_content_body', array( $this, 'inject_video_player_in_activity' ), 0, 2 );
 
 		// Whitelist our MVS tags/attrs so kses (priority 1) preserves our transformed output.
-		add_filter( 'bp_activity_allowed_tags', array( $this, 'allow_mvs_activity_tags' ) );
+		// Late and additive: another plugin that REPLACES the div allow-list (Activity Link Preview does) would otherwise
+		// strip data-mvs-media-id at save, and the photo is then treated as legacy markup and dropped on render.
+		add_filter( 'bp_activity_allowed_tags', array( $this, 'allow_mvs_activity_tags' ), 9999 );
 	}
 
 	/**
@@ -50,7 +52,7 @@ class ActivityContentIntegration {
 	 */
 	public function allow_mvs_activity_tags( array $tags ): array {
 		// Grid container and per-item wrappers.
-		$tags['div'] = array(
+		$tags['div'] = array_merge( (array) ( $tags['div'] ?? array() ), array(
 			'class'               => array(),
 			'style'               => array(),
 			'data-mvs-media-id'   => array(),
@@ -59,11 +61,11 @@ class ActivityContentIntegration {
 			'data-wp-interactive' => array(),
 			'data-wp-context'     => array(),
 			'data-wp-on--click'   => array(),
-		);
+		) );
 
 		// Allow inline <video> player.
 		// controlslist carries "nodownload" for items with downloads off.
-		$tags['video'] = array(
+		$tags['video'] = array_merge( (array) ( $tags['video'] ?? array() ), array(
 			'src'          => array(),
 			'controls'     => array(),
 			'controlslist' => array(),
@@ -73,23 +75,23 @@ class ActivityContentIntegration {
 			'class'        => array(),
 			'width'        => array(),
 			'height'       => array(),
-		);
+		) );
 
 		// Allow <source> inside <video>/<audio>.
-		$tags['source'] = array(
+		$tags['source'] = array_merge( (array) ( $tags['source'] ?? array() ), array(
 			'src'  => array(),
 			'type' => array(),
-		);
+		) );
 
 		// Allow inline <audio> player.
-		$tags['audio'] = array(
+		$tags['audio'] = array_merge( (array) ( $tags['audio'] ?? array() ), array(
 			'src'          => array(),
 			'controls'     => array(),
 			'controlslist' => array(),
 			'preload'      => array(),
 			'style'        => array(),
 			'class'        => array(),
-		);
+		) );
 
 		// Allow class/style and Interactivity API attrs on <a> for MVS media links.
 		$tags['a']['class']               = array();
@@ -106,10 +108,10 @@ class ActivityContentIntegration {
 		$tags['img']['style']             = array();
 		$tags['img']['loading']           = array();
 		$tags['img']['class']             = array();
-		$tags['span']                     = array(
+		$tags['span']                     = array_merge( (array) ( $tags['span'] ?? array() ), array(
 			'class'       => array(),
 			'aria-hidden' => array(),
-		);
+		) );
 
 		return $tags;
 	}
@@ -176,6 +178,53 @@ class ActivityContentIntegration {
 		$content = preg_replace( '/<div class="mvs-activity-media mvs-activity-media--video[^"]*"[^>]*>.*?<\/div>/s', $video_html, $content );
 
 		return $content;
+	}
+
+	/**
+	 * Saved media markup that carries no media id: legacy, or a composer post that lost the attribute.
+	 *
+	 * A post the composer made has _mvs_media_ids, so markup without the id attribute means another plugin's
+	 * allow-list stripped it at save, not that the markup is legacy. Its saved copy is discarded and the photo is
+	 * rebuilt from the ids. Anything else is treated as legacy and its missing images are dropped.
+	 *
+	 * @param string      $content  Activity content.
+	 * @param object|null $activity BP activity.
+	 * @return string
+	 */
+	private function clean_markup_without_ids( string $content, $activity ): string {
+		return $this->has_composer_media_ids( $activity ) ? $this->strip_saved_media_markup( $content ) : $this->drop_missing_upload_images( $content );
+	}
+
+	/**
+	 * Whether an activity was made by the composer (it carries the ids of its media).
+	 *
+	 * @param object|null $activity BP activity.
+	 * @return bool
+	 */
+	private function has_composer_media_ids( $activity ): bool {
+		return is_object( $activity ) && ! empty( $activity->id ) && '' !== (string) bp_activity_get_meta( (int) $activity->id, '_mvs_media_ids', true );
+	}
+
+	/**
+	 * Remove the media blocks (grid wrapper or single item) the composer saved into the content, keeping the text.
+	 * Balanced on <div>, so nested item blocks inside a grid come out with it.
+	 *
+	 * @param string $content Activity content.
+	 * @return string Content without its saved media markup.
+	 */
+	private function strip_saved_media_markup( string $content ): string {
+		$open = '#<div\b[^>]*\bclass=["\'][^"\']*\bmvs-activity-media(?:-grid)?\b[^"\']*["\'][^>]*>#i';
+		while ( preg_match( $open, $content, $m, PREG_OFFSET_CAPTURE ) ) {
+			$start = (int) $m[0][1];
+			$pos   = $start + strlen( $m[0][0] );
+			$depth = 1;
+			while ( $depth > 0 && preg_match( '#<(/?)div\b[^>]*>#i', $content, $t, PREG_OFFSET_CAPTURE, $pos ) ) {
+				$depth += '' === $t[1][0] ? 1 : -1;
+				$pos    = (int) $t[0][1] + strlen( $t[0][0] );
+			}
+			$content = substr( $content, 0, $start ) . substr( $content, $pos );
+		}
+		return trim( $content );
 	}
 
 	/**
@@ -266,7 +315,7 @@ class ActivityContentIntegration {
 		// so running this on them deleted every new upload's picture from the
 		// stream.
 		if ( false === strpos( $content, 'data-mvs-media-id' ) ) {
-			$content = $this->drop_missing_upload_images( $content );
+			$content = $this->clean_markup_without_ids( $content, $activity );
 		}
 
 		// Activity already has MVS media markup baked into content
