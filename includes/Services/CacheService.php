@@ -387,13 +387,18 @@ class CacheService {
 	/**
 	 * Flush all MVS caches.
 	 *
-	 * Moves the group's last-changed token: every key is read through it, so every cached value is
-	 * retired at once without asking the backend to flush a group or emptying the site's cache.
+	 * Moves the group's last-changed token, which retires every in-memory / external-cache value at
+	 * once without asking the backend to flush a group or emptying the site's cache. The two-tier
+	 * "persistent" values also keep a transient copy on a site with no external object cache, and
+	 * that copy would be read back under the new token, so those keys are dropped explicitly. They
+	 * are the admin aggregates and the tag cloud, the only users of remember_persistent().
 	 *
 	 * @return bool True on success.
 	 */
 	public function flush_all(): bool {
 		wp_cache_set_last_changed( self::GROUP );
+		$this->on_admin_aggregate_change();
+		$this->invalidate_tag_cloud();
 		return true;
 	}
 
@@ -419,6 +424,14 @@ class CacheService {
 		add_action( 'created_mvs_tag', array( $this, 'on_tag_change' ) );
 		add_action( 'edited_mvs_tag', array( $this, 'on_tag_change' ) );
 		add_action( 'delete_mvs_tag', array( $this, 'on_tag_change' ) );
+
+		// The tag cloud counts visible media per tag, so it also moves when an item is tagged or untagged
+		// (a PUT with tags=[] fires none of the term hooks above) and when an item stops being visible.
+		add_action( 'set_object_terms', array( $this, 'on_object_terms' ), 10, 4 );
+		add_action( 'mvs_media_deleted', array( $this, 'on_tag_change' ) );
+		add_action( 'mvs_media_trashed', array( $this, 'on_tag_change' ) );
+		add_action( 'mvs_media_privacy_changed', array( $this, 'on_tag_change' ) );
+		add_action( 'mvs_moderation_changed', array( $this, 'on_tag_change' ) );
 
 		// Invalidate media meta cache on upload (media is custom table, not CPT).
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_save' ) );
@@ -476,6 +489,20 @@ class CacheService {
 	 */
 	public function on_tag_change(): void {
 		$this->invalidate_tag_cloud();
+	}
+
+	/**
+	 * An object's terms were set: refresh the tag cloud when they were media tags.
+	 *
+	 * @param int    $object_id Object id.
+	 * @param array  $terms     Terms.
+	 * @param array  $tt_ids    Term taxonomy ids.
+	 * @param string $taxonomy  Taxonomy slug.
+	 */
+	public function on_object_terms( $object_id, $terms, $tt_ids, $taxonomy ): void {
+		if ( 'mvs_tag' === $taxonomy ) {
+			$this->invalidate_tag_cloud();
+		}
 	}
 
 	/**
