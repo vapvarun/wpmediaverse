@@ -32,6 +32,28 @@
 	var attachedMedia = []; // Array of { id, thumbUrl }
 
 	// A video's preview frame is a blob URL; release it when the item leaves the composer.
+	// A post in a group is a group post: while a group is the target (a group page, or the "Post in"
+	// picker set to a group) the privacy dropdown gives way to a plain line, and the server enforces it.
+	function inGroup() {
+		var wrap = document.getElementById( 'mvs-activity-media-btn-wrap' );
+		if ( wrap && '1' === wrap.getAttribute( 'data-mvs-group' ) ) { return true; }
+		var postIn = document.getElementById( 'whats-new-post-in' );
+		return !! ( postIn && postIn.value && '0' !== postIn.value && 'profile' !== postIn.value );
+	}
+
+	function syncGroupPrivacy() {
+		var sel = document.getElementById( 'mvs-activity-privacy' );
+		var note = document.getElementById( 'mvs-activity-group-note' );
+		if ( ! sel || ! note || '1' !== sel.dataset.mvsRevealed ) { return; }
+		var group = inGroup();
+		sel.style.display = group ? 'none' : '';
+		note.style.display = group ? '' : 'none';
+	}
+
+	document.addEventListener( 'change', function( e ) {
+		if ( e.target && 'whats-new-post-in' === e.target.id ) { syncGroupPrivacy(); }
+	} );
+
 	function releaseThumb( item ) {
 		if ( item && 'string' === typeof item.thumbUrl && 0 === item.thumbUrl.indexOf( 'blob:' ) ) {
 			URL.revokeObjectURL( item.thumbUrl );
@@ -194,7 +216,7 @@
 				restUrl + 'media?context=activity',
 				file,
 				{
-					privacy: privacySel && privacySel.value ? privacySel.value : '',
+					privacy: ! inGroup() && privacySel && privacySel.value ? privacySel.value : '',
 					poster: frame,
 					extra: { status: 'draft' }
 				},
@@ -296,8 +318,9 @@
 		// the privacy level to.
 		var privacySel = document.getElementById( 'mvs-activity-privacy' );
 		if ( privacySel ) {
-			privacySel.style.display = '';
+			privacySel.dataset.mvsRevealed = '1';
 		}
+		syncGroupPrivacy();
 		// Reveal the tags field too — applied to the attached media at post
 		// time.
 		var tagsField = document.getElementById( 'mvs-activity-tags' );

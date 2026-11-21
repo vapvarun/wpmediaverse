@@ -1164,6 +1164,15 @@
     clear: both;
 }
 
+/* A group post is a group post: this line replaces the dropdown while a group is the target. */
+#buddypress #whats-new-form #whats-new-options .mvs-activity-privacy-note {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--mvs-text-muted, var(--mvs-text));
+}
+
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
     display: inline-flex;
     align-items: center;
