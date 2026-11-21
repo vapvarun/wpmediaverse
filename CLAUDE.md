@@ -292,6 +292,7 @@ These rules protect the live customer sites. They are mechanically enforced via 
 | `npx grunt build` | RTL CSS, minify CSS/JS, generate .pot |
 | `npx grunt dist` | Full build + clean dist/ + copy + ZIP |
 | `npx grunt release` | CI check + dist |
+| `bash bin/boot-matrix-smoke.sh` | Boots Free only, Pro only and both on a REAL dev site and fails on a 5xx, fatal, PHP warning or notice, or a new `debug.log` line, requesting the home page, a probe page with every block and shortcode, the REST indexes and each mode's own wp-admin screens. Run by `bin/build-release.sh` (step 3b). Needs `MVS_WP` (or `MVS_WP_PATH`) and `MVS_LOGIN_PARAM`, and `WP_DEBUG` with `WP_DEBUG_LOG` (and `WP_DEBUG_DISPLAY` on for the page-output check). Proved able to fail: removing the `defined( 'MVS_VERSION' )` guard from Pro turns Pro-only red with `Undefined constant "MVS_VERSION"`. |
 | `npm run build` | Block assets (a bare `wp-scripts build` wipes tracked files in `build/`) |
 | `composer run phpcs` | WPCS coding standards |
 | `composer run phpstan` | Static analysis (baseline: `phpstan-baseline.neon`) |

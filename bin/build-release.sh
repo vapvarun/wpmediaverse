@@ -13,6 +13,7 @@
 #   bin/build-release.sh --allow-dirty    # skip the clean-tree check (dev)
 #   bin/build-release.sh --output ~/Desktop  # also copy zips to DIR
 #   bin/build-release.sh --skip-browser-smoke  # emergency only — logs a warning
+#   bin/build-release.sh --skip-boot-matrix    # emergency only — logs a warning
 #   bin/build-release.sh --free-only      # only stage + zip Free (still version-pairs with Pro)
 #
 # Exit codes:
@@ -42,12 +43,14 @@ PRO_MAIN="${PRO_SLUG}.php"
 ALLOW_DIRTY=0
 OUTPUT_DIR=""
 SKIP_BROWSER_SMOKE=0
+SKIP_BOOT_MATRIX=0
 FREE_ONLY=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--allow-dirty)         ALLOW_DIRTY=1; shift ;;
 		--output)              OUTPUT_DIR="$2"; shift 2 ;;
 		--skip-browser-smoke)  SKIP_BROWSER_SMOKE=1; shift ;;
+		--skip-boot-matrix)    SKIP_BOOT_MATRIX=1; shift ;;
 		--free-only)           FREE_ONLY=1; shift ;;
 		*) echo "unknown flag: $1" >&2; exit 2 ;;
 	esac
@@ -197,6 +200,26 @@ if [ "$FREE_ONLY" -eq 0 ]; then
 		exit 30
 	fi
 	ok "Pro  boot smoke OK"
+fi
+
+# --- 3b. boot matrix: Free only, Pro only, both, on a real WordPress -------
+# tools/smoke-test.php boots each plugin in a stub. This boots them in WordPress
+# and fails on a 5xx, a fatal, a PHP warning or notice, or a new debug.log line,
+# for every mode: thousands of sites run Free alone or update one plugin first.
+# Needs a dev site: MVS_WP (or MVS_WP_PATH) and MVS_LOGIN_PARAM, see the script.
+step "3b. boot matrix smoke (Free only, Pro only, both)"
+if [ "$SKIP_BOOT_MATRIX" -eq 1 ]; then
+	warn "--skip-boot-matrix set: the Free-only / Pro-only boot check did NOT run. Emergency only."
+elif [ "$FREE_ONLY" -eq 1 ]; then
+	warn "--free-only: the matrix needs both plugins; skipped."
+elif [ -z "${MVS_WP:-}" ] && [ -z "${MVS_WP_PATH:-}" ]; then
+	fail "MVS_WP or MVS_WP_PATH is not set, so the Free-only / Pro-only boot check cannot run. Point it at the dev site (see bin/boot-matrix-smoke.sh) or pass --skip-boot-matrix."
+	exit 30
+elif ! bash "$FREE_ROOT/bin/boot-matrix-smoke.sh"; then
+	fail "Boot matrix smoke failed: a mode (Free only, Pro only or both) is not clean"
+	exit 30
+else
+	ok "Boot matrix smoke OK"
 fi
 
 # --- 4. asset regen via grunt --------------------------------------------
