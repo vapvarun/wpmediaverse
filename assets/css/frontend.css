@@ -9441,3 +9441,68 @@ a.mvs-dashboard-tab:focus-visible {
 	flex: 1 1 0;
 	min-width: 0;
 }
+
+/* ==========================================================================
+   Media Grid block in a narrow container (sidebar, widget area, narrow column)
+
+   The justified-rows layout sizes a tile from its aspect ratio and a row
+   height, so in a container narrower than about two tiles every tile fills the
+   row and the block's Columns setting is ignored. These rules key on the
+   block's OWN width (a container query), not the viewport, so the same block
+   behaves in a 267px sidebar on a desktop and in a 390px phone column alike.
+   Wider containers are untouched.
+   ========================================================================== */
+.mvs-media-grid-block {
+    container: mvs-grid / inline-size;
+}
+
+@container mvs-grid (max-width: 419px) {
+
+    /* The owner's Columns choice, capped at three: five 50px thumbnails in a
+       sidebar are not a gallery. Both layouts share one rule. */
+    .mvs-media-grid.mvs-grid--original,
+    .mvs-media-grid.mvs-cols-3,
+    .mvs-media-grid.mvs-cols-4,
+    .mvs-media-grid.mvs-cols-5 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mvs-media-grid.mvs-grid--original.mvs-cols-2,
+    .mvs-media-grid.mvs-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* :last-child too: the lone-orphan cap above is more specific and would
+       otherwise keep the final tile narrower than its neighbours. */
+    .mvs-grid--original .mvs-grid-item,
+    .mvs-grid--original .mvs-grid-item:last-child {
+        flex: none;
+        min-width: 0;
+        max-width: none;
+    }
+
+    /* Square crops: a justified tile's fixed row height has no meaning here. */
+    .mvs-media-grid.mvs-grid--original .mvs-grid-item-link,
+    .mvs-media-grid.mvs-grid--original .mvs-grid-item > a {
+        height: auto;
+        aspect-ratio: 1;
+    }
+
+    .mvs-grid-pagination {
+        margin-top: 12px;
+    }
+
+    .mvs-grid-pagination-links a,
+    .mvs-grid-pagination-links span {
+        padding: 6px 10px;
+    }
+}
+
+/* A grid in a widget area (sidebar, footer column) is a teaser, not an archive:
+   page links under a strip of thumbnails read as clutter, so it shows its first
+   page of items only. This keys on WHERE the block sits, not on its width, so a
+   narrow phone column that holds a full gallery keeps its paging. */
+:where(.widget, .widget_block, aside) .mvs-media-grid-block .mvs-grid-pagination {
+    display: none;
+}
