@@ -1803,6 +1803,7 @@ class Plugin {
 				'i18n' => array(
 					'following'   => __( 'Following', 'wpmediaverse' ),
 					'follow'      => __( 'Follow', 'wpmediaverse' ),
+					'requested'   => __( 'Requested', 'wpmediaverse' ),
 					'block'       => __( 'Block', 'wpmediaverse' ),
 					'unblock'     => __( 'Unblock', 'wpmediaverse' ),
 					'blockAria'   => __( 'Block this member', 'wpmediaverse' ),

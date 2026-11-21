@@ -138,6 +138,19 @@ class FollowService {
 			 * @param int $following_id The user being unfollowed.
 			 */
 			do_action( 'mvs_user_unfollowed', $follower_id, $following_id );
+		} else {
+			/**
+			 * Fires when an unfollow found no follow of its own to remove.
+			 *
+			 * A community plugin that turned the follow into a request (see mvs_can_follow) holds
+			 * that request, not MediaVerse; it withdraws it here so cancelling works from every client.
+			 *
+			 * @since 2.6.5
+			 *
+			 * @param int $follower_id  The user unfollowing.
+			 * @param int $following_id The user being unfollowed.
+			 */
+			do_action( 'mvs_follow_request_withdrawn', $follower_id, $following_id );
 		}
 
 		return (bool) $deleted;
