@@ -92,6 +92,9 @@ function countLabel( total, plural, one ) {
 // read them as `state.i18n.<key>` with an English fallback.
 const sharedUI = store( 'mvs/shared-ui' );
 
+// The shared edit modal's save event is bound once per page load.
+let mediaUpdatedBound = false;
+
 function apiFetch( ctx, path, opts = {} ) {
 	if ( opts.body && typeof opts.body === 'string' ) {
 		try { opts.body = JSON.parse( opts.body ); } catch { /* leave as-is */ }
@@ -152,26 +155,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			pendingFiles: [],
 			pendingCount: 0,
 			hasPending: false,
-		},
-		// Edit modal
-		editModal: {
-			visible: false,
-			itemId: 0,
-			title: '',
-			description: '',
-			privacy: 'public',
-			album: null, // { id, title, privacy } when the photo is in an album
-			tags: [],
-			tagInput: '',
-			tagResults: [],
-			tagDropdownVisible: false,
-			// Off by default - a title edit leaves the URL alone. Held in state so
-			// re-opening the panel shows what the member actually chose.
-			regenerateSlug: false,
-			allowDownload: true,
-			saving: false,
-			// "42%" while a Replace File upload is sending, '' otherwise.
-			replaceProgress: '',
 		},
 		// Albums
 		albums: {
@@ -257,17 +240,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// Derived state
 		get uploadPercentText() {
 			return state.upload.uploading ? state.upload.percent + '%' : '';
-		},
-		get editModalSaveDisabled() {
-			// Runbook contract C.member.lightbox-edit-modal: "save disabled
-			// while title empty". A disabled Save is the feedback — pairing it
-			// with the inline hint below the field so it is not a dead button
-			// with no explanation.
-			return state.editModal.saving
-				|| '' === String( state.editModal.title || '' ).trim();
-		},
-		get editModalTitleMissing() {
-			return '' === String( state.editModal.title || '' ).trim();
 		},
 		// Rail highlight, one getter for every rail item (slug from context):
 		// active when its section is showing, or the showing section belongs to
@@ -495,12 +467,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 		get itemTitle() {
 			return getContext().item?.title || ( state.i18n?.untitled || '(Untitled)' );
 		},
-		get editModalPrivacyUnlisted() {
-			return state.privacyUnlisted( state.editModal.privacy );
-		},
-		get editModalPrivacyLabel() {
-			return state.privacyLabelFor( state.editModal.privacy );
-		},
 		get albumModalPrivacyUnlisted() {
 			return state.privacyUnlisted( state.albumModal.privacy );
 		},
@@ -554,20 +520,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 			// In an album the album's privacy applies; say so, so the badge and
 			// the edit modal agree (2.6.0,
 			return item?.album ? ( state.i18n?.privacyViaAlbum || '%s (album)' ).replace( '%s', label ) : label;
-		},
-		// A photo in an album shows with the album's privacy: the picker would offer a choice that is ignored, so it
-		// is disabled and says which album decides.
-		get editPrivacyFollowsAlbum() {
-			return !! state.editModal.album;
-		},
-		get editPrivacyFollowsText() {
-			const album = state.editModal.album;
-			if ( ! album ) {
-				return '';
-			}
-			return ( state.i18n?.editFollowsAlbum || 'This photo follows album "%1$s" (%2$s). Change the album\'s privacy, or take the photo out of the album.' )
-				.replace( '%1$s', album.title || '' )
-				.replace( '%2$s', String( state.privacyLabelFor( album.privacy || 'public' ) ).split( ':' )[ 0 ].trim() );
 		},
 		get albumItemCount() {
 			return countLabel( getContext().item?.media_count, state.i18n?.itemsCount, state.i18n?.itemCount );
@@ -1103,178 +1055,15 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 
 		/* =====================================================================
-		   Edit Media Modal
+		   Edit Media
+		   The form is the shared edit modal (templates/partials/media-edit-form.php,
+		   logic in the shared-ui store): one form for My Media, the lightbox and the
+		   single media page. This list only opens it and refreshes the item after.
 		   ===================================================================== */
 		openEditModal( event ) {
 			const id = parseInt( event.target.closest( '[data-media-id]' )?.dataset.mediaId, 10 );
-			const item = state.media.items.find( ( m ) => m.id === id );
-			if ( ! item ) return;
-
-			state.editModal.visible = true;
-			state.editModal.itemId = id;
-			state.editModal.title = item.title || '';
-			state.editModal.description = item.description || '';
-			state.editModal.privacy = item.privacy || 'public';
-			state.editModal.album = item.album || null;
-			// Use Array.from() — `item.tags` may be a WordPress Interactivity
-			// Proxy or a JSON-parsed array. Array.from() handles both safely
-			// and always yields a plain array for JSON serialization.
-			state.editModal.tags = Array.isArray( item.tags ) || item.tags
-				? Array.from( item.tags )
-				: [];
-			state.editModal.tagInput = '';
-			state.editModal.tagResults = [];
-			state.editModal.tagDropdownVisible = false;
-			state.editModal.regenerateSlug = false;
-			// REST folds the site-wide switch in; the field only shows when it is on.
-			state.editModal.allowDownload = item.allow_download !== false;
-		},
-
-		closeEditModal() {
-			state.editModal.visible = false;
-		},
-
-		setEditTitle( event ) { state.editModal.title = event.target.value; },
-		setEditRegenerateSlug( event ) { state.editModal.regenerateSlug = !! event.target.checked; },
-		setEditAllowDownload( event ) { state.editModal.allowDownload = !! event.target.checked; },
-		setEditDesc( event ) { state.editModal.description = event.target.value; },
-		setEditPrivacy( event ) { state.editModal.privacy = event.target.value; },
-
-		async updateEditTagInput( event ) {
-			const ctx = getContext();
-			state.editModal.tagInput = event.target.value;
-			await sharedUI.actions.searchTags( state.editModal.tagInput, ctx.restUrl );
-			const uiState = store( 'mvs/shared-ui' ).state;
-			state.editModal.tagResults = ( uiState.tagResults || [] )
-				.filter( ( t ) => ! state.editModal.tags.includes( t ) );
-			state.editModal.tagDropdownVisible = state.editModal.tagResults.length > 0;
-		},
-
-		addEditTag( event ) {
-			if ( event.key !== 'Enter' ) return;
-			event.preventDefault();
-			const val = state.editModal.tagInput.trim();
-			if ( val && ! state.editModal.tags.includes( val ) ) {
-				state.editModal.tags = [ ...state.editModal.tags, val ];
-			}
-			state.editModal.tagInput = '';
-			state.editModal.tagDropdownVisible = false;
-		},
-
-		selectEditTag( event ) {
-			const tag = event.target.dataset.tagName;
-			if ( tag && ! state.editModal.tags.includes( tag ) ) {
-				state.editModal.tags = [ ...state.editModal.tags, tag ];
-			}
-			state.editModal.tagInput = '';
-			state.editModal.tagDropdownVisible = false;
-		},
-
-		removeEditTag( event ) {
-			const tag = event.target.closest( '[data-tag-name]' )?.dataset.tagName;
-			if ( tag ) {
-				state.editModal.tags = state.editModal.tags.filter( ( t ) => t !== tag );
-			}
-		},
-
-		handleReplaceFile( event ) {
-			const file = event.target.files[ 0 ];
-			if ( ! file ) return;
-			event.target.value = '';
-			actions.replaceMediaFile( file );
-		},
-
-		async replaceMediaFile( file ) {
-			const ctx = getContext();
-			const mediaId = state.editModal.itemId;
-			if ( ! mediaId ) return;
-
-			state.editModal.saving = true;
-			state.editModal.replaceProgress = '0%';
-			try {
-				// A replacement video can be large: show how much has been sent.
-				const res = await window.mvsRest.uploadMedia( ctx.restUrl + 'media/' + mediaId + '/replace', file, {}, ( loaded, total ) => {
-					state.editModal.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
-				} );
-				if ( res.ok ) {
-					const updated = res.data;
-					const idx = state.media.items.findIndex( ( m ) => m.id === mediaId );
-					if ( idx !== -1 ) {
-						state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
-					}
-					sharedUI.actions.showToast( ( state.i18n?.fileReplaced || 'File replaced!' ), 'success' );
-				} else {
-					const err = res.data || {};
-					sharedUI.actions.showToast( err.message || ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
-				}
-			} catch {
-				sharedUI.actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
-			}
-			state.editModal.saving = false;
-			state.editModal.replaceProgress = '';
-		},
-
-		async saveEdit() {
-			const ctx = getContext();
-
-			// A media item with no name renders as an untitled tile everywhere
-			// it appears, and the server refuses it (mvs_empty_title). The
-			// Save button is bound to editModalSaveDisabled so this should be
-			// unreachable from the UI; it stays as the belt-and-braces path
-			// for keyboard/programmatic submits.
-			if ( '' === String( state.editModal.title || '' ).trim() ) {
-				return;
-			}
-
-			state.editModal.saving = true;
-
-			// Array.from() unwraps the Interactivity Proxy so JSON.stringify
-			// produces a real array. Without it the Proxy can serialize to `{}`
-			// or drop entries, which the server then reads as "clear all tags".
-			const payload = {
-				title: state.editModal.title,
-				description: state.editModal.description,
-				privacy: state.editModal.privacy,
-				tags: Array.from( state.editModal.tags || [] ),
-			};
-			// Only sent when the field is on the page (site-wide downloads on).
-			if ( document.querySelector( '.mvs-edit-allow-download' ) ) {
-				payload.allow_download = !! state.editModal.allowDownload;
-			}
-
-			// Slug stays put unless the user explicitly opted in via the
-			// "Update URL slug" checkbox. Read DOM directly — keeps the
-			// checkbox state authoritative regardless of any IA hydration
-			// timing quirks. Server runs sanitize_title + collision check.
-			const slugCheckbox = document.querySelector( '.mvs-edit-regenerate-slug' );
-			if ( slugCheckbox && slugCheckbox.checked ) {
-				payload.slug = ( state.editModal.title || '' )
-					.toLowerCase()
-					.replace( /[^\w\s-]/g, '' )
-					.trim()
-					.replace( /\s+/g, '-' )
-					.replace( /-+/g, '-' );
-			}
-
-			try {
-				const res = await apiFetch( ctx, 'media/' + state.editModal.itemId, {
-					method: 'PUT',
-					body: payload,
-				} );
-				const updated = res.data;
-				state.editModal.saving = false;
-				state.editModal.visible = false;
-
-				// Update item in-place.
-				const idx = state.media.items.findIndex( ( m ) => m.id === state.editModal.itemId );
-				if ( idx !== -1 ) {
-					state.media.items[ idx ] = { ...state.media.items[ idx ], ...updated };
-				}
-
-				sharedUI.actions.showToast( ( state.i18n?.mediaUpdated || 'Media updated!' ), 'success' );
-			} catch {
-				state.editModal.saving = false;
-				sharedUI.actions.showToast( ( state.i18n?.updateFailed || 'Update failed.' ), 'error' );
+			if ( id ) {
+				sharedUI.actions.openEditModal( id );
 			}
 		},
 
@@ -2472,7 +2261,6 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		closeOverlay( event ) {
 			if ( event.target === event.currentTarget ) {
-				state.editModal.visible = false;
 				state.albumModal.visible = false;
 				state.collectionModal.visible = false;
 			}
@@ -2481,7 +2269,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 	callbacks: {
 		/**
 		 * data-wp-watch on each .mvs-modal; its context names the state key
-		 * (albumModal / collectionModal / editModal) so one callback serves all.
+		 * (albumModal / collectionModal) so one callback serves all.
 		 */
 		manageModalFocus() {
 			const key = getContext().modalKey;
@@ -2512,6 +2300,21 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		init() {
 			const ctx = getContext();
+
+			// An edit made in the shared edit modal: show the new values in the list.
+			if ( ! mediaUpdatedBound ) {
+				mediaUpdatedBound = true;
+				document.addEventListener(
+					'mvs:media-updated',
+					withScope( ( event ) => {
+						const { id, item } = event.detail || {};
+						const idx = state.media.items.findIndex( ( m ) => m.id === id );
+						if ( idx !== -1 && item ) {
+							state.media.items[ idx ] = { ...state.media.items[ idx ], ...item };
+						}
+					} )
+				);
+			}
 
 			// Back and Forward. The tabs write the address with pushState, so the
 			// browser moves through those entries without reloading; without this

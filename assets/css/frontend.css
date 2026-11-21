@@ -8030,15 +8030,10 @@ a.mvs-dashboard-card-title:hover {
 }
 /* Replace-file row inside edit modal */
 .mvs-replace-file-row {
-    padding: 0 24px 12px;
+    /* Sits inside the edit form's own padding, in the modal and the inline panel alike. */
+    padding: 12px 0 0;
     border-top: 1px solid var(--mvs-border-light);
     margin-top: 12px;
-    padding-top: 12px;
-}
-
-/* In the inline form on a media page the row lines up with the fields above it (the 24px side padding is the modal's). */
-.mvs-inline-edit .mvs-replace-file-row {
-    padding-inline: 0;
 }
 
 .mvs-replace-file-label {

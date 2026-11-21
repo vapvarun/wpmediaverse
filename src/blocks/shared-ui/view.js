@@ -285,6 +285,35 @@ function galleryQuery( mediaId ) {
 	return q ? '?' + q : '';
 }
 
+/**
+ * The URL slug a title would produce. Mirrors the server's sanitize_title (the
+ * server still runs its own pass and the collision check), so this is only
+ * optimistic formatting. The one copy: every edit surface uses it.
+ *
+ * @param {string} title Title as typed.
+ * @return {string} Lowercase, dash-separated slug.
+ */
+function slugFromTitle( title ) {
+	return String( title || '' )
+		.toLowerCase()
+		.replace( /[^\w\s-]/g, '' )
+		.trim()
+		.replace( /\s+/g, '-' )
+		.replace( /-+/g, '-' );
+}
+
+/**
+ * Tell the page an edit went through. A surface that shows the item (My Media
+ * list, the single media page) listens and refreshes it in place.
+ *
+ * @param {number}  id       Media ID.
+ * @param {Object}  item     Item as the REST API returned it after the edit.
+ * @param {boolean} replaced True when the file itself was replaced.
+ */
+function announceMediaUpdated( id, item, replaced ) {
+	document.dispatchEvent( new CustomEvent( 'mvs:media-updated', { detail: { id, item, replaced } } ) );
+}
+
 const { state, actions } = store( 'mvs/shared-ui', {
 	state: {
 		// --- Toast (flat) ---
@@ -410,6 +439,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				.replace( '%1$s', album.title || '' )
 				.replace( '%2$s', state.privacyShortLabel( album.privacy || 'public' ) );
 		},
+		get editModalOverlayVisible() {
+			return state.editModalVisible && 'modal' === state.editModalMode;
+		},
+		get editInlineVisible() {
+			return state.editModalVisible && 'inline' === state.editModalMode;
+		},
+		/** The title box is empty: Save stays off and the form says why. */
+		get editTitleMissing() {
+			return state.editModalVisible && ! state.editModalLoading
+				&& '' === String( state.editModalTitle || '' ).trim();
+		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
 			// while title empty".
@@ -514,7 +554,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalPrivacy: 'public',
 		editModalAlbum: null, // { id, title, privacy } when the photo is in an album
 		editModalAllowDownload: true,
-		editModalTags: '',
+		// 'modal' (My Media, lightbox, BuddyPress tab) or 'inline' (single media page).
+		editModalMode: 'modal',
+		editModalTagList: [],
+		editModalTagInput: '',
+		editModalTagResults: [],
+		editModalTagDropdown: false,
+		editModalReplaceProgress: '',
 		// Off by default — title edits leave the URL slug alone. The user
 		// can opt in via the "Update URL slug from title" checkbox; the
 		// save handler will compute sanitize_title(title) on the JS side
@@ -1067,23 +1113,30 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} );
 			}
 		},
-		async openEditModal( mediaId ) {
+		async openEditModal( mediaId, options = {} ) {
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 
 			const id = parseInt( mediaId, 10 );
 			if ( ! id ) return;
+			const inline = !! options.inline;
 			state.editModalMediaId = id;
-			// lightboxEdit() presets the tile behind the lightbox; anything else
-			// returns focus to the control that opened the modal.
-			if ( ! editReturnFocus ) {
-				editReturnFocus = document.activeElement;
+			state.editModalMode = inline ? 'inline' : 'modal';
+			// The inline panel is part of the page: no scroll lock, no focus trap.
+			if ( ! inline ) {
+				// lightboxEdit() presets the tile behind the lightbox; anything else
+				// returns focus to the control that opened the modal.
+				if ( ! editReturnFocus ) {
+					editReturnFocus = document.activeElement;
+				}
+				document.body.style.overflow = 'hidden';
 			}
 			state.editModalVisible = true;
-			// Focus into the dialog once it renders (Close is there even while it loads).
-			focusWhenShown( '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-close' );
+			if ( ! inline ) {
+				// Focus into the dialog once it renders (Close is there even while it loads).
+				focusWhenShown( '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-close' );
+			}
 			state.editModalLoading = true;
 			state.editModalError = '';
-			document.body.style.overflow = 'hidden';
 
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -1096,13 +1149,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalPrivacy = data.privacy || 'public';
 				state.editModalAlbum = data.album || null;
 				state.editModalAllowDownload = data.allow_download !== false;
-				state.editModalTags = ( data.tags || [] ).join( ', ' );
+				state.editModalTagList = Array.from( data.tags || [] );
+				state.editModalTagInput = '';
+				state.editModalTagResults = [];
+				state.editModalTagDropdown = false;
 			} catch {
 				state.editModalError = 'Could not load this media. Try again.';
 			}
 			state.editModalLoading = false;
 		},
 		closeEditModal() {
+			const wasModal = 'modal' === state.editModalMode;
 			state.editModalVisible = false;
 			state.editModalMediaId = 0;
 			state.editModalTitle = '';
@@ -1110,13 +1167,20 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalPrivacy = 'public';
 			state.editModalAlbum = null;
 			state.editModalAllowDownload = true;
-			state.editModalTags = '';
+			state.editModalTagList = [];
+			state.editModalTagInput = '';
+			state.editModalTagResults = [];
+			state.editModalTagDropdown = false;
+			state.editModalReplaceProgress = '';
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
 			state.editModalSaving = false;
-			document.body.style.overflow = '';
-			returnFocus( editReturnFocus );
-			editReturnFocus = null;
+			state.editModalMode = 'modal';
+			if ( wasModal ) {
+				document.body.style.overflow = '';
+				returnFocus( editReturnFocus );
+				editReturnFocus = null;
+			}
 		},
 		updateEditTitle() {
 			state.editModalTitle = getElement().ref?.value || '';
@@ -1124,8 +1188,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateEditDescription() {
 			state.editModalDescription = getElement().ref?.value || '';
 		},
-		updateEditTags() {
-			state.editModalTags = getElement().ref?.value || '';
+		async updateEditTagInput() {
+			state.editModalTagInput = getElement().ref?.value || '';
+			const restUrl = window.mvsBpActions?.restUrl
+				|| ( window.location.origin + '/wp-json/mvs/v1/' );
+			await actions.searchTags( state.editModalTagInput, restUrl );
+			state.editModalTagResults = ( state.tagResults || [] )
+				.filter( ( t ) => ! state.editModalTagList.includes( t ) );
+			state.editModalTagDropdown = state.editModalTagResults.length > 0;
+		},
+		addEditTag( event ) {
+			if ( event.key !== 'Enter' ) return;
+			event.preventDefault();
+			const val = String( state.editModalTagInput || '' ).trim();
+			if ( val && ! state.editModalTagList.includes( val ) ) {
+				state.editModalTagList = [ ...state.editModalTagList, val ];
+			}
+			state.editModalTagInput = '';
+			state.editModalTagDropdown = false;
+		},
+		selectEditTag( event ) {
+			const tag = event.target.dataset.tagName;
+			if ( tag && ! state.editModalTagList.includes( tag ) ) {
+				state.editModalTagList = [ ...state.editModalTagList, tag ];
+			}
+			state.editModalTagInput = '';
+			state.editModalTagDropdown = false;
+		},
+		removeEditTag( event ) {
+			const tag = event.target.closest( '[data-tag-name]' )?.dataset.tagName;
+			if ( tag ) {
+				state.editModalTagList = state.editModalTagList.filter( ( t ) => t !== tag );
+			}
 		},
 		updateEditPrivacy() {
 			state.editModalPrivacy = getElement().ref?.value || 'public';
@@ -1136,15 +1230,60 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateEditRegenerateSlug() {
 			state.editModalRegenerateSlug = !! getElement().ref?.checked;
 		},
+		handleEditReplaceFile( event ) {
+			const file = event.target.files[ 0 ];
+			if ( ! file ) return;
+			event.target.value = '';
+			actions.replaceEditFile( file );
+		},
+		async replaceEditFile( file ) {
+			const id = state.editModalMediaId;
+			if ( ! id || state.editModalSaving ) return;
+
+			state.editModalSaving = true;
+			state.editModalReplaceProgress = '0%';
+			let item = null;
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				// A replacement video can be large: show how much has been sent.
+				const res = await window.mvsRest.uploadMedia( `${ restUrl }media/${ id }/replace`, file, {}, ( loaded, total ) => {
+					state.editModalReplaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
+				} );
+				if ( res.ok ) {
+					item = res.data || {};
+					actions.showToast( ( state.i18n?.fileReplaced || 'File replaced!' ), 'success' );
+				} else {
+					const err = res.data || {};
+					actions.showToast( err.message || ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+				}
+			} catch {
+				actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+			}
+			state.editModalSaving = false;
+			state.editModalReplaceProgress = '';
+			if ( item ) {
+				announceMediaUpdated( id, item, true );
+			}
+		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
 
 			// Mirrors the server guard (mvs_empty_title). Whitespace-only is
-			// empty — " " is not a name.
+			// empty: " " is not a name.
 			if ( '' === String( state.editModalTitle || '' ).trim() ) {
 				state.editModalError = ( state.i18n?.titleRequired || 'Title cannot be empty.' );
 				return;
 			}
+
+			// A tag typed but not yet confirmed with Enter is still the member's
+			// intent when they press Save.
+			const pendingTag = String( state.editModalTagInput || '' ).trim();
+			if ( pendingTag && ! state.editModalTagList.includes( pendingTag ) ) {
+				state.editModalTagList = [ ...state.editModalTagList, pendingTag ];
+			}
+			state.editModalTagInput = '';
+			state.editModalTagDropdown = false;
 
 			state.editModalSaving = true;
 			state.editModalError = '';
@@ -1157,23 +1296,15 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					description: state.editModalDescription,
 					privacy: state.editModalPrivacy,
 					allow_download: state.editModalAllowDownload,
-					tags: String( state.editModalTags || '' ).split( ',' ).map( ( t ) => t.trim() ).filter( Boolean ),
+					// Array.from() unwraps the Interactivity proxy: serialised raw it can
+					// read as `{}` and the server then clears every tag.
+					tags: Array.from( state.editModalTagList ),
 				};
-				// Only include `slug` when the admin explicitly opted into
-				// regenerating it from the new title. Leaving the field out
-				// preserves the existing URL — the safer default per the
-				// WordPress permalink convention.
+				// Only include `slug` when the owner explicitly opted into
+				// regenerating it from the new title. Leaving it out keeps the
+				// existing URL, the safer default (inbound links stay valid).
 				if ( state.editModalRegenerateSlug ) {
-					// Match the server's sanitize_title — lowercase, dashes
-					// for spaces, strip everything else. The server runs the
-					// same pass + collision check, so this is just optimistic
-					// formatting (and no-op if title unchanged).
-					body.slug = ( state.editModalTitle || '' )
-						.toLowerCase()
-						.replace( /[^\w\s-]/g, '' )
-						.trim()
-						.replace( /\s+/g, '-' )
-						.replace( /-+/g, '-' );
+					body.slug = slugFromTitle( state.editModalTitle );
 				}
 				const res = await window.mvsRest.restFetch( `${ restUrl }media/${ state.editModalMediaId }`, {
 					method: 'PUT',
@@ -1184,13 +1315,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					throw new Error( err.message || 'save_failed' );
 				}
 				const updated = res.data || {};
+				const id = state.editModalMediaId;
 
-				// When the user opted into a slug change AND they're CURRENTLY
-				// on the media's single page (`/media/{old-slug}/`), the page
-				// they're viewing now points at a dead URL. Redirect to the
-				// new permalink so reload doesn't 404. On other pages
-				// (Explore, BP profile, etc.) we just close the modal — the
-				// page they're on is unaffected by the slug change.
+				// When the owner opted into a slug change AND they are on the
+				// media's own page (`/media/{old-slug}/`), that page now points at
+				// a dead URL: go to the new permalink so a reload does not 404. On
+				// other pages (Explore, profile, My Media) the page is unaffected.
 				if (
 					updated.link &&
 					typeof window !== 'undefined' &&
@@ -1205,7 +1335,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 				actions.showToast( ( state.i18n?.settingsSaved || 'Media settings saved.' ), 'success' );
 				actions.closeEditModal();
+				announceMediaUpdated( id, updated, false );
 			} catch ( err ) {
+				// Same on every surface: the message shows in the form, which stays
+				// open with what the member typed.
 				state.editModalError = err.message || 'Could not save. Try again.';
 				state.editModalSaving = false;
 			}
@@ -2226,7 +2359,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				dialogTrapTab( event, '.mvs-confirm-overlay:not([hidden]) .mvs-confirm' );
 				return;
 			}
-			if ( event.key === 'Tab' && state.editModalVisible ) {
+			if ( event.key === 'Tab' && state.editModalOverlayVisible ) {
 				dialogTrapTab( event, '.mvs-edit-modal' );
 				return;
 			}
@@ -2242,7 +2375,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( event.key === 'Escape' ) {
 				if ( state.confirmVisible ) {
 					actions.handleConfirmCancel();
-				} else if ( state.editModalVisible ) {
+				} else if ( state.editModalOverlayVisible ) {
 					actions.closeEditModal();
 				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();

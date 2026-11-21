@@ -1170,3 +1170,23 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-lightbox-media-error a {
 	text-decoration: none;
 }
+
+/* On a phone the modal scrolls as one block; keep Cancel and Save in view at
+   the bottom instead of after the last field. */
+@media ( max-width: 640px ) {
+	.mvs-edit-modal .mvs-modal-footer {
+		position: sticky;
+		bottom: 0;
+		background: var(--mvs-surface);
+		z-index: 1;
+	}
+}
+
+/* The shared media edit form (modal and inline): text fields clear the touch
+   floor in both looks. */
+.mvs-edit-form input[type="text"],
+.mvs-edit-form select,
+.mvs-edit-form .mvs-tag-text-input {
+    min-height: var(--mvs-touch-min, 44px);
+    box-sizing: border-box;
+}

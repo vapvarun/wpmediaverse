@@ -136,51 +136,51 @@ async function fetchFavorite( ctx ) {
 	}
 }
 
+// The shared edit form's save event is bound once per page load.
+let mediaUpdatedBound = false;
+
 /**
- * Replace the file of the media on this page, then reload so the new file shows.
+ * Show a saved edit on the media page: title, description and the tag links.
+ * A replaced file needs a reload: the page still shows the old file.
  *
- * Takes the context from the direct event handler (the Interactivity API only allows getContext() there).
- *
- * @param {Object} ctx  The element's context.
- * @param {File}   file The replacement file.
+ * @param {Object} ctx    Page context (archive address, media id).
+ * @param {Object} detail Event detail: { id, item, replaced }.
  */
-async function replaceFile( ctx, file ) {
-	ctx.saving = true;
-	ctx.replaceProgress = '0%';
-	let replaced = false;
-	try {
-		// A replacement video can be large: show how much has been sent.
-		const res = await window.mvsRest.uploadMedia( ctx.restUrl + 'media/' + ctx.mediaId + '/replace', file, {}, ( loaded, total ) => {
-			ctx.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
-		} );
-		if ( res.ok ) {
-			replaced = true;
-			sharedUI.actions.showToast( ( state.i18n?.fileReplaced || 'File replaced!' ), 'success' );
-		} else {
-			const err = res.data || {};
-			sharedUI.actions.showToast( err.message || ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
-		}
-	} catch {
-		sharedUI.actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+function showUpdatedMedia( ctx, detail ) {
+	if ( detail.id !== ctx.mediaId || ! detail.item ) {
+		return;
 	}
-	ctx.saving = false;
-	ctx.replaceProgress = '';
-	if ( replaced ) {
-		// The page shows the old file until it reloads.
+	const updated = detail.item;
+
+	if ( detail.replaced ) {
 		window.setTimeout( () => window.location.reload(), 1200 );
+		return;
+	}
+
+	const titleEl = document.querySelector( '.mvs-media-title' );
+	if ( titleEl ) titleEl.textContent = updated.title || '';
+	const descEl = document.querySelector( '.mvs-media-description' );
+	if ( descEl ) descEl.textContent = updated.description || '';
+
+	const tagsContainer = document.querySelector( '.mvs-media-tags' );
+	if ( tagsContainer && updated.tags ) {
+		const archiveUrl = ctx.archiveUrl || '/';
+		while ( tagsContainer.firstChild ) tagsContainer.removeChild( tagsContainer.firstChild );
+		updated.tags.forEach( ( t ) => {
+			const a = document.createElement( 'a' );
+			a.className = 'mvs-tag';
+			a.textContent = t;
+			// The term address the server prints on a reload; the filter address is only a fallback.
+			const url = new URL( archiveUrl, window.location.origin );
+			url.searchParams.set( 'mvs_tag', t );
+			a.href = ( updated.tag_urls && updated.tag_urls[ t ] ) || url.toString();
+			tagsContainer.appendChild( a );
+		} );
 	}
 }
 
 const { state } = store( 'mvs/media-social', {
 	state: {
-		/** The title box is empty: Save stays off and the form says why (same rule as the My Media edit form). */
-		get editTitleMissing() {
-			return '' === String( getContext().editTitle || '' ).trim();
-		},
-		get editSaveDisabled() {
-			const ctx = getContext();
-			return !! ctx.saving || '' === String( ctx.editTitle || '' ).trim();
-		},
 		reactions: [],
 		userReaction: '',
 		isFavorite: false,
@@ -191,11 +191,6 @@ const { state } = store( 'mvs/media-social', {
 		editTitle: '',
 		editDesc: '',
 		editPrivacy: 'public',
-		editRegenerateSlug: false,
-		editTags: [],
-		tagInput: '',
-		tagResults: [],
-		tagDropdownVisible: false,
 		saving: false,
 		shareLabel: 'Share',
 		/**
@@ -496,19 +491,21 @@ const { state } = store( 'mvs/media-social', {
 		/* --- Owner Edit --- */
 		toggleEdit() {
 			const ctx = getContext();
+			// A media item edits through the one shared form, shown inline here.
+			// Albums are a different record and keep their own small form.
+			if ( 'album' !== ctx.type ) {
+				if ( sharedUI.state.editInlineVisible ) {
+					sharedUI.actions.closeEditModal();
+				} else {
+					sharedUI.actions.openEditModal( ctx.mediaId, { inline: true } );
+				}
+				return;
+			}
 			ctx.editVisible = ! ctx.editVisible;
 		},
 
 		cancelEdit() {
 			getContext().editVisible = false;
-		},
-
-		handleReplaceFile( event ) {
-			const file = event.target.files[ 0 ];
-			if ( ! file ) return;
-			const ctx = getContext();
-			event.target.value = '';
-			replaceFile( ctx, file );
 		},
 
 		updateEditTitle( event ) {
@@ -523,99 +520,18 @@ const { state } = store( 'mvs/media-social', {
 			getContext().editPrivacy = event.target.value;
 		},
 
-		updateEditRegenerateSlug( event ) {
-			// Off by default — title edits leave the URL slug alone. Tick
-			// to opt into regenerating the slug from the title (will break
-			// inbound links to the old URL).
-			getContext().editRegenerateSlug = !! event.target.checked;
-		},
-
-		updateEditAllowDownload( event ) {
-			getContext().editAllowDownload = !! event.target.checked;
-		},
-
-		/* --- Owner Tag Input --- */
-		async updateTagInput( event ) {
-			const ctx = getContext();
-			ctx.tagInput = event.target.value;
-			await sharedUI.actions.searchTags( ctx.tagInput, ctx.restUrl );
-			const uiState = store( 'mvs/shared-ui' ).state;
-			ctx.tagResults = ( uiState.tagResults || [] )
-				.filter( ( t ) => ! ctx.editTags.includes( t ) );
-			ctx.tagDropdownVisible = ctx.tagResults.length > 0;
-		},
-
-		addTagFromInput( event ) {
-			if ( event.key !== 'Enter' ) return;
-			event.preventDefault();
-			const ctx = getContext();
-			const val = ctx.tagInput.trim();
-			if ( val && ! ctx.editTags.includes( val ) ) {
-				ctx.editTags = [ ...ctx.editTags, val ];
-			}
-			ctx.tagInput = '';
-			ctx.tagDropdownVisible = false;
-		},
-
-		selectTag( event ) {
-			const ctx = getContext();
-			const tag = event.target.dataset.tagName;
-			if ( tag && ! ctx.editTags.includes( tag ) ) {
-				ctx.editTags = [ ...ctx.editTags, tag ];
-			}
-			ctx.tagInput = '';
-			ctx.tagDropdownVisible = false;
-		},
-
-		removeTag( event ) {
-			const ctx = getContext();
-			const tag = event.target.closest( '[data-tag-name]' )?.dataset.tagName;
-			if ( tag ) {
-				ctx.editTags = ctx.editTags.filter( ( t ) => t !== tag );
-			}
-		},
-
+		// Albums only: a media item saves through the shared edit form.
 		async saveEdit() {
 			const ctx = getContext();
 			ctx.saving = true;
-			const ep = endpoint( ctx );
-			// A tag typed but not yet confirmed with Enter is still the member's
-			// intent when they press Save.
-			const pendingTag = ( ctx.tagInput || '' ).trim();
-			if ( pendingTag && ctx.type !== 'album' && ! ctx.editTags.includes( pendingTag ) ) {
-				ctx.editTags = [ ...ctx.editTags, pendingTag ];
-				ctx.tagInput = '';
-			}
 			const payload = {
 				title: ctx.editTitle,
 				description: ctx.editDesc,
 				privacy: ctx.editPrivacy,
 			};
-			if ( ctx.type !== 'album' ) {
-				payload.tags = ctx.editTags;
-			}
-			// Only sent when the field is on the page (site-wide downloads on).
-			if ( document.querySelector( '.mvs-inline-edit .mvs-edit-allow-download' ) ) {
-				payload.allow_download = !! ctx.editAllowDownload;
-			}
-			// Slug stays put unless the user explicitly opted in via the
-			// "Update URL slug" checkbox. Read the DOM directly so the
-			// IA reactive context isn't on the critical path — keeps the
-			// checkbox state authoritative regardless of any hydration
-			// timing quirks. The server still runs sanitize_title +
-			// collision check.
-			const slugCheckbox = document.querySelector( '.mvs-inline-edit .mvs-edit-regenerate-slug' );
-			if ( slugCheckbox && slugCheckbox.checked ) {
-				payload.slug = ( ctx.editTitle || '' )
-					.toLowerCase()
-					.replace( /[^\w\s-]/g, '' )
-					.trim()
-					.replace( /\s+/g, '-' )
-					.replace( /-+/g, '-' );
-			}
 
 			try {
-				const res = await window.mvsRest.restFetch( ctx.restUrl + ep + ctx.mediaId, {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + endpoint( ctx ) + ctx.mediaId, {
 					method: 'PUT',
 					body: payload,
 				} );
@@ -623,46 +539,12 @@ const { state } = store( 'mvs/media-social', {
 				ctx.saving = false;
 				ctx.editVisible = false;
 
-				// If the slug changed (admin opted into the regenerate-slug
-				// checkbox), the URL the user is currently on is now stale
-				// and would 404 on reload. Redirect to the new permalink so
-				// the address bar reflects reality. `replace` (vs `assign`)
-				// so the back-button doesn't bounce them back to the dead URL.
-				if (
-					updated.link &&
-					typeof window !== 'undefined' &&
-					window.location.pathname !== new URL( updated.link ).pathname
-				) {
-					sharedUI.actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
-					window.location.replace( updated.link );
-					return;
-				}
-
-				const titleEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-title' : '.mvs-media-title' );
+				const titleEl = document.querySelector( '.mvs-album-title' );
 				if ( titleEl ) titleEl.textContent = updated.title || '';
-				const descEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-description' : '.mvs-media-description' );
+				const descEl = document.querySelector( '.mvs-album-description' );
 				if ( descEl ) descEl.textContent = updated.description || '';
 
-				if ( ctx.type !== 'album' && updated.tags ) {
-					const archiveUrl = ctx.archiveUrl || '/';
-					const tagsContainer = document.querySelector( '.mvs-media-tags' );
-					if ( tagsContainer ) {
-						while ( tagsContainer.firstChild ) tagsContainer.removeChild( tagsContainer.firstChild );
-						updated.tags.forEach( ( t ) => {
-							const a = document.createElement( 'a' );
-							a.className = 'mvs-tag';
-							a.textContent = t;
-							// Same link the server prints for a tag: the Explore page filtered by it.
-							// The term address the server prints on a reload; the filter address is only a fallback.
-							const url = new URL( archiveUrl, window.location.origin );
-							url.searchParams.set( 'mvs_tag', t );
-							a.href = ( updated.tag_urls && updated.tag_urls[ t ] ) || url.toString();
-							tagsContainer.appendChild( a );
-						} );
-					}
-				}
-
-				sharedUI.actions.showToast( ctx.type === 'album' ? ( state.i18n?.albumSaved || 'Album saved!' ) : ( state.i18n?.saved || 'Saved!' ), 'success' );
+				sharedUI.actions.showToast( ( state.i18n?.albumSaved || 'Album saved!' ), 'success' );
 			} catch {
 				ctx.saving = false;
 				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
@@ -720,7 +602,13 @@ const { state } = store( 'mvs/media-social', {
 			ctx.editTitle = ctx.initialTitle || '';
 			ctx.editDesc = ctx.initialDesc || '';
 			ctx.editPrivacy = ctx.initialPrivacy || 'public';
-			ctx.editTags = ctx.initialTags || [];
+
+			// A media item edited in the shared form (inline here, or the lightbox's
+			// modal): show what was saved without a reload.
+			if ( 'album' !== ctx.type && ! mediaUpdatedBound ) {
+				mediaUpdatedBound = true;
+				document.addEventListener( 'mvs:media-updated', ( event ) => showUpdatedMedia( ctx, event.detail || {} ) );
+			}
 
 			// Load all data in parallel using helpers (ctx passed explicitly).
 			const promises = [];
