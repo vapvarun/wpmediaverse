@@ -1185,21 +1185,36 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		$item = $this->prepare_item_for_response( $media_id, $request );
+		return rest_ensure_response( self::with_tag_urls( $this->prepare_item_for_response( $media_id, $request ), $media_id, array_key_exists( 'tags', $json_params ) ) );
+	}
 
-		// Only an edit asks for the tag addresses: the page that saved it shows the new tags in place and
-		// links them exactly as a reload would. Not part of the shared item shape, so lists pay nothing.
-		if ( is_array( $item ) && array_key_exists( 'tags', $json_params ) ) {
-			$item['tag_urls'] = array();
-			foreach ( (array) wp_get_object_terms( $media_id, 'mvs_tag' ) as $term ) {
-				$link = $term instanceof \WP_Term ? get_term_link( $term ) : '';
-				if ( is_string( $link ) && '' !== $link ) {
-					$item['tag_urls'][ $term->name ] = $link;
-				}
+	/**
+	 * Add each tag's term address (keyed by tag name) to an edit response that changed the tags.
+	 *
+	 * Only an edit carries it: the page that saved the tags shows them in place and links them exactly as a
+	 * reload would. Kept out of the shared item shape so lists add no per-item query.
+	 *
+	 * @param mixed $item       Prepared item.
+	 * @param int   $media_id   Media ID.
+	 * @param bool  $tags_saved Whether this request set the tags.
+	 * @return mixed
+	 */
+	private static function with_tag_urls( $item, int $media_id, bool $tags_saved ) {
+		if ( ! $tags_saved || ! is_array( $item ) ) {
+			return $item;
+		}
+
+		$urls = array();
+		foreach ( (array) wp_get_object_terms( $media_id, 'mvs_tag' ) as $term ) {
+			$link = $term instanceof \WP_Term ? get_term_link( $term ) : '';
+			if ( is_string( $link ) && '' !== $link ) {
+				$urls[ $term->name ] = $link;
 			}
 		}
 
-		return rest_ensure_response( $item );
+		$item['tag_urls'] = $urls;
+
+		return $item;
 	}
 
 	/**
