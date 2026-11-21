@@ -48,4 +48,34 @@ class ChatPositionTest extends WP_UnitTestCase {
 
 		delete_option( 'mvs_chat_position' );
 	}
+
+	/**
+	 * The floating chat rows are offered only when MediaVerse owns the chat, not while BuddyNext does.
+	 */
+	public function test_chat_rows_are_hidden_while_buddynext_owns_messaging(): void {
+		global $wp_settings_fields;
+		$page = \WPMediaVerse\Admin\Settings\SettingsPage::PAGE_SLUG . '-social';
+		$has  = static function () use ( $page ): array {
+			global $wp_settings_fields;
+			return array(
+				'position'   => isset( $wp_settings_fields[ $page ]['mvs_messaging']['mvs_chat_position'] ),
+				'visibility' => isset( $wp_settings_fields[ $page ]['mvs_messaging']['mvs_chat_panel_visibility'] ),
+			);
+		};
+
+		add_filter( 'mvs_buddynext_active', '__return_true', 99 );
+		$wp_settings_fields[ $page ] = array();
+		( new \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar() )->register();
+		$with_bn = $has();
+		remove_filter( 'mvs_buddynext_active', '__return_true', 99 );
+
+		add_filter( 'mvs_buddynext_active', '__return_false', 99 );
+		$wp_settings_fields[ $page ] = array();
+		( new \WPMediaVerse\Admin\Settings\MessagingSettingsRegistrar() )->register();
+		$without_bn = $has();
+		remove_filter( 'mvs_buddynext_active', '__return_false', 99 );
+
+		$this->assertSame( array( 'position' => false, 'visibility' => false ), $with_bn );
+		$this->assertSame( array( 'position' => true, 'visibility' => true ), $without_bn );
+	}
 }
