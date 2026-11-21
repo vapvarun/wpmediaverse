@@ -439,23 +439,13 @@ class ReportService {
 	 * @return int Rows closed.
 	 */
 	public function close_pending_for_target( string $target_type, int $target_id, string $status ): int {
-		global $wpdb;
-
 		if ( ! in_array( $status, array( 'resolved', 'dismissed' ), true ) ) {
 			return 0;
 		}
 
-		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-			$wpdb->prepare(
-				"SELECT id FROM {$wpdb->prefix}mvs_reports WHERE target_type = %s AND target_id = %d AND status = 'pending'",
-				$target_type,
-				$target_id
-			)
-		);
-
 		$closed = 0;
-		foreach ( $ids as $id ) {
-			$closed += $this->update_status( (int) $id, $status ) ? 1 : 0;
+		foreach ( ( new \WPMediaVerse\Repository\ReportRepository() )->pending_ids_for_target( $target_type, $target_id ) as $id ) {
+			$closed += $this->update_status( $id, $status ) ? 1 : 0;
 		}
 
 		return $closed;

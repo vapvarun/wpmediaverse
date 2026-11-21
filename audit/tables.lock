@@ -1,0 +1,28 @@
+# Allowed CREATE TABLE statements. Editing this file needs the owner's yes in the commit body.
+# Standard: wbcom-scope-and-schema-standard.md
+$table_name
+mvs_access_grants
+mvs_activity
+mvs_album_items
+mvs_blocks
+mvs_bp_activity_media
+mvs_conversation_participants
+mvs_conversations
+mvs_device_tokens
+mvs_error_log
+mvs_favorites
+mvs_follows
+mvs_media_index
+mvs_media_meta
+mvs_media_spaces
+mvs_media_stats
+mvs_media_views
+mvs_mentions
+mvs_message_reactions
+mvs_messages
+mvs_notifications
+mvs_reactions
+mvs_reports
+mvs_transactions
+{$table_name} x3
+{$table}
