@@ -168,6 +168,19 @@ class FollowController extends WP_REST_Controller {
 			return new WP_Error( 'mvs_follow_failed', __( 'Unable to follow this user.', 'wpmediaverse' ), array( 'status' => 400 ) );
 		}
 
+		// A private account turns a follow into a request: accepted, not yet following.
+		if ( 'pending' === $result ) {
+			$response = rest_ensure_response(
+				array(
+					'following' => false,
+					'requested' => true,
+					'counts'    => $this->follows->get_counts( $target_id ),
+				)
+			);
+			$response->set_status( 202 );
+			return $response;
+		}
+
 		return rest_ensure_response(
 			array(
 				'following' => true,

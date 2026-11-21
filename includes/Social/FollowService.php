@@ -25,7 +25,7 @@ class FollowService {
 	 *
 	 * @param int $follower_id  The user doing the following.
 	 * @param int $following_id The user being followed.
-	 * @return bool|int Follow row ID on success, false on failure.
+	 * @return bool|int|string Follow row ID on success, 'pending' when a community plugin recorded a request, false on failure.
 	 */
 	public function follow( int $follower_id, int $following_id ) {
 		if ( $follower_id === $following_id || ! $follower_id || ! $following_id ) {
@@ -58,13 +58,21 @@ class FollowService {
 		 * turns a follow into a request, a limit refuses it) answers here, so
 		 * no follow is written that it would take back a moment later.
 		 *
+		 * Answer 'pending' when the community plugin recorded a follow REQUEST (a private account):
+		 * no follow row is written here, and the caller is told the request is waiting instead of
+		 * being refused.
+		 *
 		 * @since 2.6.5
 		 *
-		 * @param bool $can          True to record the follow.
-		 * @param int  $follower_id  The user doing the following.
-		 * @param int  $following_id The user being followed.
+		 * @param bool|string $can          True to record the follow, false to refuse it, 'pending' for a request.
+		 * @param int         $follower_id  The user doing the following.
+		 * @param int         $following_id The user being followed.
 		 */
-		if ( ! apply_filters( 'mvs_can_follow', true, $follower_id, $following_id ) ) {
+		$can = apply_filters( 'mvs_can_follow', true, $follower_id, $following_id );
+		if ( 'pending' === $can ) {
+			return 'pending';
+		}
+		if ( ! $can ) {
 			return false;
 		}
 

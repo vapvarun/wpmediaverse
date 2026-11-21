@@ -39,6 +39,38 @@ class FollowServiceTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A community plugin that turns the follow into a request answers 'pending': no row, no event.
+	 */
+	public function test_follow_pending_writes_nothing_and_fires_nothing(): void {
+		$fired = 0;
+		$count = static function () use ( &$fired ): void {
+			++$fired;
+		};
+		add_filter( 'mvs_can_follow', static fn() => 'pending' );
+		add_action( 'mvs_user_followed', $count );
+
+		$result = $this->service->follow( $this->user_a, $this->user_b );
+
+		remove_all_filters( 'mvs_can_follow' );
+		remove_action( 'mvs_user_followed', $count );
+
+		$this->assertSame( 'pending', $result );
+		$this->assertFalse( $this->service->is_following( $this->user_a, $this->user_b ) );
+		$this->assertSame( 0, $fired );
+	}
+
+	/**
+	 * A refusal stays a refusal.
+	 */
+	public function test_follow_refused_by_filter_returns_false(): void {
+		add_filter( 'mvs_can_follow', '__return_false' );
+		$result = $this->service->follow( $this->user_a, $this->user_b );
+		remove_all_filters( 'mvs_can_follow' );
+
+		$this->assertFalse( $result );
+	}
+
+	/**
 	 * A user cannot follow themselves.
 	 */
 	public function test_follow_self_returns_false(): void {
