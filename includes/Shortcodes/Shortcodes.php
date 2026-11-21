@@ -864,6 +864,10 @@ class Shortcodes {
 	 * @return string
 	 */
 	public function render_documents( $atts ): string {
+		// First, so every branch below has it, the notices included: a shortcode does not trigger the
+		// block render hook that loads the stylesheet, and the notices are returned before the end.
+		wp_enqueue_style( 'mvs-frontend' );
+
 		// Documents switched off means OFF, on this page too.
 		//
 		// Found in the browser rather than in review: with the master toggle
@@ -973,7 +977,6 @@ class Shortcodes {
 			return $mvs_doc_root_html;
 		}
 
-		wp_enqueue_style( 'mvs-frontend' );
 		if ( wp_script_is( 'mvs-lucide', 'registered' ) ) {
 			wp_enqueue_script( 'mvs-lucide' );
 		}
