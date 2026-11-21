@@ -75,6 +75,24 @@ body.dark-mode {
 	transition: transform 0.2s, background 0.2s;
 }
 
+/* Chat button on the left (setting "Chat Button Position"): the button and its panel mirror to the left edge. */
+.mvs-chat-root--left .mvs-chat-trigger {
+	right: auto;
+	left: 20px;
+}
+
+.mvs-chat-root--left .mvs-chat-panel {
+	right: auto;
+	left: 0;
+	border-left: 0;
+	border-right: 1px solid var(--mvs-chat-border);
+	transform: translateX(-100%);
+}
+
+.mvs-chat-root--left .mvs-chat-panel[data-open="true"] {
+	transform: translateX(0);
+}
+
 .mvs-chat-trigger:hover {
 	transform: scale(1.05);
 	background: var(--mvs-chat-primary-hover);

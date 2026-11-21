@@ -38,6 +38,7 @@ Every option the code reads, with the default it falls back to. **A blank defaul
 | `mvs_ai_auto_analyze` | `false` | 2 |  | includes/Core/Plugin.php |
 | `mvs_ai_auto_moderate` | `false` | 2 |  | includes/Core/Plugin.php |
 | `mvs_chat_panel_visibility` | `'everywhere'` | 2 |  | includes/Core/Plugin.php |
+| `mvs_chat_position` | `'right'` | 2 |  | includes/Core/Plugin.php, templates/partials/chat-panel.php |
 | `mvs_openai_api_key` | `''` | 2 |  | includes/Core/SettingsHelper.php |
 | `mvs_db_version` | `'0'` | 2 |  | includes/CLI/Commands.php |
 | `mvs_large_image_size` | `1024` | 2 |  | includes/CLI/Commands.php |

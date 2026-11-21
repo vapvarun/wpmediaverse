@@ -93,6 +93,7 @@ All four are on the **Mobile App** tab since 2.6.0. App Sign-In moved there from
 | `mvs_dm_access` | Who can send messages | string | `everyone` |
 | `mvs_dm_min_age` | Minimum Account Age (days) | integer | `0` |
 | `mvs_chat_panel_visibility` | Chat Panel Visibility | string | `everywhere` |
+| `mvs_chat_position` | Chat Button Position | string | `right` |
 | `mvs_show_online_status` | Online Status Visibility | string | `everyone` |
 | `mvs_comment_edit_window` | *(no settings field - filterable)* | integer | `900` (15 minutes) |
 

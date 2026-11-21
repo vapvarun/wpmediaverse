@@ -15,6 +15,7 @@ if ( ! $user_id ) {
 }
 ?>
 <div
+	class="mvs-chat-root<?php echo 'left' === get_option( 'mvs_chat_position', 'right' ) ? ' mvs-chat-root--left' : ''; ?>"
 	data-wp-interactive="mvs/messaging"
 	data-wp-init="callbacks.onInit"
 	<?php

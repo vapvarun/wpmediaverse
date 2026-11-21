@@ -140,7 +140,8 @@ class MessagingSettingsRegistrar {
 			)
 		);
 
-		// Online status visibility.
+		$this->register_chat_position();
+
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_social',
 			'mvs_show_online_status',
@@ -166,5 +167,43 @@ class MessagingSettingsRegistrar {
 				'description' => __( 'Who can see that a member is online right now.', 'wpmediaverse' ),
 			)
 		);
+	}
+
+	/**
+	 * Register the chat button corner setting.
+	 *
+	 * @return void
+	 */
+	private function register_chat_position(): void {
+		// Chat button corner (owner decision 2026-11-21, the one new option approved for 2.6.5): a site
+		// whose theme or another plugin keeps a floating button in the bottom-right corner (a course
+		// notification bell, a cookie badge) moves the chat to the other corner instead of one hiding the
+		// other. 'right' is where it has always been, so nothing changes on update.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_social',
+			'mvs_chat_position',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_position' ),
+				'default'           => 'right',
+			)
+		);
+		FieldRenderer::add_field(
+			'mvs_chat_position',
+			__( 'Chat Button Position', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-social',
+			'mvs_messaging',
+			array(
+				'option'      => 'mvs_chat_position',
+				'choices'     => array(
+					'right' => __( 'Bottom right (default)', 'wpmediaverse' ),
+					'left'  => __( 'Bottom left', 'wpmediaverse' ),
+				),
+				'description' => __( 'Which corner the floating chat button sits in, and the side its panel slides in from. Choose the left if another floating button, such as a course notification bell, already uses the bottom right.', 'wpmediaverse' ),
+			)
+		);
+
+		// Online status visibility.
 	}
 }
