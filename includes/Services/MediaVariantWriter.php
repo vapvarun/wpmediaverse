@@ -45,9 +45,26 @@ class MediaVariantWriter {
 	public function record( VariantSpec $spec, string $stored_url ): void {
 		$this->repo->set( $spec->media_id(), $spec->meta_key(), $stored_url );
 
-		if ( $this->path_meta_ok( $spec->media_id() ) ) {
+		// The relative path tells the URL builder "this variant lives on the media's current driver". When it
+		// landed elsewhere (a cloud upload failed and the local copy was kept), a path would make a CDN URL
+		// up for a file that is not there, so only the real URL is kept and any older path is cleared.
+		if ( ! $this->on_primary_host( $spec->media_id(), $stored_url ) ) {
+			$this->repo->set( $spec->media_id(), $spec->path_meta_key(), '' );
+		} elseif ( $this->path_meta_ok( $spec->media_id() ) ) {
 			$this->repo->set( $spec->media_id(), $spec->path_meta_key(), $spec->rel_path() );
 		}
+	}
+
+	/**
+	 * Whether a variant URL sits on the same host as the media's primary file.
+	 *
+	 * @param int    $media_id   Media id.
+	 * @param string $stored_url Variant URL.
+	 * @return bool True when there is no primary URL to compare against.
+	 */
+	private function on_primary_host( int $media_id, string $stored_url ): bool {
+		$file_url = (string) $this->repo->get_raw( $media_id, 'file_url' );
+		return '' === $file_url || (string) wp_parse_url( $stored_url, PHP_URL_HOST ) === (string) wp_parse_url( $file_url, PHP_URL_HOST );
 	}
 
 	/**

@@ -537,15 +537,6 @@ class UploadService {
 			);
 		}
 
-		// Hand the cloud copy to the queue now that the row exists. Deliberately
-		// fire-and-forget: a failure to ENQUEUE must never fail an upload that
-		// has already succeeded — the file is on disk and serving. If Action
-		// Scheduler is absent the media simply stays local, which is a working
-		// state, not a broken one.
-		if ( $defer_cloud ) {
-			self::queue_cloud_sync( $media_id );
-		}
-
 		// Persist optimization outcome on the media row. Done here (after the
 		// media insert) because the meta keys need a media_id. The original
 		// optimization itself already ran on the temp file pre-store().
@@ -626,6 +617,15 @@ class UploadService {
 
 		// Initialize stats row — fresh upload only; replace must NOT reset counts.
 		$this->init_stats( $media_id );
+
+		// Hand the cloud copy to the queue only now: the sizes and WebP/AVIF siblings exist, so the job
+		// moves the whole set. Queued before them, a runner that claimed it straight away (server cron, a
+		// busy site) moved the original alone, flipped file_url to the CDN mid-upload and left the original's
+		// WebP behind. Fire-and-forget: a failure to ENQUEUE never fails an upload that has already
+		// succeeded; if Action Scheduler is absent the media stays local, which is a working state.
+		if ( $defer_cloud ) {
+			self::queue_cloud_sync( $media_id );
+		}
 
 		// Carousel / gallery-post membership, recorded BEFORE mvs_media_uploaded
 		// fires. Written by the REST controller *after* the upload
