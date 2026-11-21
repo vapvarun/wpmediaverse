@@ -653,9 +653,10 @@ const { state } = store( 'mvs/media-social', {
 							a.className = 'mvs-tag';
 							a.textContent = t;
 							// Same link the server prints for a tag: the Explore page filtered by it.
+							// The term address the server prints on a reload; the filter address is only a fallback.
 							const url = new URL( archiveUrl, window.location.origin );
 							url.searchParams.set( 'mvs_tag', t );
-							a.href = url.toString();
+							a.href = ( updated.tag_urls && updated.tag_urls[ t ] ) || url.toString();
 							tagsContainer.appendChild( a );
 						} );
 					}

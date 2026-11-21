@@ -1185,7 +1185,21 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+		$item = $this->prepare_item_for_response( $media_id, $request );
+
+		// Only an edit asks for the tag addresses: the page that saved it shows the new tags in place and
+		// links them exactly as a reload would. Not part of the shared item shape, so lists pay nothing.
+		if ( is_array( $item ) && array_key_exists( 'tags', $json_params ) ) {
+			$item['tag_urls'] = array();
+			foreach ( (array) wp_get_object_terms( $media_id, 'mvs_tag' ) as $term ) {
+				$link = $term instanceof \WP_Term ? get_term_link( $term ) : '';
+				if ( is_string( $link ) && '' !== $link ) {
+					$item['tag_urls'][ $term->name ] = $link;
+				}
+			}
+		}
+
+		return rest_ensure_response( $item );
 	}
 
 	/**
