@@ -39,4 +39,27 @@ class ReportRepository {
 
 		return array_map( 'intval', (array) $ids );
 	}
+
+	/**
+	 * Close every pending report against a target without announcing it.
+	 *
+	 * For a target that no longer exists: there is nothing left to act on, so its reports must stop
+	 * counting in the moderation queue. A plain status change, not ReportService::update_status(),
+	 * so no 'report resolved' event fires and reporters are not notified.
+	 *
+	 * @param string $target_type Target type (media, album, comment...).
+	 * @param int    $target_id   Target id.
+	 * @return int Reports closed.
+	 */
+	public function close_pending_silently( string $target_type, int $target_id ): int {
+		global $wpdb;
+
+		return (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved' WHERE target_type = %s AND target_id = %d AND status = 'pending'",
+				$target_type,
+				$target_id
+			)
+		);
+	}
 }

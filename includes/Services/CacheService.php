@@ -415,6 +415,8 @@ class CacheService {
 		// Invalidate moderation cache.
 		add_action( 'mvs_moderation_changed', array( $this, 'on_moderation_change' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'on_moderation_change' ) );
+		// Runs after the report close above (priority 20), so the count is read from the closed rows.
+		add_action( 'mvs_media_deleted', array( $this, 'on_moderation_change' ), 20 );
 
 		// Invalidate follow counts on follow/unfollow.
 		add_action( 'mvs_user_followed', array( $this, 'on_follow_change' ), 10, 2 );
