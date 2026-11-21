@@ -644,6 +644,7 @@ const { state } = store( 'mvs/media-social', {
 				if ( descEl ) descEl.textContent = updated.description || '';
 
 				if ( ctx.type !== 'album' && updated.tags ) {
+					const archiveUrl = ctx.archiveUrl || '/';
 					const tagsContainer = document.querySelector( '.mvs-media-tags' );
 					if ( tagsContainer ) {
 						while ( tagsContainer.firstChild ) tagsContainer.removeChild( tagsContainer.firstChild );
@@ -651,7 +652,10 @@ const { state } = store( 'mvs/media-social', {
 							const a = document.createElement( 'a' );
 							a.className = 'mvs-tag';
 							a.textContent = t;
-							a.href = '#';
+							// Same link the server prints for a tag: the Explore page filtered by it.
+							const url = new URL( archiveUrl, window.location.origin );
+							url.searchParams.set( 'mvs_tag', t );
+							a.href = url.toString();
 							tagsContainer.appendChild( a );
 						} );
 					}
