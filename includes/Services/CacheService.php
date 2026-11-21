@@ -23,6 +23,17 @@ class CacheService {
 	const TTL_LONG   = 3600;     // 1 hour.
 
 	/**
+	 * A key tied to the group's last-changed token, so flush_all() can retire every cached read at
+	 * once by moving the token, on any object-cache backend (core's own pattern for a family of reads).
+	 *
+	 * @param string $key Cache key.
+	 * @return string Key carrying the current token.
+	 */
+	private function versioned( string $key ): string {
+		return $key . ':' . wp_cache_get_last_changed( self::GROUP );
+	}
+
+	/**
 	 * Get a cached value.
 	 *
 	 * @param string $key   Cache key.
@@ -30,7 +41,7 @@ class CacheService {
 	 * @return mixed Cached value or false.
 	 */
 	public function get( string $key, bool &$found = false ) {
-		return wp_cache_get( $key, self::GROUP, false, $found );
+		return wp_cache_get( $this->versioned( $key ), self::GROUP, false, $found );
 	}
 
 	/**
@@ -42,7 +53,7 @@ class CacheService {
 	 * @return bool True on success.
 	 */
 	public function set( string $key, $value, int $ttl = self::TTL_MEDIUM ): bool {
-		return wp_cache_set( $key, $value, self::GROUP, $ttl );
+		return wp_cache_set( $this->versioned( $key ), $value, self::GROUP, $ttl );
 	}
 
 	/**
@@ -52,7 +63,7 @@ class CacheService {
 	 * @return bool True on success.
 	 */
 	public function delete( string $key ): bool {
-		return wp_cache_delete( $key, self::GROUP );
+		return wp_cache_delete( $this->versioned( $key ), self::GROUP );
 	}
 
 	/**
@@ -376,17 +387,13 @@ class CacheService {
 	/**
 	 * Flush all MVS caches.
 	 *
-	 * Uses wp_cache_flush_group if available (WP 6.1+), otherwise individual deletes.
+	 * Moves the group's last-changed token: every key is read through it, so every cached value is
+	 * retired at once without asking the backend to flush a group or emptying the site's cache.
 	 *
 	 * @return bool True on success.
 	 */
 	public function flush_all(): bool {
-		if ( function_exists( 'wp_cache_flush_group' ) ) {
-			return wp_cache_flush_group( self::GROUP );
-		}
-
-		// Fallback: can't flush unknown keys, but we clear known patterns.
-		$this->delete( 'moderation_counts' );
+		wp_cache_set_last_changed( self::GROUP );
 		return true;
 	}
 
