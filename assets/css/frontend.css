@@ -3020,19 +3020,39 @@ body.dark-mode .mvs-skeleton::after {
     max-width: 100%;
 }
 
+/* Album names are typed by members and can be any length, so the picker is capped (a select
+   otherwise grows to its longest option and pushes every other control onto a new row). A long
+   name is cut with an ellipsis; the full name is in the list. */
+.mvs-bulk-album {
+    width: 14rem;
+    max-width: 100%;
+    text-overflow: ellipsis;
+}
+
 @media (max-width: 480px) {
+    /* Pairs of controls share a row (picker + its button) instead of one control per row: the
+       stacked bar was ~510px tall at 390px and covered most of the screen while it is sticky. */
     .mvs-bulk-bar {
-        flex-direction: column;
-        align-items: stretch;
+        align-items: center;
     }
 
     .mvs-bulk-count {
+        flex: 1 0 100%;
         margin-inline-end: 0;
     }
 
-    .mvs-bulk-privacy {
-        /* Full row on a phone. width:auto would size it to its (long) label
-           and push the arrow past the bar's edge. */
+    .mvs-bulk-privacy-label,
+    .mvs-bulk-album-label,
+    .mvs-bulk-tags-label {
+        flex: 1 1 9rem;
+        min-width: 0;
+    }
+
+    .mvs-bulk-privacy,
+    .mvs-bulk-album,
+    .mvs-bulk-tags {
+        /* Fill the label. width:auto would size a select to its (long) label and push the arrow
+           past the bar's edge. */
         width: 100%;
     }
 }
