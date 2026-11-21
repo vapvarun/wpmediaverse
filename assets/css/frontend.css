@@ -2126,7 +2126,7 @@ body.dark-mode .mvs-skeleton::after {
     align-items: center;
     gap: 2px;
     background: rgba(0, 0, 0, 0.6);
-    color: var(--mvs-surface);
+    color: var(--mvs-on-overlay);
     padding: 4px 8px;
     border-radius: var(--mvs-radius-xs);
     font-size: 0.8em;
@@ -2139,7 +2139,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-gallery-badge .mvs-icon svg {
     width: 16px;
     height: 16px;
-    color: var(--mvs-surface);
+    color: var(--mvs-on-overlay);
 }
 
 /* ==========================================================================
@@ -7260,7 +7260,7 @@ a.mvs-dashboard-card-title:hover {
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, .6);
-    color: var(--mvs-surface);
+    color: var(--mvs-on-overlay);
     padding: 4px 12px;
     border-radius: var(--mvs-radius-lg);
     font-size: 13px;
