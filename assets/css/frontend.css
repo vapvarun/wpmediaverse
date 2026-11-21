@@ -3468,6 +3468,15 @@ a.mvs-dashboard-card-title:hover {
     opacity: 1;
 }
 
+/* The ring is the pill's own text colour so it contrasts on a filled and on an outlined pill; the
+   negative offset keeps it inside the 44px target instead of spilling over the neighbouring pill. */
+.mvs-tag-pill-remove:focus-visible {
+    opacity: 1;
+    outline: 2px solid currentColor;
+    outline-offset: -8px;
+    border-radius: 50%;
+}
+
 .mvs-tag-text-input {
     border: none !important;
     outline: none;

@@ -1620,8 +1620,7 @@ wp_interactivity_state(
 									<span data-wp-text="context.item"></span>
 									<button type="button" class="mvs-tag-pill-remove"
 										data-wp-bind--data-tag-name="context.item"
-										data-wp-on--click="actions.removeEditTag"
-										aria-label="<?php esc_attr_e( 'Remove this tag', 'wpmediaverse' ); ?>"><span aria-hidden="true">&times;</span></button>
+										data-wp-on--click="actions.removeEditTag"><span aria-hidden="true">&times;</span><span class="mvs-sr-only"><?php esc_html_e( 'Remove tag', 'wpmediaverse' ); ?></span> <span class="mvs-sr-only" data-wp-text="context.item"></span></button>
 								</span>
 							</template>
 							<input type="text" class="mvs-tag-text-input" aria-label="<?php esc_attr_e( 'Add tags', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"

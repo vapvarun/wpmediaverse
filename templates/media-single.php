@@ -883,9 +883,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 								<span class="mvs-tag-pill">
 									<span data-wp-text="context.item"></span>
 									<button type="button" class="mvs-tag-pill-remove"
-										aria-label="<?php esc_attr_e( 'Remove tag', 'wpmediaverse' ); ?>"
 										data-wp-bind--data-tag-name="context.item"
-										data-wp-on--click="actions.removeTag">&times;</button>
+										data-wp-on--click="actions.removeTag"><span aria-hidden="true">&times;</span><span class="mvs-sr-only"><?php esc_html_e( 'Remove tag', 'wpmediaverse' ); ?></span> <span class="mvs-sr-only" data-wp-text="context.item"></span></button>
 								</span>
 							</template>
 							<input type="text" class="mvs-tag-text-input" aria-label="<?php esc_attr_e( 'Add tags', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
