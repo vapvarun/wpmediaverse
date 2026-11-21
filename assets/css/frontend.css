@@ -590,6 +590,21 @@ body.dark-mode {
 .mvs-single-album h1,
 .mvs-single-collection h1,
 .mvs-explore-page h1,
+/* A notice printed by a Documents shortcode (switched off, or needs Pro). It can sit outside the
+   .mvs-documents wrapper, so it carries its own font and colours. */
+.mvs-documents__notice {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--mvs-border-light);
+    border-inline-start: 4px solid var(--mvs-primary-fill);
+    border-radius: 6px;
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    font-family: var(--mvs-font);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
 .mvs-documents h1,
 .mvs-dashboard h1,
 .mvs-profile-edit h1 {
