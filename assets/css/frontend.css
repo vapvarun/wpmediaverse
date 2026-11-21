@@ -4835,6 +4835,11 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text);
     text-decoration: none;
     font-weight: 500;
+    /* The avatar and the name are both inside the link, so the gap has to be declared here: a gap on the
+       outer span only separates its direct children, and it has just this one. */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .mvs-collection-meta-author a:hover,
