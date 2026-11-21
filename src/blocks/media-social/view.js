@@ -136,8 +136,51 @@ async function fetchFavorite( ctx ) {
 	}
 }
 
+/**
+ * Replace the file of the media on this page, then reload so the new file shows.
+ *
+ * Takes the context from the direct event handler (the Interactivity API only allows getContext() there).
+ *
+ * @param {Object} ctx  The element's context.
+ * @param {File}   file The replacement file.
+ */
+async function replaceFile( ctx, file ) {
+	ctx.saving = true;
+	ctx.replaceProgress = '0%';
+	let replaced = false;
+	try {
+		// A replacement video can be large: show how much has been sent.
+		const res = await window.mvsRest.uploadMedia( ctx.restUrl + 'media/' + ctx.mediaId + '/replace', file, {}, ( loaded, total ) => {
+			ctx.replaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
+		} );
+		if ( res.ok ) {
+			replaced = true;
+			sharedUI.actions.showToast( ( state.i18n?.fileReplaced || 'File replaced!' ), 'success' );
+		} else {
+			const err = res.data || {};
+			sharedUI.actions.showToast( err.message || ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+		}
+	} catch {
+		sharedUI.actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+	}
+	ctx.saving = false;
+	ctx.replaceProgress = '';
+	if ( replaced ) {
+		// The page shows the old file until it reloads.
+		window.setTimeout( () => window.location.reload(), 1200 );
+	}
+}
+
 const { state } = store( 'mvs/media-social', {
 	state: {
+		/** The title box is empty: Save stays off and the form says why (same rule as the My Media edit form). */
+		get editTitleMissing() {
+			return '' === String( getContext().editTitle || '' ).trim();
+		},
+		get editSaveDisabled() {
+			const ctx = getContext();
+			return !! ctx.saving || '' === String( ctx.editTitle || '' ).trim();
+		},
 		reactions: [],
 		userReaction: '',
 		isFavorite: false,
@@ -458,6 +501,14 @@ const { state } = store( 'mvs/media-social', {
 
 		cancelEdit() {
 			getContext().editVisible = false;
+		},
+
+		handleReplaceFile( event ) {
+			const file = event.target.files[ 0 ];
+			if ( ! file ) return;
+			const ctx = getContext();
+			event.target.value = '';
+			replaceFile( ctx, file );
 		},
 
 		updateEditTitle( event ) {

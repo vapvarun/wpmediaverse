@@ -644,6 +644,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				'commentText'         => '',
 				'viewCount'           => '',
 				'editVisible'         => false,
+				// Percent sent while a replacement file uploads ('' when idle).
+				'replaceProgress'     => '',
 				'editTitle'           => $mvs_title,
 				'editDesc'            => $mvs_desc,
 				'editPrivacy'         => $current_privacy,
@@ -831,7 +833,11 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<div class="mvs-field">
 					<label for="mvs-single-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
 					<input id="mvs-single-edit-title" type="text" data-wp-bind--value="context.editTitle"
-						data-wp-on--input="actions.updateEditTitle" />
+						data-wp-on--input="actions.updateEditTitle"
+						aria-describedby="mvs-single-edit-title-hint"
+						data-wp-bind--aria-invalid="state.editTitleMissing" />
+					<span class="mvs-field-hint" id="mvs-single-edit-title-hint" role="status" hidden
+						data-wp-bind--hidden="!state.editTitleMissing"><?php esc_html_e( 'Title cannot be empty.', 'wpmediaverse' ); ?></span>
 				</div>
 				<div class="mvs-field">
 					<label for="mvs-single-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
@@ -902,10 +908,20 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 						</div>
 					</div>
 				</div>
+				<?php // Same control and wording as the My Media edit form. ?>
+				<div class="mvs-replace-file-row">
+					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-replace-file-label">
+						<span aria-hidden="true">&#8635;</span> <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
+						<?php // Visually hidden, not `hidden`: a hidden input can't take keyboard focus. ?>
+						<input type="file" class="mvs-sr-only" data-wp-on--change="actions.handleReplaceFile" />
+					</label>
+					<span class="mvs-replace-progress" role="status" aria-live="polite" data-wp-bind--hidden="!context.replaceProgress" data-wp-text="context.replaceProgress" hidden></span>
+					<span class="mvs-replace-file-hint"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
+				</div>
 				<div class="mvs-inline-edit-actions">
 					<button class="mvs-btn mvs-btn--secondary" type="button"
 						data-wp-on--click="actions.saveEdit"
-						data-wp-bind--disabled="context.saving">
+						data-wp-bind--disabled="state.editSaveDisabled">
 						<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!context.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>

@@ -8036,6 +8036,11 @@ a.mvs-dashboard-card-title:hover {
     padding-top: 12px;
 }
 
+/* In the inline form on a media page the row lines up with the fields above it (the 24px side padding is the modal's). */
+.mvs-inline-edit .mvs-replace-file-row {
+    padding-inline: 0;
+}
+
 .mvs-replace-file-label {
     cursor: pointer;
     display: inline-flex;

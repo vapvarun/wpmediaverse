@@ -2528,6 +2528,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'albumSaved'           => __( 'Album saved!', 'wpmediaverse' ),
 					'saved'                => __( 'Saved!', 'wpmediaverse' ),
 					'saveFailed'           => __( 'Save failed.', 'wpmediaverse' ),
+					'fileReplaced'         => __( 'File replaced!', 'wpmediaverse' ),
+					'replaceFailed'        => __( 'Replace failed.', 'wpmediaverse' ),
 					// Owner delete.
 					'deleteAlbumConfirm'   => __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ),
 					'deleteMediaConfirm'   => __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ),
