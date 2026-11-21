@@ -53,9 +53,12 @@ All registered blocks can be used in Full Site Editing (FSE) templates, template
 - Sort Direction - `asc` / `desc`
 - User ID filter (`userId`) - restrict the grid to a single author
 - Lightbox (default: on)
+- Show pagination (default: on) - page links under the grid. Turn it off for a short strip, such as the latest uploads on a home page. Grids saved before this setting existed keep their page links.
 - Show Reactions (default: on)
 
 Grid columns and pagination inherit from **MediaVerse > Settings > Display**.
+
+**Narrow places:** the block follows its own width, not the screen. In a sidebar, widget area or narrow column (under about 420px wide) the tiles are square and use the Columns setting, up to three across. A grid placed in a widget area never shows page links, since a sidebar strip is a teaser; a narrow content column keeps them.
 
 **Galleries (2.6.2):** Files uploaded together show as one tile with a badge counting the items the viewer may see. With a media type, category or tag filter set, the tile is fronted by its first matching item and the badge counts the matching items. See [Media Upload](media-upload.md#galleries-262).
 

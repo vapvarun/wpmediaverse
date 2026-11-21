@@ -47,6 +47,7 @@ $order_by       = isset( $attributes['orderBy'] ) ? sanitize_text_field( $attrib
 $order_dir      = isset( $attributes['order'] ) && 'asc' === strtolower( $attributes['order'] ) ? 'ASC' : 'DESC';
 $show_lightbox  = ! empty( $attributes['showLightbox'] );
 $show_reactions = ! empty( $attributes['showReactions'] );
+$mvs_show_pagination = ! isset( $attributes['showPagination'] ) || ! empty( $attributes['showPagination'] ); // On by default: grids saved before the switch keep their paging.
 $gap            = isset( $attributes['gap'] ) ? absint( $attributes['gap'] ) : 8;
 $mvs_user_id    = isset( $attributes['userId'] ) ? absint( $attributes['userId'] ) : 0; // 0 = no filter; > 0 scopes to post_author.
 
@@ -319,7 +320,7 @@ $wrapper       = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes(
 		</div>
 
 		<?php
-		if ( $max_num_pages > 1 ) :
+		if ( $mvs_show_pagination && $max_num_pages > 1 ) :
 			?>
 			<div class="mvs-grid-pagination">
 				<span class="mvs-grid-pagination-info">

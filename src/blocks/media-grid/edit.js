@@ -36,6 +36,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		order,
 		showLightbox,
 		showReactions,
+		showPagination,
 		gap,
 		userId,
 	} = attributes;
@@ -158,6 +159,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 						}
 						min={ 4 }
 						max={ 48 }
+					/>
+					<ToggleControl
+						label={ __( 'Show pagination', 'wpmediaverse' ) }
+						help={ __(
+							'Show page links under the grid. Turn off for a short strip on a home page.',
+							'wpmediaverse'
+						) }
+						checked={ showPagination !== false }
+						onChange={ ( val ) =>
+							setAttributes( { showPagination: val } )
+						}
 					/>
 					<RangeControl
 						label={ __( 'Gap (px)', 'wpmediaverse' ) }
@@ -392,11 +404,17 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 											perPage
 									  )
 									: sprintf(
-											/* translators: %d: items per page setting. */
-											__(
-												'Preview sample. The published page shows up to %d items with pagination.',
-												'wpmediaverse'
-											),
+											showPagination === false
+												? /* translators: %d: items per page setting. */
+												  __(
+														'Preview sample. The published page shows up to %d items without page links.',
+														'wpmediaverse'
+												  )
+												: /* translators: %d: items per page setting. */
+												  __(
+														'Preview sample. The published page shows up to %d items with pagination.',
+														'wpmediaverse'
+												  ),
 											perPage
 									  ) }
 							</p>
