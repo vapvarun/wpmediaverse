@@ -3865,6 +3865,24 @@ a.mvs-dashboard-card-title:hover {
     flex: 0 0 auto;
 }
 
+/* A tag name can be any length: past about 20rem it is cut with an ellipsis (the full name is the
+   link's title), so one long tag cannot take half a row or be wider than a phone's scroller. */
+.mvs-tag-cloud-items .mvs-tag-cloud-item {
+    max-width: min(20rem, 85vw);
+}
+
+.mvs-tag-cloud-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The display value on the chip beats the browser's [hidden]; "More tags" uses the attribute. */
+.mvs-tag-cloud-item[hidden] {
+    display: none;
+}
+
 .mvs-tag-cloud--all,
 .mvs-tag-cloud--all .mvs-tag-cloud-items {
     flex-wrap: wrap;

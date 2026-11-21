@@ -17,7 +17,7 @@
  *   - $mvs_filter_tag  (string, optional) Current tag slug filter.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.5
  * @since   2.4.2
  */
 
@@ -75,8 +75,9 @@ $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sa
 			}
 			?>
 			<a class="mvs-tag-cloud-item <?php echo $mvs_active_tag === $mvs_chip_slug ? 'active' : ''; ?>"
-				href="<?php echo esc_url( add_query_arg( 'mvs_tag', $mvs_chip_slug, $mvs_archive_url ) ); ?>">
-				<?php echo esc_html( $mvs_chip_name ); ?>
+				href="<?php echo esc_url( add_query_arg( 'mvs_tag', $mvs_chip_slug, $mvs_archive_url ) ); ?>"
+				title="<?php echo esc_attr( $mvs_chip_name ); ?>">
+				<span class="mvs-tag-cloud-name"><?php echo esc_html( $mvs_chip_name ); ?></span>
 			</a>
 		<?php endforeach; ?>
 	</span>
@@ -86,9 +87,14 @@ $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sa
 	// the rest: with everything below the top N sharing a count of 1, the
 	// tie-break decided the cut, so a tag was reachable or unreachable
 	// forever based on spelling. Basecamp 10278224214.
-	if ( ! $mvs_show_all && $mvs_tag_total > count( $mvs_tag_chips ) ) :
+	if ( ! $mvs_show_all && $mvs_tag_chips ) :
+		// Rendered whenever there are chips. Always visible when the site has more tags than the cloud
+		// holds; otherwise hidden until explore-search.js sees the row clipping a pill (the two-row
+		// cap on a wide screen), so a hidden pill always has a way to the full list.
+		$mvs_more_always = $mvs_tag_total > count( $mvs_tag_chips );
 		?>
 		<a class="mvs-tag-cloud-item mvs-tag-cloud-item--more"
+			<?php echo $mvs_more_always ? 'data-mvs-more-always="1"' : 'hidden'; ?>
 			href="<?php echo esc_url( add_query_arg( 'mvs_all_tags', 1, $mvs_archive_url ) ); ?>">
 			<?php
 			printf(
