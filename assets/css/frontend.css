@@ -3871,6 +3871,44 @@ a.mvs-dashboard-card-title:hover {
     overflow: visible;
 }
 
+/* Tablet and desktop: the chips wrap onto at most two rows and only whole pills show, never one cut
+   in half at the edge; "More tags" has the rest. A fully wrapped list of 20 chips pushed the results
+   down, which is why this was one scrolling row. */
+@media (min-width: 641px) {
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) {
+        align-items: flex-start;
+    }
+
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) .mvs-tag-cloud-items {
+        flex-wrap: wrap;
+        overflow: hidden;
+        max-height: calc(2 * var(--mvs-touch-min, 44px) + 8px);
+        padding-bottom: 0;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+}
+
+/* Phones: "All" and "More tags" share the first row and the chips get the full width below it, as
+   one scrolling row with a stronger fade (the chips were squeezed into a 126px window between them). */
+@media (max-width: 640px) {
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) {
+        flex-wrap: wrap;
+    }
+
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) .mvs-tag-cloud-items {
+        order: 3;
+        flex: 1 0 100%;
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent);
+    }
+
+    [dir="rtl"] .mvs-tag-cloud:not(.mvs-tag-cloud--all) .mvs-tag-cloud-items {
+        -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent);
+        mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent);
+    }
+}
+
 .mvs-tag-cloud-item {
     display: inline-block;
     padding: 4px 14px;
