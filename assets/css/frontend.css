@@ -443,7 +443,10 @@
        (base/sticky/fab) stays low. */
     --mvs-z-base:    1;
     --mvs-z-sticky:  50;
-    --mvs-z-fab:     100;
+    /* Floating chat button: above theme chrome (sticky headers, bottom bars), below every MediaVerse overlay, modal and toast. */
+    --mvs-z-fab:     9980;
+    --mvs-z-chat-overlay: 9985;
+    --mvs-z-chat-panel:   9986;
     --mvs-z-overlay: 9990;
     --mvs-z-modal:   9991;
     --mvs-z-toast:   9992;

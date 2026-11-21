@@ -59,7 +59,7 @@ body.dark-mode {
 	position: fixed;
 	bottom: 20px;
 	right: 20px;
-	z-index: 99999;
+	z-index: var(--mvs-z-fab, 9980);
 	width: 56px;
 	height: 56px;
 	padding: 0;
@@ -111,7 +111,7 @@ body.dark-mode {
 	right: 0;
 	bottom: 0;
 	width: var(--mvs-chat-panel-width);
-	z-index: 100000;
+	z-index: var(--mvs-z-chat-panel, 9986);
 	background: var(--mvs-chat-bg);
 	border-left: 1px solid var(--mvs-chat-border);
 	box-shadow: var(--mvs-chat-shadow);
@@ -159,7 +159,7 @@ body.dark-mode {
 .mvs-chat-panel__overlay {
 	position: fixed;
 	inset: 0;
-	z-index: 99998;
+	z-index: var(--mvs-z-chat-overlay, 9985);
 	background: rgba(0, 0, 0, 0.3);
 	opacity: 0;
 	pointer-events: none;
