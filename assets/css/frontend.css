@@ -3184,6 +3184,16 @@ a.mvs-dashboard-card-title:hover {
     font-size: var(--mvs-font-sm);
 }
 
+/* The Apply button (shown when the filters do not apply on change) matches the selects beside it. Its margin
+   is ours too: a theme rule like `select + button[type=submit] { margin-top: .75rem }` (Reign has one) pushed it
+   13px lower than the selects and made the toolbar taller. */
+.mvs-panel-toolbar__apply {
+    margin: 0;
+    min-height: var(--mvs-touch-min);
+    border-radius: var(--mvs-radius-md);
+    align-self: center;
+}
+
 .mvs-panel-toolbar__count {
     color: var(--mvs-text-muted);
     font-size: var(--mvs-font-sm);
