@@ -136,7 +136,10 @@ body.dark-mode {
 	display: flex;
 	flex-direction: column;
 	transform: translateX(100%);
-	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	/* Closed: hidden from the keyboard and assistive tech, not just moved off-screen. The delay lets
+	   the slide-out finish before the panel is hidden; opening shows it at once (see below). */
+	visibility: hidden;
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
 }
 
 /* Account for WP admin bar height */
@@ -162,6 +165,8 @@ body.dark-mode {
 
 .mvs-chat-panel[data-open="true"] {
 	transform: translateX(0);
+	visibility: visible;
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
 }
 
 .mvs-chat-panel__view {
