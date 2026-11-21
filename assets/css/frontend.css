@@ -7998,6 +7998,20 @@ a.mvs-dashboard-card-title:hover {
         border-left: none;
         border-top: 1px solid var(--mvs-border-light);
     }
+
+    /* One scroll area on a phone. The sidebar is the scroller here, and the info, actions and comment box above
+       the list already fill most of it, so a second scroller for the list was squeezed to about 16px and the
+       comments could not be reached. The comments pane and the list take their natural height and the sidebar
+       scrolls them as one column (desktop keeps its own bounded list). */
+    .mvs-lightbox-comments {
+        flex: 0 0 auto;
+        min-height: auto;
+    }
+
+    .mvs-lightbox-comment-list {
+        flex: 0 0 auto;
+        overflow-y: visible;
+    }
 }
 /* Replace-file row inside edit modal */
 .mvs-replace-file-row {
