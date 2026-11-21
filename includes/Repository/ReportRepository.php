@@ -41,6 +41,15 @@ class ReportRepository {
 	}
 
 	/**
+	 * A media item was deleted: close its pending reports.
+	 *
+	 * @param int $media_id Media id.
+	 */
+	public function on_media_deleted( $media_id ): void {
+		$this->close_pending_silently( 'media', (int) $media_id );
+	}
+
+	/**
 	 * Close every pending report against a target without announcing it.
 	 *
 	 * For a target that no longer exists: there is nothing left to act on, so its reports must stop

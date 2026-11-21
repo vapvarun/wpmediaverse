@@ -511,13 +511,6 @@ class Plugin {
 		add_action( 'wp_loaded', array( \WPMediaVerse\Services\ServerFileOffload::class, 'maybe_probe' ) );
 		add_action( 'rest_api_init', array( \WPMediaVerse\Services\ServerFileOffload::class, 'register_route' ) );
 		\WPMediaVerse\Services\MediaFileRotator::register();
-		// A deleted item cannot be acted on, so its pending reports stop counting in the moderation queue.
-		add_action(
-			'mvs_media_deleted',
-			static function ( $media_id ): void {
-				( new \WPMediaVerse\Repository\ReportRepository() )->close_pending_silently( 'media', (int) $media_id );
-			}
-		);
 		add_action( 'wp_loaded', array( \WPMediaVerse\Services\MediaFileRotator::class, 'maybe_start_legacy' ) );
 
 		// Register Abilities API (WP 6.9+).
@@ -1090,6 +1083,9 @@ class Plugin {
 				return new \WPMediaVerse\Repository\MessageRepository();
 			}
 		);
+
+		// A deleted item cannot be acted on, so its pending reports stop counting in the moderation queue.
+		add_action( 'mvs_media_deleted', array( new \WPMediaVerse\Repository\ReportRepository(), 'on_media_deleted' ) );
 	}
 
 	/**
