@@ -14,6 +14,12 @@ defined( 'ABSPATH' ) || exit;
  */
 class MediaTag {
 
+	/** Action Scheduler hook that clears a deleted tag from one batch of media. */
+	public const FORGET_HOOK = 'mvs_tag_forget_batch';
+
+	/** Media per batch; a delete touching no more than this runs inline, like a small merge. */
+	private const FORGET_BATCH = 200;
+
 	/**
 	 * Drop a deleted tag from each media item's stored tag list.
 	 *
@@ -31,10 +37,32 @@ class MediaTag {
 			return;
 		}
 
-		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
-		$name = strtolower( $deleted_term->name );
+		$batches = array_chunk( array_map( 'intval', (array) $object_ids ), self::FORGET_BATCH );
 
-		foreach ( (array) $object_ids as $media_id ) {
+		foreach ( $batches as $i => $ids ) {
+			// A popular tag must not be walked inside the delete request: the first batch is cheap, the rest
+			// go to the background (the same split Tag merge uses).
+			if ( $i > 0 && function_exists( 'as_enqueue_async_action' ) ) {
+				as_enqueue_async_action( self::FORGET_HOOK, array( $deleted_term->name, $ids ), 'wpmediaverse' );
+			} else {
+				self::forget_tag_on_items( $deleted_term->name, $ids );
+			}
+		}
+	}
+
+	/**
+	 * Remove one tag name from the stored tag list of a batch of media.
+	 *
+	 * Action Scheduler callback, also called inline for the first batch.
+	 *
+	 * @param string $name      Deleted tag name.
+	 * @param int[]  $media_ids Media IDs to clean.
+	 */
+	public static function forget_tag_on_items( $name, $media_ids ): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$name = strtolower( (string) $name );
+
+		foreach ( (array) $media_ids as $media_id ) {
 			$stored = json_decode( (string) $repo->get( (int) $media_id, 'tags' ), true );
 			if ( ! is_array( $stored ) ) {
 				continue;
@@ -58,6 +86,7 @@ class MediaTag {
 	 */
 	public static function register(): void {
 		add_action( 'delete_mvs_tag', array( self::class, 'forget_deleted_tag' ), 10, 4 );
+		add_action( self::FORGET_HOOK, array( self::class, 'forget_tag_on_items' ), 10, 2 );
 
 		$labels = array(
 			'name'                       => __( 'Media Tags', 'wpmediaverse' ),
