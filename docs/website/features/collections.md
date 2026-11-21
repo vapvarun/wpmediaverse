@@ -27,7 +27,7 @@ Save and curate media from anyone on your site into personal boards - like Pinte
 
 ## For Site Owners
 
-1. Collections are available to all users with upload access once MediaVerse is activated
+1. Any signed-in member can create collections once MediaVerse is activated; no upload permission is needed, because a collection only gathers media that already exists (albums are different: they need upload access). Only the owner and site managers can edit a collection, and only the owner and moderators can delete one on the front end and over REST; in wp-admin only site managers can delete
 2. To embed a collection on any page, use `[mvs_collection id="456"]` (there is no Collection block)
 3. Smart collections are especially useful for curated showcase pages - create a smart collection filtered by a tag and embed it on your homepage
 4. Manage all collections from **MediaVerse > Collections** in wp-admin
