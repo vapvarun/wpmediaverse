@@ -3034,6 +3034,11 @@ body.dark-mode .mvs-skeleton::after {
        stacked bar was ~510px tall at 390px and covered most of the screen while it is sticky. */
     .mvs-bulk-bar {
         align-items: center;
+        /* Never more than about half the screen while it is pinned: past that the controls scroll
+           inside the bar, so every one stays reachable and the page behind stays visible. */
+        max-height: 50vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .mvs-bulk-count {
