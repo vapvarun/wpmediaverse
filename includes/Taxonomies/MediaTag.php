@@ -15,9 +15,50 @@ defined( 'ABSPATH' ) || exit;
 class MediaTag {
 
 	/**
+	 * Drop a deleted tag from each media item's stored tag list.
+	 *
+	 * The media page and the REST item read that list before the term
+	 * relationships, so a tag deleted from Tag management, REST or WP-CLI would
+	 * otherwise keep showing on every media item that carried it.
+	 *
+	 * @param int      $term_id      Deleted term ID.
+	 * @param int      $tt_id        Term taxonomy ID.
+	 * @param \WP_Term $deleted_term Deleted term object.
+	 * @param int[]    $object_ids   Media IDs that carried the term.
+	 */
+	public static function forget_deleted_tag( $term_id, $tt_id, $deleted_term, $object_ids ): void {
+		if ( ! $deleted_term instanceof \WP_Term ) {
+			return;
+		}
+
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$name = strtolower( $deleted_term->name );
+
+		foreach ( (array) $object_ids as $media_id ) {
+			$stored = json_decode( (string) $repo->get( (int) $media_id, 'tags' ), true );
+			if ( ! is_array( $stored ) ) {
+				continue;
+			}
+
+			$kept = array_values(
+				array_filter(
+					$stored,
+					static fn( $tag ) => strtolower( (string) $tag ) !== $name
+				)
+			);
+
+			if ( count( $kept ) !== count( $stored ) ) {
+				$repo->set( (int) $media_id, 'tags', wp_json_encode( $kept ) );
+			}
+		}
+	}
+
+	/**
 	 * Register the mvs_tag taxonomy.
 	 */
 	public static function register(): void {
+		add_action( 'delete_mvs_tag', array( self::class, 'forget_deleted_tag' ), 10, 4 );
+
 		$labels = array(
 			'name'                       => __( 'Media Tags', 'wpmediaverse' ),
 			'singular_name'              => __( 'Media Tag', 'wpmediaverse' ),
