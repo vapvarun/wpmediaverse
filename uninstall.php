@@ -45,6 +45,21 @@ if ( is_readable( $mvs_deactivator ) ) {
 	\WPMediaVerse\Core\Deactivator::clear_scheduled( true );
 }
 
+// The licence SDK's weekly check is named after the plugin slug, not mvs_: it would keep firing into code that is gone.
+// (Pro's own event, ...-pro, is left for Pro's uninstall.)
+wp_clear_scheduled_hook( 'edd_sl_sdk_weekly_license_check_wpmediaverse' );
+
+// Action Scheduler rows left by this plugin's jobs (Action Scheduler belongs to whichever plugin bundles it, so only
+// our own hooks are removed, and Pro's mvs_pro_ hooks are left for Pro).
+$mvs_as_actions = $wpdb->prefix . 'actionscheduler_actions';
+if ( $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_actions ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+	$mvs_as_logs = $wpdb->prefix . 'actionscheduler_logs';
+	if ( $mvs_as_logs === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_logs ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$wpdb->query( $wpdb->prepare( "DELETE l FROM {$mvs_as_logs} l INNER JOIN {$mvs_as_actions} a ON a.action_id = l.action_id WHERE a.hook LIKE %s AND a.hook NOT LIKE %s", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	}
+	$wpdb->query( $wpdb->prepare( "DELETE FROM {$mvs_as_actions} WHERE hook LIKE %s AND hook NOT LIKE %s", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+}
+
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_timeout_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
@@ -105,8 +120,9 @@ foreach ( $mvs_tables as $mvs_table ) {
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}{$mvs_table}" ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 }
 
-// Delete all mvs_ options (the opt-in survives while Pro is installed, see above).
-$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name <> %s", $wpdb->esc_like( 'mvs_' ) . '%', $mvs_pro_installed ? 'mvs_delete_data_on_uninstall' : '' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+// Delete all mvs_ options. The opt-in itself goes LAST (end of this file): a wipe that is cut short (a web timeout on a
+// big site) can then be run again, instead of being stranded half done with the option that asks for it already gone.
+$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name <> %s", $wpdb->esc_like( 'mvs_' ) . '%', 'mvs_delete_data_on_uninstall' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
 // Options stored under the plugin slug rather than the mvs_ prefix: the
 // licence key and its status, and the setup preset flag (QA, 2.6.0). The
@@ -137,21 +153,28 @@ $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->usermeta} WHERE meta_key LIKE
 // Delete all _mvs_ post meta.
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s", $wpdb->esc_like( '_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 
-// Delete all mvs_ CPT posts (album, collection — media lives in custom tables dropped above).
-$mvs_post_types = array( 'mvs_album', 'mvs_collection' );
-foreach ( $mvs_post_types as $mvs_post_type ) {
-	$mvs_posts = get_posts(
-		array(
-			'post_type'   => $mvs_post_type,
-			'numberposts' => -1,
-			'post_status' => 'any',
-			'fields'      => 'ids',
-		)
-	);
-	foreach ( $mvs_posts as $mvs_post_id ) {
-		wp_delete_post( $mvs_post_id, true );
+// Delete all mvs_ CPT posts (album, collection - media lives in custom tables dropped above). One wp_delete_post() per post
+// took minutes at tens of thousands of albums; these types carry no revisions or attachments of their own, so the rows
+// (and their meta and term links) are removed in set-based batches.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- fixed post types, bound below.
+$mvs_types_in = "'mvs_album', 'mvs_collection'";
+do {
+	$mvs_batch = array_map( 'intval', (array) $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( {$mvs_types_in} ) LIMIT 2000" ) );
+	if ( ! $mvs_batch ) {
+		break;
 	}
-}
+	$mvs_ids = implode( ',', $mvs_batch );
+	$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE post_id IN ( {$mvs_ids} )" );
+	$wpdb->query( "DELETE FROM {$wpdb->term_relationships} WHERE object_id IN ( {$mvs_ids} )" );
+	$wpdb->query( "DELETE FROM {$wpdb->posts} WHERE ID IN ( {$mvs_ids} )" );
+} while ( count( $mvs_batch ) >= 2000 );
+
+// Media comments live in core's comments tables (type mvs_comment, with mvs_media_id in commentmeta): left behind, they
+// reappear under whatever new media gets the same id after a reinstall.
+$wpdb->query( "DELETE cm FROM {$wpdb->commentmeta} cm INNER JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id WHERE c.comment_type = 'mvs_comment'" );
+$wpdb->query( "DELETE FROM {$wpdb->comments} WHERE comment_type = 'mvs_comment'" );
+$wpdb->query( "DELETE FROM {$wpdb->commentmeta} WHERE meta_key = 'mvs_media_id'" );
+// phpcs:enable
 
 // Remove capabilities from roles.
 //
@@ -170,4 +193,10 @@ if ( file_exists( $mvs_caps_file ) ) {
 	if ( method_exists( '\WPMediaVerse\Capabilities\MediaCapabilities', 'remove_caps' ) ) {
 		\WPMediaVerse\Capabilities\MediaCapabilities::remove_caps();
 	}
+}
+
+// Last of all: the opt-in. Pro reads the same option when it is deleted, so it stays while Pro is installed (Pro's
+// delete follows the owner's choice, not a silent "keep").
+if ( ! $mvs_pro_installed ) {
+	delete_option( 'mvs_delete_data_on_uninstall' );
 }
