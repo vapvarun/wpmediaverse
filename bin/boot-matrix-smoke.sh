@@ -226,8 +226,18 @@ EOF_SCREENS
 	if [ "$MODE" = "free" ]; then
 		PRO_B="$(printf '%s' "$DISCOVERY" | sed -n 's/.*"pro_blocks":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | grep -c .)"
 		PRO_S="$(printf '%s' "$DISCOVERY" | sed -n 's/.*"pro_codes":\[\([^]]*\)\].*/\1/p' | tr ',' '\n' | grep -c .)"
-		LEFT="$(curl -sS -L -m 60 "$SITE/?page_id=$PAGE_ID" | grep -c 'wp-block-mvs-pro-')"
-		echo "  ${DIM}info${RESET} [free] Pro leftovers on a Free-only site: $PRO_B Pro blocks render nothing (found $LEFT Pro block wrappers); $PRO_S Pro shortcodes print as plain text, as WordPress does for any unregistered shortcode"
+		GUEST="$(curl -sS -L -m 60 "$SITE/?page_id=$PAGE_ID")"
+		LEFT="$(printf '%s' "$GUEST" | grep -c 'wp-block-mvs-pro-')"
+		RAW="$(printf '%s' "$GUEST" | grep -E -o '\[(mvs_pro_[a-z_]+|mvs_document)\]' | sort -u | head -5 | tr '\n' ' ')"
+		if [ -n "$RAW" ]; then
+			echo "  ${RED}FAIL${RESET} [free] a visitor sees raw Pro shortcodes on the probe page: $RAW"
+			FAILS=$((FAILS + 1))
+		else
+			echo "  ${GREEN}ok${RESET}   [free] a visitor sees no raw Pro shortcode ($PRO_S Pro shortcodes, $PRO_B Pro blocks; $LEFT Pro block wrappers)"
+		fi
+		if [ -n "$LOGIN" ] && [ "${PRO_S:-0}" -gt 0 ]; then
+			check "$MODE" "probe page as admin (Pro shortcodes say they need Pro)" "$SITE/?page_id=$PAGE_ID" "This block needs MediaVerse Pro."
+		fi
 	fi
 done
 

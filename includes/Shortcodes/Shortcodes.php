@@ -18,6 +18,28 @@ defined( 'ABSPATH' ) || exit;
 class Shortcodes {
 
 	/**
+	 * Shortcodes MediaVerse Pro registers. With Pro off (or a Pro feature switched off) nothing registers them, and
+	 * WordPress would print the raw tag on the page; Free registers a quiet stand-in for each instead.
+	 *
+	 * @since 2.6.5
+	 */
+	public const PRO_SHORTCODES = array(
+		'mvs_document',
+		'mvs_pro_tournament',
+		'mvs_pro_tournaments_list',
+		'mvs_pro_challenge',
+		'mvs_pro_challenges_list',
+		'mvs_pro_battle',
+		'mvs_pro_battles_active',
+		'mvs_pro_instagram_feed',
+		'mvs_pro_flickr_feed',
+		'mvs_pro_pinterest_feed',
+		'mvs_pro_dribbble_feed',
+		'mvs_pro_leaderboard',
+		'mvs_pro_compete_hub',
+	);
+
+	/**
 	 * Initialize shortcode registration.
 	 */
 	public function init(): void {
@@ -36,6 +58,40 @@ class Shortcodes {
 		add_shortcode( 'mvs_pdf_viewer', array( $this, 'render_pdf_viewer' ) );
 		add_shortcode( 'mvs_usage_history', array( $this, 'render_usage_history' ) );
 		// Stories moved to the Pro plugin in 1.9.0 — no story shortcode in Free.
+
+		// Late, so Pro (which registers on mvs_loaded) has had its turn.
+		add_action( 'init', array( $this, 'register_pro_stand_ins' ), 999 );
+	}
+
+	/**
+	 * Register a stand-in for every Pro shortcode nothing registered.
+	 *
+	 * @since 2.6.5
+	 */
+	public function register_pro_stand_ins(): void {
+		foreach ( self::PRO_SHORTCODES as $tag ) {
+			if ( ! shortcode_exists( $tag ) ) {
+				add_shortcode( $tag, array( $this, 'render_pro_stand_in' ) );
+			}
+		}
+	}
+
+	/**
+	 * Visitors see nothing; a site admin sees why the block is empty when Pro is not running.
+	 *
+	 * With Pro running, the tag is unregistered because its feature is switched off, which is the owner's own
+	 * choice, so the admin sees nothing too.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @return string
+	 */
+	public function render_pro_stand_in(): string {
+		if ( \WPMediaVerse\Core\Plugin::is_pro_active() || ! current_user_can( 'manage_options' ) ) {
+			return '';
+		}
+
+		return '<p class="mvs-documents__notice">' . esc_html__( 'This block needs MediaVerse Pro.', 'wpmediaverse' ) . '</p>';
 	}
 
 	/**
@@ -915,7 +971,7 @@ class Shortcodes {
 			// Empty means nothing can render a folder here — Pro absent. Saying
 			// so to an editor beats printing nothing and looking broken.
 			if ( '' === $mvs_doc_folder_html ) {
-				return current_user_can( 'edit_posts' )
+				return current_user_can( 'manage_options' )
 					? '<p class="mvs-documents__notice">' . esc_html__( 'Folder listings need MediaVerse Pro.', 'wpmediaverse' ) . '</p>'
 					: '';
 			}
@@ -969,7 +1025,7 @@ class Shortcodes {
 			);
 
 			if ( '' === $mvs_doc_root_html ) {
-				return current_user_can( 'edit_posts' )
+				return current_user_can( 'manage_options' )
 					? '<p class="mvs-documents__notice">' . esc_html__( 'This drive view needs MediaVerse Pro.', 'wpmediaverse' ) . '</p>'
 					: '';
 			}
