@@ -82,7 +82,7 @@ class UploadService {
 		// the message rules, not the media library's.
 		$is_dm   = 'dm' === ( $args['privacy'] ?? '' );
 		$allowed = $is_dm ? \WPMediaVerse\Messaging\MessagingController::allowed_attachment_types() : $this->get_allowed_types();
-		$mime    = $this->detect_mime( $file['tmp_name'] );
+		$mime    = $this->detect_mime( $file['tmp_name'], (string) ( $file['name'] ?? '' ) );
 
 		// Hard guard: PDF and unrecognised uploads are refused (owner decision). This is the real enforcement — it fires even
 		// when a legacy site still has `application/pdf` in its stored
@@ -899,22 +899,16 @@ class UploadService {
 	 * Detect real MIME type of a file.
 	 *
 	 * @param string $file_path File path.
+	 * @param string $name      Original file name (used when fileinfo is missing).
 	 * @return string MIME type.
 	 */
-	private function detect_mime( string $file_path ): string {
+	private function detect_mime( string $file_path, string $name = '' ): string {
 		$check = wp_check_filetype_and_ext( $file_path, $file_path );
 		if ( ! empty( $check['type'] ) ) {
 			return MediaTypes::canonical_mime( $check['type'] );
 		}
-		// Fallback to finfo.
-		if ( function_exists( 'finfo_open' ) ) {
-			$finfo = finfo_open( FILEINFO_MIME_TYPE );
-			$mime  = finfo_file( $finfo, $file_path );
-			// PHP 8.5 deprecated finfo_close — finfo handle is GC'd when $finfo
-			// goes out of scope.
-			return $mime ? MediaTypes::canonical_mime( $mime ) : '';
-		}
-		return '';
+		$mime = MediaTypes::sniff( $file_path, $name );
+		return '' !== $mime ? MediaTypes::canonical_mime( $mime ) : '';
 	}
 
 	/**

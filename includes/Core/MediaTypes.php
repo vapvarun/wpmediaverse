@@ -207,6 +207,27 @@ final class MediaTypes {
 	}
 
 	/**
+	 * The MIME type of a file's bytes: finfo when the fileinfo extension is loaded, otherwise WordPress's own check
+	 * (real image bytes, the original file name for the rest), so a host without fileinfo still accepts uploads.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string $path File on disk (an upload's tmp_name).
+	 * @param string $name The file's original name.
+	 * @return string MIME type, or '' when unknown.
+	 */
+	public static function sniff( string $path, string $name = '' ): string {
+		if ( function_exists( 'finfo_open' ) ) {
+			$finfo = finfo_open( FILEINFO_MIME_TYPE );
+			$mime  = $finfo ? finfo_file( $finfo, $path ) : false;
+			return is_string( $mime ) ? $mime : '';
+		}
+
+		$check = wp_check_filetype_and_ext( $path, '' !== $name ? $name : basename( $path ) );
+		return is_string( $check['type'] ?? null ) ? $check['type'] : '';
+	}
+
+	/**
 	 * The MIME type the allowed lists use for a sniffed type.
 	 *
 	 * PHP's finfo reports an MP4 whose container brand is M4V (Apple, HandBrake, many

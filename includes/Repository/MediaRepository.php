@@ -5542,7 +5542,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$kept  = array();
 
 		foreach ( (array) $words as $word ) {
-			if ( mb_strlen( $word, 'UTF-8' ) < 3 || in_array( mb_strtolower( $word, 'UTF-8' ), self::FULLTEXT_STOPWORDS, true ) ) {
+			if ( mb_strlen( $word, 'UTF-8' ) < 3 || in_array( \WPMediaVerse\Core\Text::lower( $word ), self::FULLTEXT_STOPWORDS, true ) ) {
 				continue;
 			}
 			$kept[] = '+' . $word . '*';
@@ -6710,7 +6710,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( '' !== $path && 0 === strpos( trailingslashit( $path ), $base ) ) {
 			$rest = rawurldecode( trim( substr( $path, strlen( $base ) ), '/' ) );
 			if ( '' !== $rest && false === strpos( $rest, '/' ) && '@' !== $rest[0] ) {
-				if ( ctype_digit( $rest ) && $this->exists( (int) $rest ) ) {
+				if ( \WPMediaVerse\Core\Text::is_digits( $rest ) && $this->exists( (int) $rest ) ) {
 					$id = (int) $rest;
 				} else {
 					$row = $this->get_by_slug( $rest );

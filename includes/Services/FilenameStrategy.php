@@ -252,7 +252,7 @@ final class FilenameStrategy {
 		$stem  = (string) pathinfo( $original_name, PATHINFO_FILENAME );
 		$title = trim( (string) preg_replace( '/[\s._-]+/u', ' ', sanitize_text_field( $stem ) ) );
 		if ( '' !== $title ) {
-			$title = mb_strtoupper( mb_substr( $title, 0, 1, 'UTF-8' ), 'UTF-8' ) . mb_substr( $title, 1, null, 'UTF-8' );
+			$title = \WPMediaVerse\Core\Text::upper( mb_substr( $title, 0, 1, 'UTF-8' ) ) . mb_substr( $title, 1, null, 'UTF-8' );
 		}
 
 		/**

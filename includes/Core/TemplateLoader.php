@@ -825,7 +825,7 @@ class TemplateLoader {
 		$repo = Plugin::container()->get( 'media_repository' );
 
 		// Look up by slug first, then by numeric ID.
-		if ( ctype_digit( $slug ) ) {
+		if ( Text::is_digits( $slug ) ) {
 			$media = $repo->get_batch( array( (int) $slug ) )[ (int) $slug ] ?? null;
 
 			// `get_batch()` does not filter status, and this route must not serve

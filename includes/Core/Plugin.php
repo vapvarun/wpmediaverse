@@ -539,12 +539,45 @@ class Plugin {
 		// Messaging — DM engine.
 		self::init_messaging();
 
-		/**
-		 * Fires after WPMediaVerse has loaded.
-		 *
-		 * @param ServiceContainer $container The service container.
-		 */
-		do_action( 'mvs_loaded', self::$container );
+		self::fire_loaded();
+	}
+
+	/**
+	 * Fire mvs_loaded, so an extension that throws (Pro, an add-on) cannot take the site down with it.
+	 *
+	 * A Throwable from a listener is logged and reported once to admins; Free has finished booting by then, so the
+	 * site keeps working without that extension.
+	 *
+	 * @since 2.6.5
+	 */
+	private static function fire_loaded(): void {
+		try {
+			/**
+			 * Fires after WPMediaVerse has loaded.
+			 *
+			 * @param ServiceContainer $container The service container.
+			 */
+			do_action( 'mvs_loaded', self::$container );
+		} catch ( \Throwable $e ) {
+			\WPMediaVerse\Services\LoggerService::error( 'boot', 'An mvs_loaded listener failed', array( 'error' => $e->getMessage(), 'at' => $e->getFile() . ':' . $e->getLine() ) );
+			add_action(
+				'admin_notices',
+				static function () use ( $e ): void {
+					if ( current_user_can( 'activate_plugins' ) ) {
+						printf(
+							'<div class="notice notice-error"><p>%s</p></div>',
+							esc_html(
+								sprintf(
+									/* translators: %s: file and line that failed. */
+									__( 'A MediaVerse extension failed to start and was skipped, so the rest of the site keeps working. Update or reinstall the extension. Details: %s', 'wpmediaverse' ),
+									basename( $e->getFile() ) . ':' . $e->getLine()
+								)
+							)
+						);
+					}
+				}
+			);
+		}
 	}
 
 	/**
