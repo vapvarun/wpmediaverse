@@ -196,9 +196,7 @@ class Plugin {
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
-		// No load_plugin_textdomain(): WordPress 4.6+ loads it from the language
-		// folders, and calling it on `plugins_loaded` raises the
-		// `_load_textdomain_just_in_time` notice on WP 6.7+.
+		// The textdomain loads on `init` from wpmediaverse.php (bundled languages/ folder).
 
 		// Ensure capabilities are registered. The activation hook can fail
 		// on some hosts (fatal error, WP-CLI without --activate, etc.).

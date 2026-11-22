@@ -118,7 +118,8 @@ async function fetchStats( ctx ) {
 		const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/stats' );
 		const data = res.data;
 		if ( data?.views !== undefined ) {
-			ctx.viewCount = data.views + ' views';
+			const i = store( 'mvs/media-social' ).state.i18n || {};
+			ctx.viewCount = ( 1 === data.views ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', data.views );
 		}
 	} catch {
 		// Ignore.

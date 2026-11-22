@@ -251,6 +251,15 @@ function mvs_licence_request( array $params ) {
 	return is_object( $reply ) ? $reply : false;
 }
 
+// MediaVerse is not on wordpress.org, so WordPress's just-in-time loader (which reads only wp-content/languages/plugins)
+// never finds the bundled languages/ folder. Load it on init, as Pro does; earlier raises the WP 6.7+ notice.
+add_action(
+	'init',
+	static function () {
+		load_plugin_textdomain( 'wpmediaverse', false, dirname( plugin_basename( MVS_PLUGIN_FILE ) ) . '/languages' );
+	}
+);
+
 // Lockstep compatibility check: warn when an OLDER WPMediaVerse Pro is active
 // next to this newer free build. Free keeps working; the notice nudges the admin
 // to update Pro so the cross-plugin APIs line up. Pro carries the reciprocal

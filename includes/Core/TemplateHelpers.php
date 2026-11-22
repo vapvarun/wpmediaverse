@@ -2494,6 +2494,10 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			array(
 				'emojiBase' => self::emoji_base_url(),
 				'i18n'      => array(
+					/* translators: %s: number of views (1). */
+					'viewOne'              => _n( '%s view', '%s views', 1, 'wpmediaverse' ),
+					/* translators: %s: number of views (2 or more). */
+					'viewMany'             => _n( '%s view', '%s views', 2, 'wpmediaverse' ),
 					// Reactions.
 					'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
 					'reactionSaveFailed'   => __( 'Could not save reaction.', 'wpmediaverse' ),

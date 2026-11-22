@@ -181,6 +181,8 @@ wp_interactivity_state(
 			? 'documents'
 			: \WPMediaVerse\Core\DashboardSections::resolve( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
 		'i18n'        => array(
+			/* translators: %s: the search the member typed. */
+			'noResultsFor'            => __( 'No results for "%s".', 'wpmediaverse' ),
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
 			'optImage'                => __( 'Image', 'wpmediaverse' ),

@@ -66,6 +66,18 @@ wp_interactivity_state(
 		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
 		'i18n'                => array(
 			'reportPrompt'         => __( 'Why are you reporting this?', 'wpmediaverse' ),
+			'confirm'              => __( 'Confirm', 'wpmediaverse' ),
+			/* translators: %s: number of views (1). */
+			'viewOne'              => _n( '%s view', '%s views', 1, 'wpmediaverse' ),
+			/* translators: %s: number of views (2 or more). */
+			'viewMany'             => _n( '%s view', '%s views', 2, 'wpmediaverse' ),
+			/* translators: %s: number of downloads (1). */
+			'downloadOne'          => _n( '%s download', '%s downloads', 1, 'wpmediaverse' ),
+			/* translators: %s: number of downloads (2 or more). */
+			'downloadMany'         => _n( '%s download', '%s downloads', 2, 'wpmediaverse' ),
+			'loadMediaFailed'      => __( 'Could not load this media. Try again.', 'wpmediaverse' ),
+			'saveFailedRetry'      => __( 'Could not save. Try again.', 'wpmediaverse' ),
+			'uploadFailed'         => __( 'Upload failed.', 'wpmediaverse' ),
 			'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
 			/* translators: used when the comment has exactly one reply. */
 			'deleteCommentReply'   => __( 'Delete this comment and its reply?', 'wpmediaverse' ),

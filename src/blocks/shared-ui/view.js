@@ -789,8 +789,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const s = state.lightboxStats;
 			const views = s?.views || 0;
 			const downloads = s?.downloads || 0;
-			let text = views + ' view' + ( views !== 1 ? 's' : '' );
-			if ( downloads > 0 ) text += ' · ' + downloads + ' download' + ( downloads !== 1 ? 's' : '' );
+			// One/other forms seeded from PHP (_n with 1 and 2), the same pattern as deleteCommentReply(ies).
+			// ponytail: languages with more plural forms get the "other" form; per-count server labels if that matters.
+			const i = state.i18n || {};
+			let text = ( views === 1 ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', views );
+			if ( downloads > 0 ) {
+				text += ' · ' + ( downloads === 1 ? ( i.downloadOne || '%s download' ) : ( i.downloadMany || '%s downloads' ) ).replace( '%s', downloads );
+			}
 			return text;
 		},
 		get lightboxFavoriteLabel() {
@@ -898,7 +903,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// --- Confirm ---
 		// tone 'primary' for an invitation (Log in); the default 'danger' is for
 		// the destructive confirms this dialog was built for.
-		showConfirm( msg, callback, buttonLabel = 'Confirm', tone = 'danger' ) {
+		showConfirm( msg, callback, buttonLabel = state.i18n?.confirm || 'Confirm', tone = 'danger' ) {
 			state.confirmMessage = msg;
 			state.confirmCallback = callback;
 			state.confirmButtonLabel = buttonLabel;
@@ -1154,7 +1159,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalTagResults = [];
 				state.editModalTagDropdown = false;
 			} catch {
-				state.editModalError = 'Could not load this media. Try again.';
+				state.editModalError = state.i18n?.loadMediaFailed || 'Could not load this media. Try again.';
 			}
 			state.editModalLoading = false;
 		},
@@ -1339,7 +1344,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			} catch ( err ) {
 				// Same on every surface: the message shows in the form, which stays
 				// open with what the member typed.
-				state.editModalError = err.message || 'Could not save. Try again.';
+				state.editModalError = err.message || state.i18n?.saveFailedRetry || 'Could not save. Try again.';
 				state.editModalSaving = false;
 			}
 		},
@@ -1637,7 +1642,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						if ( errData && errData.message ) {
 							state.uploadModalLastError = errData.message;
 						} else {
-							state.uploadModalLastError = 'Upload failed.';
+							state.uploadModalLastError = state.i18n?.uploadFailed || 'Upload failed.';
 						}
 					}
 				} catch {
