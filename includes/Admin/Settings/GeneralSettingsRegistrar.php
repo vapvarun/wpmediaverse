@@ -408,7 +408,7 @@ class GeneralSettingsRegistrar {
 
 		return sprintf(
 			/* translators: 1: uploads folder for media, e.g. wp-content/uploads/wpmediaverse, 2: uploads folder for Pro documents. */
-			__( '<strong>This cannot be undone.</strong> When you delete MediaVerse it removes media records, albums and collections, comments, reactions and favorites, messages, settings, member preferences and permissions. It keeps the uploaded files: they stay in %1$s (and, with MediaVerse Pro, private documents in %2$s), files on a cloud bucket stay there, and the pages MediaVerse created stay. While MediaVerse Pro is installed this choice stays saved, so deleting Pro later removes its data too. Leave this off if you might reinstall.', 'wpmediaverse' ),
+			__( '<strong>This cannot be undone.</strong> When you delete MediaVerse it removes media records, albums and collections, comments, reactions and favorites, messages, settings, member preferences and permissions. Uploaded files are never deleted: they stay in %1$s, MediaVerse Pro private documents (PDFs and other files) stay in %2$s, files on a cloud bucket stay there, and the pages MediaVerse created stay. While MediaVerse Pro is installed, WordPress does not let you delete MediaVerse from the Plugins screen (only with WP-CLI or FTP); if it is removed that way, this choice stays saved so deleting Pro later removes its data too. Leave this off if you might reinstall.', 'wpmediaverse' ),
 			'<code>' . esc_html( $base . 'wpmediaverse/' ) . '</code>',
 			'<code>' . esc_html( $base . 'wpmediaverse-documents/' ) . '</code>'
 		);
