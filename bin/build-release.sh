@@ -14,6 +14,7 @@
 #   bin/build-release.sh --output ~/Desktop  # also copy zips to DIR
 #   bin/build-release.sh --skip-browser-smoke  # emergency only — logs a warning
 #   bin/build-release.sh --skip-boot-matrix    # emergency only — logs a warning
+#   bin/build-release.sh --skip-uninstall-smoke  # emergency only — logs a warning
 #   bin/build-release.sh --free-only      # only stage + zip Free (still version-pairs with Pro)
 #
 # Exit codes:
@@ -44,6 +45,7 @@ ALLOW_DIRTY=0
 OUTPUT_DIR=""
 SKIP_BROWSER_SMOKE=0
 SKIP_BOOT_MATRIX=0
+SKIP_UNINSTALL_SMOKE=0
 FREE_ONLY=0
 while [ $# -gt 0 ]; do
 	case "$1" in
@@ -51,6 +53,7 @@ while [ $# -gt 0 ]; do
 		--output)              OUTPUT_DIR="$2"; shift 2 ;;
 		--skip-browser-smoke)  SKIP_BROWSER_SMOKE=1; shift ;;
 		--skip-boot-matrix)    SKIP_BOOT_MATRIX=1; shift ;;
+		--skip-uninstall-smoke) SKIP_UNINSTALL_SMOKE=1; shift ;;
 		--free-only)           FREE_ONLY=1; shift ;;
 		*) echo "unknown flag: $1" >&2; exit 2 ;;
 	esac
@@ -220,6 +223,21 @@ elif ! bash "$FREE_ROOT/bin/boot-matrix-smoke.sh"; then
 	exit 30
 else
 	ok "Boot matrix smoke OK"
+fi
+
+# --- 3c. uninstall smoke: uninstall.php with the plugin inactive, remove-data OFF and ON, then reinstall ---
+# Destructive, so it runs on a THROWAWAY site of its own (MVS_UNINSTALL_WP), never the boot-matrix dev site.
+step "3c. uninstall smoke (data OFF, data ON, reinstall)"
+if [ "$SKIP_UNINSTALL_SMOKE" -eq 1 ]; then
+	warn "--skip-uninstall-smoke set: deleting the plugins was NOT tested. Emergency only."
+elif [ -z "${MVS_UNINSTALL_WP:-}" ]; then
+	fail "MVS_UNINSTALL_WP is not set, so uninstall/reinstall cannot be tested. Point it at a throwaway site's WP-CLI (see bin/uninstall-smoke.sh) or pass --skip-uninstall-smoke."
+	exit 30
+elif ! bash "$FREE_ROOT/bin/uninstall-smoke.sh"; then
+	fail "Uninstall smoke failed: deleting or reinstalling MediaVerse is not clean"
+	exit 30
+else
+	ok "Uninstall smoke OK"
 fi
 
 # --- 4. asset regen via grunt --------------------------------------------

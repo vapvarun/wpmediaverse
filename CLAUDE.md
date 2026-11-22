@@ -293,6 +293,7 @@ These rules protect the live customer sites. They are mechanically enforced via 
 | `npx grunt dist` | Full build + clean dist/ + copy + ZIP |
 | `npx grunt release` | CI check + dist |
 | `bash bin/boot-matrix-smoke.sh` | Boots Free only, Pro only and both on a REAL dev site and fails on a 5xx, fatal, PHP warning or notice, or a new `debug.log` line, requesting the home page, a probe page with every block and shortcode, the REST indexes and each mode's own wp-admin screens. Run by `bin/build-release.sh` (step 3b). Needs `MVS_WP` (or `MVS_WP_PATH`) and `MVS_LOGIN_PARAM`, and `WP_DEBUG` with `WP_DEBUG_LOG` (and `WP_DEBUG_DISPLAY` on for the page-output check). Proved able to fail: removing the `defined( 'MVS_VERSION' )` guard from Pro turns Pro-only red with `Undefined constant "MVS_VERSION"`. |
+| `bash bin/uninstall-smoke.sh` | Runs `uninstall.php` of Free (and Pro) the way WordPress does, with the plugin INACTIVE, remove-data OFF then ON, then reinstalls; fails on any PHP error, data lost with OFF, data left with ON, or a table missing after reinstall. DESTRUCTIVE: needs `MVS_UNINSTALL_WP` pointing at a throwaway site. Run by `bin/build-release.sh` (step 3c). Proved able to fail: without the autoloader block in `uninstall.php` it reports the `PresetActivation not found` fatal. |
 | `npm run build` | Block assets (a bare `wp-scripts build` wipes tracked files in `build/`) |
 | `composer run phpcs` | WPCS coding standards |
 | `composer run phpstan` | Static analysis (baseline: `phpstan-baseline.neon`) |
