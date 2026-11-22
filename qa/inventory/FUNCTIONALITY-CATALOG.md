@@ -4770,8 +4770,8 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Steps:** 1. Search by exact title term. 2. Search by a term only in the body of a plain-text/Office doc. 3. Search by a tag. 4. Search a PDF by a term only in its body.
 - **Expected:** Title/content/tag matches rank (content/title weighted ahead of tags). PDF is findable by title/tags only — never by body text, since extraction never runs on PDFs.
 - **UX expectation:** A PDF that doesn't surface for a body-text search must not look like "search is broken" — if a QA pass files this as a bug, it should be corrected to note it's the documented PDF exception. A freshly-uploaded, not-yet-extracted document should show as "indexing" state, not a false "no results."
-- **Settings that change it:** `mvs_pro_documents_extraction` — turning it off stops new indexing.
-- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan). A search inside one drive finds the member's file however many better matches the site has elsewhere (the drive narrows inside the query), and a space's search includes files linked into it.
+- **Settings that change it:** `mvs_pro_documents_extraction` — turning it off stops new indexing. Turning it back on catches up the documents added while it was off (the backfill starts on the next admin page load).
+- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan). A document whose file is replaced is found by the new file's text, not the old one's. Documents uploaded before extraction existed are indexed by the backfill, which starts on an admin page load and resumes after a deactivation. A search inside one drive finds the member's file however many better matches the site has elsewhere (the drive narrows inside the query), and a space's search includes files linked into it.
 
 #### MV-DOC-029 — Space search covering linked files
 - **Edition:** Pro (bridged via BuddyNext)

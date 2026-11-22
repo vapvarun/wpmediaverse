@@ -145,16 +145,17 @@ lookups are group-agnostic.
    applies) are deleted with their log rows, 200 per batch, at most 50 batches of each and 10 seconds a run. Pending and
    running rows, and every other plugin's rows, are never touched. We never change Action Scheduler's
    site-wide retention filters.
-9. **Deactivation cancels queued background jobs; uninstall deletes them.** Each plugin clears its own lists
-   from WP-Cron and cancels the pending Action Scheduler rows of its own hooks (Free `Deactivator::CRON_HOOKS` +
-   `JOB_HOOKS`; Pro `Lifecycle::RECURRING_HOOKS` + `JOB_HOOKS`), with set-based UPDATEs of 10,000 rows
-   (`Jobs::cancel_pending()`), scoped by exact hook, never by group, because `mvs` is shared. Running, complete
-   and failed rows, and every other plugin's rows, are never touched. Once a plugin is off its listeners are
-   gone, and Action Scheduler, often loaded by another plugin, would run those rows with no listener and mark
-   them complete, so the work is lost either way; cancelling says so. **Work that was pending does not carry
-   across a deactivation.** Section 6 lists what repairs each job; several have no recovery path yet. Uninstall deletes
-   each plugin's own rows by its own hook list in batches of 1,000 (a batch that deletes nothing stops the
-   loop), then the group rows once nothing uses them; Free never deletes a Pro row, and neither drops a table.
+9. **Deactivation cancels recomputable jobs and leaves state jobs; uninstall deletes them all.** Each plugin
+   clears its own lists from WP-Cron and cancels the pending Action Scheduler rows of its own hooks (Free
+   `Deactivator::CRON_HOOKS` + `JOB_HOOKS`; Pro `Lifecycle::RECURRING_HOOKS` + `JOB_HOOKS`) with set-based
+   UPDATEs of 10,000 rows (`Jobs::cancel_pending()`). The scope is the exact hook, never the group, because `mvs`
+   is shared. Running, complete and failed rows, and every other plugin's rows, are never touched. **Except
+   `STATE_JOB_HOOKS`** (one constant per plugin): jobs that finish an action a member or owner already committed,
+   or carry state nothing else holds, stay pending, so the supported update (deactivate, replace, activate)
+   resumes them. A recomputable job is cancelled, because its work comes back by itself or is lost by nature.
+   Uninstall clears every hook, state jobs included: it deletes each plugin's own rows by its own hook list in
+   batches of 1,000 (a batch that deletes nothing stops the loop), then the group rows once nothing uses them.
+   Free never deletes a Pro row, and neither drops a table. Section 6 has the hook-by-hook list.
 
 ## 4. Job list
 
@@ -199,8 +200,8 @@ reads `DISABLE_WP_CRON`).
 | `mvs_pro_push_send` | Free's `mvs_push_send` | 1 per notification | `[ user_id, message, data ]` (exception 3.2) |
 | `mvs_connector_auto_export` | upload with auto-export | 1 per connector | `[ connector, media_id, author ]` |
 | `mvs_pro_connector_delta_sync_continue` | connector sync | 1, continues | sync cursor |
-| `mvs_pro_extract_document` | document uploaded | 1 per document, deduped | `[ media_id ]` |
-| `mvs_pro_extract_documents` | extraction backfill | 1, continues per 20 | `[ cursor ]` |
+| `mvs_pro_extract_document` | document uploaded or its file replaced | 1 per document, deduped | `[ media_id ]` |
+| `mvs_pro_extract_documents` | extraction backfill; started or resumed (lost after a 15-minute lease) on a scheduling request, re-marked when extraction is switched on | 1, continues per 20 | `[ cursor ]` |
 | `mvs_document_folder_subtree_rewrite` | folder move over 5,000 descendants | 1 | `[ folder, old_path, new_path, depth_delta ]` (exception 3.2) |
 | `mvs_document_folder_privacy_cascade` | privacy change over 5,000 items | 1 | `[ folder, privacy ]` |
 | `mvs_document_folder_trash_contents` / `_restore_contents` | folder trashed / restored | 1 per folder, deduped | `[ folder ]` |
@@ -220,36 +221,47 @@ WP-Cron housekeeping (direct `wp_schedule_event()`, light hourly or daily): `mvs
    deactivation and uninstall clear it.
 4. Add a row to section 4.
 
-## 6. Recovery after a deactivation
+## 6. Deactivation, hook by hook
 
-A deactivation cancels pending jobs (rule 9). What each one leaves and what repairs it:
+**Left pending** (`STATE_JOB_HOOKS`). These stay pending while the plugin is off, and the supported update
+(deactivate, replace the files, activate) loses none of them. If the plugin stays off while Action Scheduler keeps
+running for another plugin (about a minute), the runner takes those rows, finds no listener and marks them
+complete. That loss is what the Recovery column covers.
 
-| Hook | Left behind | Recovery |
+| Hook | Why it is left | Recovery if a runner consumes it while off |
 |---|---|---|
-| `mvs_move_chat_attachments`, `mvs_convert_legacy_media_names` | state option not done | automatic: re-queued on the next scheduling request |
-| `mvs_competitions_tick`, `mvs_daily_streak_check` (Pro) | no pending row | automatic: re-armed on the first scheduling request after activation |
-| `mvs_pro_captions_reap_stale` (Pro) | no reaper | the next transcription arms it |
-| `mvs_repair_storage_paths` | state stuck at `running` | `wp mvs repair-storage` |
-| `mvs_ai_process_media` | no AI status | `wp mvs backfill_ai`, or Re-run AI per item |
-| `mvs_cloud_sync_media` | media stays local | `wp mvs migrate-storage --from=local --to=<cloud>` |
-| `mvs_tag_merge_batch` | source tag keeps unmoved items | merge again in Tags |
-| `mvs_pro_connector_delta_sync_continue`, `mvs_connector_auto_export` (Pro) | partial sync, missed exports | sync again; export per item |
-| `mvs_document_folder_restore_contents` (Pro) | documents still trashed | trash and restore the folder again |
-| `mvs_document_folder_trash_contents` (Pro) | documents of a trashed folder still published | restore and trash again, or Delete permanently |
-| `mvs_document_folder_purge` (Pro) | trashed folder never expires; a `purging` folder half deleted | Delete permanently; a `purging` folder only through REST `DELETE ?force=1` |
-| `mvs_cloud_repatriate_media` | private media still in the bucket | manual `wp mvs migrate-storage --from=<cloud> --to=local --include-non-public --media-id=<id>`; nothing finds which |
-| `mvs_document_folder_privacy_cascade` (Pro) | documents keep the looser privacy | loosen and tighten the folder again; nothing automatic |
-| `mvs_pro_transcribe_media` (Pro) | captions status stuck at `queued` | delete the captions, then generate again |
-| `mvs_cleanup_media_files` | files of deleted media stay on disk or CDN | **none** |
-| `mvs_rotate_media_files` | old file names (old direct URLs) stay valid | **none** |
-| `mvs_user_deletion_cascade`, `mvs_user_deletion_purge` | a deleted member's media and mapped rows stay | **none** (the eraser needs the user to exist) |
-| `mvs_tag_forget_batch` | deleted tag name stays in items' tag lists | **none** |
-| `mvs_close_orphan_reports` | reports on deleted media stay open | close by hand |
-| `mvs_backfill_drive_columns` | drive listing keeps its slower path | **none** |
-| `mvs_deliver_webhook`, `mvs_pro_push_send` (Pro) | the event is not delivered | **none** (by nature) |
-| `mvs_pro_extract_document`, `mvs_pro_extract_documents` (Pro) | document missing from search; backfill stuck at `running` | **none** |
-| `mvs_document_folder_subtree_rewrite` (Pro) | moved folder stuck at `moving`, hidden from listings | **none** |
-| `mvs_document_space_drive_trash` (Pro) | documents of a deleted space stay published | **none** |
+| `mvs_cleanup_media_files` | file paths of media rows already deleted live only here | **none**: files stay on disk or CDN |
+| `mvs_cloud_repatriate_media` | finishes a privacy change already made | manual `wp mvs migrate-storage --from=<cloud> --to=local --include-non-public --media-id=<id>`; nothing finds which |
+| `mvs_rotate_media_files` | finishes a privacy tightening, trash or rejection; old direct URLs stay valid until it runs | **none** |
+| `mvs_user_deletion_cascade`, `mvs_user_deletion_purge` | finishes a member deletion; the user id lives only here | **none** (the eraser needs the user to exist) |
+| `mvs_tag_forget_batch` | finishes a tag deletion; the name lives only here | **none** |
+| `mvs_tag_merge_batch` | finishes a merge an admin committed | merge again in Tags |
+| `mvs_repair_storage_paths` | a cancelled run leaves the state at `running` | `wp mvs repair-storage` |
+| `mvs_document_folder_subtree_rewrite` (Pro) | finishes a folder move; the folder stays `moving` and hidden until it runs | **none** |
+| `mvs_document_folder_privacy_cascade` (Pro) | finishes a folder privacy tightening | loosen and tighten the folder again |
+| `mvs_document_folder_trash_contents`, `mvs_document_folder_restore_contents` (Pro) | finish a folder trash or restore | trash or restore the folder again |
+| `mvs_document_folder_purge` (Pro) | finishes a purge; also the trashed folder's expiry | Delete permanently; a `purging` folder only through REST `DELETE ?force=1` |
+| `mvs_document_space_drive_trash` (Pro) | finishes a space deletion | **none** |
 
-Rows marked **none** are open: each needs a sweep or command before deactivation may cancel it without loss.
+How many pile up: a few rows per event. A bulk delete of 2,000 images leaves about 67 cleanup rows (measured: six
+files per image, packed under the 7,000-character argument budget). Rotation queues one row per 100 media; a tag
+or member deletion one per 200 or 100 items. Deactivation over 100,000 recomputable rows plus these stays under
+10 s (`DeactivationCancelsJobsTest`).
 
+**Cancelled** (recomputed, re-armed, or lost by nature):
+
+| Hook | What brings it back |
+|---|---|
+| `mvs_move_chat_attachments`, `mvs_convert_legacy_media_names` | re-queued on the next scheduling request |
+| `mvs_competitions_tick`, `mvs_daily_streak_check`, recurring rows (Pro) | re-armed on the first scheduling request after activation, or on boot |
+| `mvs_pro_captions_reap_stale` (Pro) | the next transcription arms it |
+| `mvs_pro_extract_documents` (Pro) | the backfill resumes from its cursor on the next scheduling request once its 15-minute lease runs out; documents added while extraction was off are caught up when it is switched on |
+| `mvs_pro_extract_document` (Pro) | the backfill picks up any document with no index row |
+| `mvs_pro_transcribe_media` (Pro) | delete the captions, then generate again |
+| `mvs_ai_process_media` | `wp mvs backfill_ai`, or Re-run AI per item |
+| `mvs_cloud_sync_media` | `wp mvs migrate-storage --from=local --to=<cloud>` |
+| `mvs_backfill_drive_columns` | **none**: the drive listing keeps its slower path (performance only) |
+| `mvs_close_orphan_reports` | close by hand; the reports stay visible to moderators |
+| `mvs_adopt_pending_jobs` | the next upgrade run |
+| `mvs_pro_connector_delta_sync_continue`, `mvs_connector_auto_export` (Pro) | sync again; export per item |
+| `mvs_deliver_webhook`, `mvs_pro_push_send` (Pro) | **none** (by nature: the event is not delivered) |
