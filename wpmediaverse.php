@@ -216,6 +216,17 @@ add_action(
 	}
 );
 
+// Free's key is preset and buys updates only, so there is nothing for an owner to manage: drop the SDK's
+// "Manage License" row link (added at priority 100). The key and the update channel are untouched.
+add_filter(
+	'plugin_action_links_' . plugin_basename( MVS_PLUGIN_FILE ),
+	static function ( $actions ) {
+		unset( $actions['edd_sdk_manage'] );
+		return $actions;
+	},
+	101
+);
+
 /**
  * One licence-server request (activate, deactivate, check or get_version) for MediaVerse and MediaVerse Pro.
  *
@@ -255,7 +266,7 @@ add_action(
 		if ( ! version_compare( strtok( MVS_PRO_VERSION, '-' ), MVS_MIN_PRO, '<' ) ) {
 			return;
 		}
-		if ( ! current_user_can( 'update_plugins' ) ) {
+		if ( ! current_user_can( 'update_plugins' ) || ! \WPMediaVerse\Admin\OverviewPage::is_housekeeping_screen() ) {
 			return;
 		}
 		printf(
