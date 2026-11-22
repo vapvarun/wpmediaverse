@@ -42,7 +42,7 @@ spl_autoload_register(
 $mvs_deactivator = __DIR__ . '/includes/Core/Deactivator.php';
 if ( is_readable( $mvs_deactivator ) ) {
 	require_once $mvs_deactivator;
-	\WPMediaVerse\Core\Deactivator::clear_scheduled( true );
+	\WPMediaVerse\Core\Deactivator::clear_scheduled();
 }
 
 // The licence SDK's weekly check is named after the plugin slug, not mvs_: it would keep firing into code that is gone.
@@ -187,9 +187,10 @@ $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE
 // took minutes at tens of thousands of albums; these types carry no revisions or attachments of their own, so the rows
 // (and their meta and term links) are removed in set-based batches.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- fixed post types, bound below.
-$mvs_types_in = "'mvs_album', 'mvs_collection'";
+$mvs_types_in   = "'mvs_album', 'mvs_collection'";
+$mvs_post_batch = 2000;
 do {
-	$mvs_batch = array_map( 'intval', (array) $wpdb->get_col( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( {$mvs_types_in} ) LIMIT 2000" ) );
+	$mvs_batch = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->posts} WHERE post_type IN ( {$mvs_types_in} ) LIMIT %d", $mvs_post_batch ) ) );
 	if ( ! $mvs_batch ) {
 		break;
 	}
@@ -197,7 +198,7 @@ do {
 	$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE post_id IN ( {$mvs_ids} )" );
 	$wpdb->query( "DELETE FROM {$wpdb->term_relationships} WHERE object_id IN ( {$mvs_ids} )" );
 	$mvs_deleted = (int) $wpdb->query( "DELETE FROM {$wpdb->posts} WHERE ID IN ( {$mvs_ids} )" );
-	$mvs_more    = count( $mvs_batch ) >= 2000 && $mvs_deleted > 0; // A batch that deletes nothing stops the loop.
+	$mvs_more    = count( $mvs_batch ) >= $mvs_post_batch && $mvs_deleted > 0; // A batch that deletes nothing stops the loop.
 } while ( $mvs_more );
 
 // Media comments live in core's comments tables (type mvs_comment, with mvs_media_id in commentmeta): left behind, they

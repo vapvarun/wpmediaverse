@@ -22,14 +22,13 @@ class Deactivator {
 	 * Recurring WP-Cron events. The plugin re-schedules each on boot, so
 	 * clearing them on deactivate is safe.
 	 *
-	 * `mvs_story_cleanup` belongs to Pro since 1.8.1; it stays here so a site
-	 * upgraded from before the move does not keep a stray Free-era event.
+	 * Only Free's own: `mvs_story_cleanup` is Pro's (Pro's Lifecycle clears it),
+	 * and listing it here made deactivating or deleting Free stop Pro's sweep.
 	 */
 	public const CRON_HOOKS = array(
 		'mvs_prune_logs',
 		'mvs_purge_old_views',
 		'mvs_process_account_deletions',
-		'mvs_story_cleanup',
 		// A switched-off plugin asks the store nothing; activation re-arms it.
 		PresetActivation::HOOK,
 	);
@@ -37,9 +36,11 @@ class Deactivator {
 	/**
 	 * One-off background jobs (WP-Cron single events or Action Scheduler).
 	 *
-	 * Cleared on uninstall only. Cancelling one on a plain deactivate could
-	 * strand work half done - a drive backfill or a file cleanup - that the
-	 * plugin resumes when it is switched back on.
+	 * Cancelled on deactivate as well as uninstall: with the plugin off nothing
+	 * listens for them, and Action Scheduler loaded by another plugin would mark
+	 * them complete unrun. Work that was pending does not carry across a
+	 * deactivation; the recovery paths are listed in
+	 * docs/standards/background-jobs.md.
 	 */
 	public const JOB_HOOKS = array(
 		'mvs_backfill_drive_columns',
@@ -57,6 +58,7 @@ class Deactivator {
 		\WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK,
 		\WPMediaVerse\Services\MediaFileRotator::HOOK,
 		\WPMediaVerse\Services\MediaFileRotator::LEGACY_HOOK,
+		Jobs::ADOPT_HOOK,
 	);
 
 	/**
@@ -72,7 +74,7 @@ class Deactivator {
 		delete_option( 'mvs_rewrite_version' );
 		delete_option( 'rewrite_rules' );
 
-		self::clear_scheduled( false );
+		self::clear_scheduled();
 
 		global $wpdb;
 		$wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -80,21 +82,18 @@ class Deactivator {
 	}
 
 	/**
-	 * Clear the plugin's scheduled work.
+	 * Clear the plugin's scheduled work, every copy whatever its arguments: WP-Cron events, and pending Action
+	 * Scheduler rows of Free's own hooks (set-based, so 100,000 rows do not time the deactivation out). Never Pro's
+	 * rows, though they share the group. Running, complete and failed rows stay; uninstall.php deletes them.
 	 *
-	 * @param bool $include_jobs Also cancel one-off jobs (uninstall).
+	 * @param bool $include_jobs Ignored since 2.6.5: deactivate and uninstall both cancel one-off jobs.
 	 */
-	public static function clear_scheduled( bool $include_jobs ): void {
-		$hooks = $include_jobs ? array_merge( self::CRON_HOOKS, self::JOB_HOOKS ) : self::CRON_HOOKS;
-
+	public static function clear_scheduled( bool $include_jobs = true ): void {
+		unset( $include_jobs );
+		$hooks = array_merge( self::CRON_HOOKS, self::JOB_HOOKS );
 		foreach ( $hooks as $hook ) {
-			// Every copy, whatever its arguments. Jobs::cancel() also cancels Action Scheduler rows when its store is
-			// running; at uninstall it is not (MediaVerse is inactive), and uninstall.php deletes those rows directly.
-			if ( $include_jobs ) {
-				Jobs::cancel( $hook );
-			} else {
-				wp_unschedule_hook( $hook );
-			}
+			wp_unschedule_hook( $hook );
 		}
+		Jobs::cancel_pending( $hooks );
 	}
 }
