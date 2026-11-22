@@ -88,12 +88,12 @@ class Deactivator {
 		$hooks = $include_jobs ? array_merge( self::CRON_HOOKS, self::JOB_HOOKS ) : self::CRON_HOOKS;
 
 		foreach ( $hooks as $hook ) {
-			wp_clear_scheduled_hook( $hook );
-
-			// Skipped when Action Scheduler is not running (uninstall runs with MediaVerse inactive): uninstall.php
-			// then deletes the rows of every mvs_ hook directly.
+			// Every copy, whatever its arguments. Jobs::cancel() also cancels Action Scheduler rows when its store is
+			// running; at uninstall it is not (MediaVerse is inactive), and uninstall.php deletes those rows directly.
 			if ( $include_jobs ) {
 				Jobs::cancel( $hook );
+			} else {
+				wp_unschedule_hook( $hook );
 			}
 		}
 	}

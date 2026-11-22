@@ -49,29 +49,34 @@ if ( is_readable( $mvs_deactivator ) ) {
 // (Pro's own event, ...-pro, is left for Pro's uninstall.)
 wp_clear_scheduled_hook( 'edd_sl_sdk_weekly_license_check_wpmediaverse' );
 
-// Action Scheduler rows left by this plugin's jobs (Action Scheduler belongs to whichever plugin bundles it, so only
-// our own hooks are removed, and Pro's mvs_pro_ hooks are left for Pro).
+// Action Scheduler rows left by Free's jobs: finished and failed rows stay after a cancel. Action Scheduler belongs to
+// whichever plugin bundles it, and Pro's jobs share the 'mvs' group and the mvs_ prefix, so rows are matched by Free's
+// own hook list (the Deactivator's) and nothing else: a pending Pro job (a folder purge, a privacy cascade) survives.
 $mvs_as_actions = $wpdb->prefix . 'actionscheduler_actions';
 $mvs_as_logs    = $wpdb->prefix . 'actionscheduler_logs';
+$mvs_as_hooks   = class_exists( '\WPMediaVerse\Core\Deactivator' ) ? array_merge( \WPMediaVerse\Core\Deactivator::CRON_HOOKS, \WPMediaVerse\Core\Deactivator::JOB_HOOKS ) : array();
 // phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
-if ( $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_actions ) ) ) ) {
+if ( $mvs_as_hooks && $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_actions ) ) ) ) {
 	$mvs_as_has_logs = $mvs_as_logs === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_logs ) ) );
-	// In batches of 1,000, logs first, so a site with years of rows never runs one huge locking DELETE.
+	$mvs_as_in_hooks = implode( ', ', array_fill( 0, count( $mvs_as_hooks ), '%s' ) );
+	// In batches of 1,000, logs first, so a site with years of rows never runs one huge locking DELETE. A batch that
+	// deletes nothing stops the loop, so a failing DELETE cannot spin.
 	$mvs_as_batch = 1000;
 	do {
-		$mvs_as_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$mvs_as_actions} WHERE hook LIKE %s AND hook NOT LIKE %s LIMIT %d", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%', $mvs_as_batch ) ) );
+		$mvs_as_ids     = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$mvs_as_actions} WHERE hook IN ( {$mvs_as_in_hooks} ) LIMIT %d", array_merge( $mvs_as_hooks, array( $mvs_as_batch ) ) ) ) );
+		$mvs_as_deleted = 0;
 		if ( $mvs_as_ids ) {
 			$mvs_as_in = implode( ',', $mvs_as_ids );
 			if ( $mvs_as_has_logs ) {
 				$wpdb->query( "DELETE FROM {$mvs_as_logs} WHERE action_id IN ( {$mvs_as_in} )" );
 			}
-			$wpdb->query( "DELETE FROM {$mvs_as_actions} WHERE action_id IN ( {$mvs_as_in} )" );
+			$mvs_as_deleted = (int) $wpdb->query( "DELETE FROM {$mvs_as_actions} WHERE action_id IN ( {$mvs_as_in} )" );
 		}
-		$mvs_as_found = count( $mvs_as_ids );
-	} while ( $mvs_as_batch === $mvs_as_found );
-	// The group rows MediaVerse created, once no action (another plugin's included) still uses them.
+		$mvs_as_more = count( $mvs_as_ids ) === $mvs_as_batch && $mvs_as_deleted > 0;
+	} while ( $mvs_as_more );
+	// The group rows MediaVerse created, once no action (Pro's or another plugin's included) still uses them.
 	$mvs_as_groups = $wpdb->prefix . 'actionscheduler_groups';
-	if ( $mvs_as_groups === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_groups ) ) ) ) {
+	if ( class_exists( '\WPMediaVerse\Core\Jobs' ) && $mvs_as_groups === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_groups ) ) ) ) {
 		$mvs_as_slugs = array_merge( array( \WPMediaVerse\Core\Jobs::GROUP ), \WPMediaVerse\Core\Jobs::LEGACY_GROUPS );
 		$wpdb->query( $wpdb->prepare( "DELETE g FROM {$mvs_as_groups} g WHERE g.slug IN ( " . implode( ', ', array_fill( 0, count( $mvs_as_slugs ), '%s' ) ) . " ) AND NOT EXISTS ( SELECT 1 FROM {$mvs_as_actions} a WHERE a.group_id = g.group_id )", $mvs_as_slugs ) );
 	}
@@ -191,8 +196,9 @@ do {
 	$mvs_ids = implode( ',', $mvs_batch );
 	$wpdb->query( "DELETE FROM {$wpdb->postmeta} WHERE post_id IN ( {$mvs_ids} )" );
 	$wpdb->query( "DELETE FROM {$wpdb->term_relationships} WHERE object_id IN ( {$mvs_ids} )" );
-	$wpdb->query( "DELETE FROM {$wpdb->posts} WHERE ID IN ( {$mvs_ids} )" );
-} while ( count( $mvs_batch ) >= 2000 );
+	$mvs_deleted = (int) $wpdb->query( "DELETE FROM {$wpdb->posts} WHERE ID IN ( {$mvs_ids} )" );
+	$mvs_more    = count( $mvs_batch ) >= 2000 && $mvs_deleted > 0; // A batch that deletes nothing stops the loop.
+} while ( $mvs_more );
 
 // Media comments live in core's comments tables (type mvs_comment, with mvs_media_id in commentmeta): left behind, they
 // reappear under whatever new media gets the same id after a reinstall.
