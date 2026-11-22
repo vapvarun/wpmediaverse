@@ -386,7 +386,7 @@ wp_interactivity_state(
 				<button class="mvs-btn mvs-btn--secondary" data-wp-on--click="actions.closeEditModal" data-wp-bind--disabled="state.editModalSaving">
 					<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 				</button>
-				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled">
+				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled" data-wp-bind--aria-disabled="state.editModalSaving">
 					<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.editModalSaving" hidden><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
 				</button>

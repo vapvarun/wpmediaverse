@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-22T16:23:01+00:00\n"
+"POT-Creation-Date: 2026-11-22T17:07:46+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpmediaverse\n"
@@ -499,8 +499,8 @@ msgstr ""
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:809
 #: templates/album.php:227
 #: templates/album.php:254
-#: templates/media-single.php:830
-#: templates/media-single.php:882
+#: templates/media-single.php:831
+#: templates/media-single.php:883
 #: templates/partials/chat-composer.php:73
 #: templates/partials/chat-new.php:72
 #: templates/partials/dashboard-content.php:864
@@ -3255,11 +3255,11 @@ msgstr ""
 #: includes/Admin/TagManagementPage.php:346
 #: includes/Core/Plugin.php:1797
 #: includes/Core/Plugin.php:2948
-#: includes/Core/TemplateHelpers.php:2582
+#: includes/Core/TemplateHelpers.php:2629
 #: templates/explore.php:450
 #: templates/media-single.php:795
 #: templates/media-single.php:798
-#: templates/media-single.php:891
+#: templates/media-single.php:892
 #: templates/partials/dashboard-content.php:919
 #: templates/partials/dashboard-content.php:966
 #: templates/partials/dashboard-content.php:1097
@@ -3310,7 +3310,7 @@ msgstr ""
 #: templates/admin/documents.php:196
 #: templates/media-single.php:788
 #: templates/media-single.php:791
-#: templates/media-single.php:888
+#: templates/media-single.php:889
 #: templates/partials/dashboard-content.php:962
 #: templates/partials/dashboard-content.php:1094
 #: templates/partials/dashboard-content.php:1347
@@ -3723,7 +3723,7 @@ msgid "Likes"
 msgstr ""
 
 #: includes/Core/Plugin.php:136
-#: templates/media-single.php:838
+#: templates/media-single.php:839
 #: templates/partials/shared-ui-frame.php:640
 msgid "Comments"
 msgstr ""
@@ -3733,9 +3733,9 @@ msgstr ""
 #. translators: %s: number of views (2 or more).
 #: includes/Core/Plugin.php:140
 #: includes/Core/TemplateHelpers.php:1610
-#: includes/Core/TemplateHelpers.php:2540
-#: includes/Core/TemplateHelpers.php:2542
-#: includes/REST/Controller/StatsController.php:136
+#: includes/Core/TemplateHelpers.php:2513
+#: includes/Core/TemplateHelpers.php:2587
+#: includes/Core/TemplateHelpers.php:2589
 #: templates/partials/shared-ui-frame.php:72
 #: templates/partials/shared-ui-frame.php:74
 #, php-format
@@ -4060,8 +4060,8 @@ msgstr ""
 #: templates/album.php:222
 #: templates/media-single.php:693
 #: templates/media-single.php:737
-#: templates/media-single.php:825
-#: templates/media-single.php:880
+#: templates/media-single.php:826
+#: templates/media-single.php:881
 #: templates/partials/chat-conversation.php:82
 #: templates/partials/dashboard-content.php:1530
 #: templates/partials/dashboard-content.php:1656
@@ -4385,89 +4385,101 @@ msgstr ""
 msgid "Fewest first"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2510
+#. translators: %s: number of downloads.
+#. translators: %s: number of downloads (1).
+#. translators: %s: number of downloads (2 or more).
+#: includes/Core/TemplateHelpers.php:2511
+#: templates/partials/shared-ui-frame.php:76
+#: templates/partials/shared-ui-frame.php:78
+#, php-format
+msgid "%s download"
+msgid_plural "%s downloads"
+msgstr[0] ""
+msgstr[1] ""
+
+#: includes/Core/TemplateHelpers.php:2557
 msgid "Like"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2511
+#: includes/Core/TemplateHelpers.php:2558
 msgid "Love"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2512
+#: includes/Core/TemplateHelpers.php:2559
 msgid "Haha"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2513
+#: includes/Core/TemplateHelpers.php:2560
 msgid "Wow"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2514
+#: includes/Core/TemplateHelpers.php:2561
 msgid "Sad"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2515
+#: includes/Core/TemplateHelpers.php:2562
 msgid "Angry"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2544
+#: includes/Core/TemplateHelpers.php:2591
 #: templates/partials/shared-ui-frame.php:87
 msgid "Please log in to react."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2545
+#: includes/Core/TemplateHelpers.php:2592
 msgid "Could not save reaction."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2546
+#: includes/Core/TemplateHelpers.php:2593
 msgid "Network error."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2548
+#: includes/Core/TemplateHelpers.php:2595
 msgid "Please log in to favorite."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2549
+#: includes/Core/TemplateHelpers.php:2596
 msgid "Could not update favorite."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2554
+#: includes/Core/TemplateHelpers.php:2601
 #: templates/media-single.php:713
 msgid "Add to favorites"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2555
+#: includes/Core/TemplateHelpers.php:2602
 msgid "Remove from favorites"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2557
+#: includes/Core/TemplateHelpers.php:2604
 msgid "Please log in to comment."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2558
+#: includes/Core/TemplateHelpers.php:2605
 msgid "Could not post comment."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2559
+#: includes/Core/TemplateHelpers.php:2606
 msgid "Comment updated."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2560
+#: includes/Core/TemplateHelpers.php:2607
 msgid "Edit failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2561
+#: includes/Core/TemplateHelpers.php:2608
 msgid "Comment deleted."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2563
+#: includes/Core/TemplateHelpers.php:2610
 msgid "✓ Copied!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2564
+#: includes/Core/TemplateHelpers.php:2611
 msgid "Link copied to clipboard!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2568
+#: includes/Core/TemplateHelpers.php:2615
 #: templates/album.php:167
 #: templates/media-single.php:650
 #: templates/media-single.php:759
@@ -4476,57 +4488,57 @@ msgstr ""
 msgid "Share"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2569
+#: includes/Core/TemplateHelpers.php:2616
 msgid "Could not copy link. Please copy the URL manually."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2571
+#: includes/Core/TemplateHelpers.php:2618
 msgid "Follow action failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2573
+#: includes/Core/TemplateHelpers.php:2620
 #: templates/partials/shared-ui-frame.php:104
 msgid "Saved! Redirecting to the new URL…"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2574
+#: includes/Core/TemplateHelpers.php:2621
 msgid "Album saved!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2575
+#: includes/Core/TemplateHelpers.php:2622
 msgid "Saved!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2576
+#: includes/Core/TemplateHelpers.php:2623
 #: templates/partials/dashboard-content.php:269
 msgid "Save failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2577
+#: includes/Core/TemplateHelpers.php:2624
 #: templates/partials/dashboard-content.php:261
 msgid "File replaced!"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2578
+#: includes/Core/TemplateHelpers.php:2625
 #: templates/partials/dashboard-content.php:262
 msgid "Replace failed."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2580
+#: includes/Core/TemplateHelpers.php:2627
 #: templates/partials/dashboard-content.php:273
 msgid "Delete this album? Media items will not be deleted."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2581
+#: includes/Core/TemplateHelpers.php:2628
 #: templates/partials/dashboard-content.php:266
 msgid "Delete this media item? This cannot be undone."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2584
+#: includes/Core/TemplateHelpers.php:2631
 msgid "Please log in to report content."
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2609
+#: includes/Core/TemplateHelpers.php:2656
 msgid "Resumed at"
 msgstr ""
 
@@ -5537,11 +5549,11 @@ msgstr ""
 msgid "You do not have permission to delete this media item."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:2588
+#: includes/REST/Controller/MediaController.php:2602
 msgid "Resolve specific media IDs to full objects in one call (e.g. album items). Max 100, privacy-gated, order preserved."
 msgstr ""
 
-#: includes/REST/Controller/MediaController.php:2686
+#: includes/REST/Controller/MediaController.php:2700
 msgid "Limit to one BuddyPress group's media. Group members also get items shared with the group."
 msgstr ""
 
@@ -5620,18 +5632,6 @@ msgstr ""
 #: includes/REST/Controller/SignedUrlController.php:216
 msgid "You must be logged in to request a signed URL."
 msgstr ""
-
-#. translators: %s: number of downloads.
-#. translators: %s: number of downloads (1).
-#. translators: %s: number of downloads (2 or more).
-#: includes/REST/Controller/StatsController.php:141
-#: templates/partials/shared-ui-frame.php:76
-#: templates/partials/shared-ui-frame.php:78
-#, php-format
-msgid "%s download"
-msgid_plural "%s downloads"
-msgstr[0] ""
-msgstr[1] ""
 
 #: includes/REST/Controller/TagController.php:276
 msgid "Source and target tags must be different."
@@ -6370,7 +6370,7 @@ msgstr ""
 
 #: includes/Shortcodes/Shortcodes.php:864
 #: templates/album.php:223
-#: templates/media-single.php:826
+#: templates/media-single.php:827
 #: templates/partials/dashboard-content.php:1532
 #: templates/partials/dashboard-content.php:1658
 #: templates/partials/profile-edit-panel.php:168
@@ -6395,7 +6395,7 @@ msgid "Invalid user."
 msgstr ""
 
 #: includes/Social/CommentService.php:251
-#: templates/media-single.php:855
+#: templates/media-single.php:856
 msgid "You do not have permission to comment on this item."
 msgstr ""
 
@@ -7261,7 +7261,7 @@ msgstr ""
 
 #: templates/media-single.php:804
 #: templates/media-single.php:807
-#: templates/media-single.php:895
+#: templates/media-single.php:896
 #: templates/partials/chat-message.php:94
 #: templates/partials/profile-actions.php:81
 #: templates/partials/profile-actions.php:121
@@ -7275,24 +7275,24 @@ msgstr ""
 msgid "Report this media"
 msgstr ""
 
-#: templates/media-single.php:841
+#: templates/media-single.php:842
 msgid "Write a comment..."
 msgstr ""
 
-#: templates/media-single.php:844
+#: templates/media-single.php:845
 msgid "Post comment"
 msgstr ""
 
-#: templates/media-single.php:844
+#: templates/media-single.php:845
 #: templates/partials/shared-ui-frame.php:654
 msgid "Post"
 msgstr ""
 
-#: templates/media-single.php:849
+#: templates/media-single.php:850
 msgid "Log in to leave a comment"
 msgstr ""
 
-#: templates/media-single.php:895
+#: templates/media-single.php:896
 #: templates/partials/shared-ui-frame.php:711
 msgid "Report comment"
 msgstr ""

@@ -22,7 +22,7 @@
  * @var int    $mvs_doc_folder   Folder being viewed, 0 for a drive root.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.6.5
  * @since   2.4.0
  */
 
@@ -251,7 +251,7 @@ $mvs_doc_repo   = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository
 					</span>
 
 					<time class="mvs-documents__date" datetime="<?php echo esc_attr( (string) $mvs_doc['created_at'] ); ?>">
-						<?php echo esc_html( date_i18n( (string) get_option( 'date_format' ), strtotime( (string) $mvs_doc['created_at'] ) ) ); ?>
+						<?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( (string) $mvs_doc['created_at'] ) ); ?>
 					</time>
 				</li>
 			<?php endforeach; ?>

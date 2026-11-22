@@ -111,7 +111,7 @@ $mvs_author_name  = $mvs_author
 	: $mvs_author_plain;
 
 // Format date.
-$mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) : '';
+$mvs_date_display = $mvs_created ? \WPMediaVerse\Core\TemplateHelpers::date_label( $mvs_created ) : '';
 
 // Permalink for this media.
 $mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_media_id );
@@ -821,7 +821,8 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				<div class="mvs-inline-edit-actions">
 					<button class="mvs-btn mvs-btn--secondary" type="button"
 						data-wp-on--click="actions.saveEditModal"
-						data-wp-bind--disabled="state.editModalSaveDisabled">
+						data-wp-bind--disabled="state.editModalSaveDisabled"
+						data-wp-bind--aria-disabled="state.editModalSaving">
 						<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
 						<span data-wp-bind--hidden="!state.editModalSaving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>

@@ -1004,6 +1004,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 		openMediaLightbox( event ) {
 			event.preventDefault();
+			// Focus goes back to this tile when the lightbox closes.
+			sharedUI.actions.rememberLightboxTrigger( getElement().ref );
 			const item = getContext().item;
 			if ( ! item?.id ) return;
 			const ctx = getContext();
@@ -1029,6 +1031,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		openFavLightbox( event ) {
 			event.preventDefault();
+			// Focus goes back to this tile when the lightbox closes.
+			sharedUI.actions.rememberLightboxTrigger( getElement().ref );
 			const item = getContext().item;
 			if ( ! item?.media_id ) return;
 			const ctx = getContext();

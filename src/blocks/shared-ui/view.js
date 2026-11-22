@@ -464,9 +464,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
-			// while title empty".
-			return state.editModalSaving
-				|| '' === String( state.editModalTitle || '' ).trim();
+			// while title empty". While saving the button is only aria-disabled
+			// (saveEditModal ignores a second press), so focus stays on it.
+			return '' === String( state.editModalTitle || '' ).trim();
 		},
 		get uploadModalHeading() {
 			const titles = {
@@ -1181,9 +1181,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalError = state.i18n?.loadMediaFailed || 'Could not load this media. Try again.';
 			}
 			state.editModalLoading = false;
-			if ( inline && ! state.editModalError ) {
-				// The inline panel opens in the page: start the member on its first field.
-				focusWhenShown( '.mvs-inline-edit:not([hidden]) .mvs-modal-field-input' );
+			if ( ! state.editModalError ) {
+				// Start on the first field once it holds the item's values (the dialog held focus on Close while loading).
+				focusWhenShown( inline ? '.mvs-inline-edit:not([hidden]) .mvs-modal-field-input' : '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-field-input' );
 			}
 		},
 		closeEditModal() {
@@ -1819,6 +1819,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxLoading = false;
 				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
+		},
+		/**
+		 * Remember the tile a lightbox was opened from, for openers in other stores (My Media sets the state itself).
+		 *
+		 * @param {Element} el The clicked tile.
+		 */
+		rememberLightboxTrigger( el ) {
+			lightboxReturnFocus = el || document.activeElement;
 		},
 		async openLightboxById( mediaId ) {
 			if ( ! mediaId ) return;

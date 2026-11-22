@@ -166,7 +166,7 @@ $mvs_privacy  = (string) ( $mvs_row['privacy'] ?? 'private' );
 							</tr>
 							<tr>
 								<th scope="row"><?php esc_html_e( 'Uploaded', 'wpmediaverse' ); ?></th>
-								<td><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) ( $mvs_row['created_at'] ?? '' ) ) ); ?></td>
+								<td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( (string) ( $mvs_row['created_at'] ?? '' ) ) ); ?></td>
 							</tr>
 						</tbody>
 					</table>

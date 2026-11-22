@@ -1572,7 +1572,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		echo '<div class="mvs-grid-item-details">';
 		echo '<span class="mvs-grid-item-name">' . esc_html( $name ) . '</span>';
 		if ( '' !== $created ) {
-			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( mysql2date( 'c', $created ) ) . '">' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $created ) ) ) . '</time>';
+			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( gmdate( 'c', (int) strtotime( $created . ' UTC' ) ) ) . '">' . esc_html( self::date_label( $created ) ) . '</time>';
 		}
 		$this->render_grid_stats( (int) ( $stats['views'] ?? 0 ), (int) ( $stats['reactions'] ?? 0 ), (int) ( $stats['comments'] ?? 0 ) );
 		echo '</div>';
@@ -2494,6 +2494,53 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		 * @param string $timezone IANA name or UTC offset; defaults to the site timezone.
 		 */
 		return (string) apply_filters( 'mvs_display_timezone', wp_timezone_string() );
+	}
+
+	/**
+	 * "N views" / "N downloads" with the plural form for the real count, for REST payloads JS prints as-is.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string $kind  'views' or 'downloads'.
+	 * @param int    $count Count.
+	 * @return string
+	 */
+	public static function count_label( string $kind, int $count ): string {
+		$label = 'downloads' === $kind
+			/* translators: %s: number of downloads. */
+			? _n( '%s download', '%s downloads', $count, 'wpmediaverse' )
+			/* translators: %s: number of views. */
+			: _n( '%s view', '%s views', $count, 'wpmediaverse' );
+		return sprintf( $label, number_format_i18n( $count ) );
+	}
+
+	/**
+	 * A stored time shown in the display timezone (Time Standard: one formatter for every PHP surface).
+	 *
+	 * date_i18n() and mysql2date() print a UTC value as if it were local time, so a media item uploaded at
+	 * 10:30 UTC showed the previous day on a UTC+14 site while the JS-built cards showed the right one.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param int|string $when   Unix time, or a UTC MySQL datetime as stored in our tables.
+	 * @param string     $format PHP date format; defaults to the site date format.
+	 * @return string Empty for an empty or unreadable time.
+	 */
+	public static function date_label( $when, string $format = '' ): string {
+		$when = trim( (string) $when );
+		if ( '' === $when || str_starts_with( $when, '0000-00-00' ) ) {
+			return '';
+		}
+		$ts = is_numeric( $when ) ? (int) $when : strtotime( $when . ' UTC' );
+		if ( ! $ts ) {
+			return '';
+		}
+		try {
+			$zone = new \DateTimeZone( self::display_timezone() );
+		} catch ( \Exception $e ) {
+			$zone = wp_timezone();
+		}
+		return (string) wp_date( '' !== $format ? $format : (string) get_option( 'date_format' ), $ts, $zone );
 	}
 
 	/**

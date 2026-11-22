@@ -482,7 +482,7 @@ class MediaListPage {
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_label( $privacy ) ); ?></span></td>
 			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( self::status_label( $status ) ); ?></span></td>
 			<td class="mvs-col-ai"><?php self::render_ai_cell( $media_id ); ?></td>
-			<td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $item['created_at'] ) ) ); ?></td>
+			<td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( $item['created_at'] ) ); ?></td>
 		</tr>
 		<?php
 	}
@@ -1438,7 +1438,7 @@ class MediaListPage {
 							<tr><th><?php esc_html_e( 'File size', 'wpmediaverse' ); ?></th><td><?php echo esc_html( size_format( (int) $item['file_size'] ) ); ?></td></tr>
 							<tr><th><?php esc_html_e( 'Who can see it', 'wpmediaverse' ); ?></th><td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_label( (string) $item['privacy'] ) ); ?></td></tr>
 							<tr><th><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th><td><?php echo esc_html( self::status_label( (string) $item['status'] ) ); ?></td></tr>
-							<tr><th><?php esc_html_e( 'Uploaded', 'wpmediaverse' ); ?></th><td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( (string) $item['created_at'] ) ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Uploaded', 'wpmediaverse' ); ?></th><td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( (string) $item['created_at'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td></tr>
 							<tr><th><?php esc_html_e( 'Preview', 'wpmediaverse' ); ?></th><td><a href="<?php echo esc_url( (string) $item['file_url'] ); ?>" target="_blank"><?php esc_html_e( 'Open the original image', 'wpmediaverse' ); ?> &rarr;</a></td></tr>
 						</tbody>
 					</table>
@@ -1486,7 +1486,7 @@ class MediaListPage {
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
-											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $optimized_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
 											?>
 											<?php
 										elseif ( $optimized_at > 0 && '' !== $webp_orig ) :
@@ -1495,7 +1495,7 @@ class MediaListPage {
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
-											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $optimized_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
 											?>
 											<?php
 										elseif ( $optimized_at > 0 ) :
@@ -1504,7 +1504,7 @@ class MediaListPage {
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
-											echo esc_html( sprintf( __( 'checked on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											echo esc_html( sprintf( __( 'checked on %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $optimized_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
 											?>
 											<?php
 										else :

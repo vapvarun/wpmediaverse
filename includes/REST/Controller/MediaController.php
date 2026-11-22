@@ -2559,11 +2559,7 @@ class MediaController extends WP_REST_Controller {
 				ARRAY_A
 			);
 
-		$data['stats'] = array(
-			'views'     => (int) ( $stats_row['views'] ?? 0 ),
-			'reactions' => (int) ( $stats_row['reactions'] ?? 0 ),
-			'comments'  => (int) ( $stats_row['comments'] ?? 0 ),
-		);
+		$data['stats'] = self::item_stats( (array) $stats_row );
 
 		/**
 		 * Filter the media item REST response data.
@@ -2572,6 +2568,24 @@ class MediaController extends WP_REST_Controller {
 		 * @param int   $media_id Media ID.
 		 */
 		return apply_filters( 'mvs_media_response', $data, $media_id );
+	}
+
+	/**
+	 * The stats block of a media item, with a ready-made plural views label for JS-built cards (Load More).
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param array $row views, reactions, comments.
+	 * @return array{views:int, reactions:int, comments:int, views_label:string}
+	 */
+	private static function item_stats( array $row ): array {
+		$views = (int) ( $row['views'] ?? 0 );
+		return array(
+			'views'       => $views,
+			'reactions'   => (int) ( $row['reactions'] ?? 0 ),
+			'comments'    => (int) ( $row['comments'] ?? 0 ),
+			'views_label' => \WPMediaVerse\Core\TemplateHelpers::count_label( 'views', $views ),
+		);
 	}
 
 	/**

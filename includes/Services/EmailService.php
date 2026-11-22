@@ -315,7 +315,7 @@ class EmailService {
 	 */
 	private function deletion_email( int $user_id, int $scheduled_at ): void {
 		$site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		$date    = date_i18n( get_option( 'date_format' ), (int) $scheduled_at );
+		$date    = \WPMediaVerse\Core\TemplateHelpers::date_label( (int) $scheduled_at );
 
 		/* translators: %s: site name. */
 		$subject = sprintf( __( 'Your %s account is scheduled for deletion', 'wpmediaverse' ), $site );
