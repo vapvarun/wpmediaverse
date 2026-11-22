@@ -790,6 +790,11 @@ body.mvs-page select {
                 background var(--mvs-duration-fast) var(--mvs-easing);
 }
 
+/* A back arrow points to where the reader came from: right-to-left sites mirror it. */
+[dir="rtl"] .mvs-back-link svg {
+    transform: scaleX(-1);
+}
+
 .mvs-back-link:hover,
 .mvs-back-link:focus-visible {
     color: var(--mvs-primary-text, var(--mvs-primary));

@@ -1021,7 +1021,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	border: 1px solid rgba( 214, 54, 56, 0.2 );
 	border-radius: var(--mvs-radius-sm, 6px);
 	padding: 8px 12px;
-	color: var( --mvs-danger, #d63638 );
+	/* Text token: darker red on light, lighter red on dark (frontend.css), so the message stays readable in both. */
+	color: var( --mvs-danger-text, var( --mvs-danger, #d63638 ) );
 	font-size: 13px;
 }
 
@@ -1067,7 +1068,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 .mvs-lightbox-comment-edit-error {
 	margin: 6px 0 0;
-	color: var( --mvs-danger, #d63638 );
+	color: var( --mvs-danger-text, var( --mvs-danger, #d63638 ) );
 	font-size: 13px;
 }
 

@@ -217,6 +217,10 @@ body.dark-mode {
 	color: var(--mvs-chat-text);
 }
 
+[dir="rtl"] .mvs-chat-header__back svg {
+	transform: scaleX(-1);
+}
+
 .mvs-chat-header__back:hover,
 .mvs-chat-header__back:focus {
 	background: none;
