@@ -14,6 +14,14 @@
  * WP-Cron they are stored as a list (array_values), because core calls the listener with the stored array as is and
  * PHP 8 reads string keys as named parameters.
  *
+ * Differences from \Jetonomy\Queue (the sister plugin's entry point; the shared method names behave the same):
+ * - ensure_recurring() also takes a cron expression ($cron = true), which the streak check uses; Jetonomy takes only
+ *   an interval. Both clamp an interval to at least 60 seconds.
+ * - No recurring() registry: each MediaVerse recurring job arms itself on action_scheduler_ensure_recurring_actions.
+ * - No delete_rows(): uninstall deletes rows by hook list directly, since Jobs is not loaded there.
+ * - adopt_pending() moves pre-2.6.5 rows into GROUP; Jetonomy never used another group.
+ * - prune_history() stops after TIME_BUDGET seconds as well as after PRUNE_MAX_BATCHES batches.
+ *
  * Deliberately outside this class, on WP-Cron only: the recurring housekeeping events armed on boot
  * (mvs_prune_logs, mvs_purge_old_views, mvs_process_account_deletions; Pro's boost, story, play-event and
  * replaced-document sweeps) and the preset licence activation retry, which reads DISABLE_WP_CRON to decide whether
@@ -43,13 +51,17 @@ final class Jobs {
 	public const LEGACY_GROUPS = array( 'wpmediaverse', 'wpmediaverse-pro', 'mvs-pro', 'mvs-connectors' );
 
 	/**
-	 * Days a completed job is kept by prune_history() (filter: mvs_finished_action_retention_days).
+	 * Days a completed or cancelled job is kept by prune_history() (filter: mvs_finished_action_retention_days).
+	 *
+	 * @since 2.6.5
 	 */
 	public const FINISHED_RETENTION_DAYS = 7;
 
 	/**
 	 * Days a failed job is kept by prune_history(), long enough to read why it failed. The same rule holds for every
 	 * plugin in the family.
+	 *
+	 * @since 2.6.5
 	 */
 	public const FAILED_RETENTION_DAYS = 90;
 
@@ -64,7 +76,14 @@ final class Jobs {
 	private const PRUNE_MAX_BATCHES = 50;
 
 	/**
+	 * Seconds one prune_history() or adopt_pending() call may spend; the rest waits for the next run.
+	 */
+	private const TIME_BUDGET = 10;
+
+	/**
 	 * Pending actions pending_args() reads per hook.
+	 *
+	 * @since 2.6.5
 	 */
 	public const PENDING_READ_LIMIT = 100;
 
@@ -72,6 +91,18 @@ final class Jobs {
 	 * Pending rows read per batch when moving them to GROUP.
 	 */
 	private const ADOPT_BATCH = 500;
+
+	/**
+	 * Pending rows one adopt_pending() call moves; the rest goes to a follow-up ADOPT_HOOK job.
+	 */
+	private const ADOPT_MAX_ROWS = 2000;
+
+	/**
+	 * Follow-up job that carries on moving pending rows into GROUP (argument: the hook list).
+	 *
+	 * @since 2.6.5
+	 */
+	public const ADOPT_HOOK = 'mvs_adopt_pending_jobs';
 
 	/**
 	 * Whether Action Scheduler may be called: its functions exist from plugins_loaded, its store only from
@@ -86,18 +117,19 @@ final class Jobs {
 	}
 
 	/**
-	 * Run a callback now if Action Scheduler's store is ready, else on action_scheduler_init. Upgrade routines run
-	 * before the store loads, and queuing before then fails.
+	 * Run a callback now if Action Scheduler's store is ready or Action Scheduler is not loaded at all (the callback
+	 * then queues through WP-Cron), else on action_scheduler_init. Upgrade routines run before the store loads, and
+	 * queuing before then fails.
 	 *
 	 * @since 2.6.5
 	 *
-	 * @param callable $callback Callback.
+	 * @param callable $callback Callback (no arguments).
 	 */
 	public static function when_ready( callable $callback ): void {
-		if ( did_action( 'action_scheduler_init' ) ) {
+		if ( did_action( 'action_scheduler_init' ) || ! function_exists( 'as_enqueue_async_action' ) ) {
 			$callback();
 		} else {
-			add_action( 'action_scheduler_init', $callback );
+			add_action( 'action_scheduler_init', static fn() => $callback() );
 		}
 	}
 
@@ -106,20 +138,34 @@ final class Jobs {
 	 *
 	 * @since 2.6.5
 	 *
-	 * @param string                   $hook Action hook.
-	 * @param array<int|string, mixed> $args Hook arguments.
-	 * @return bool Whether a scheduler accepted the job; false means the caller should do the work now.
+	 * @param string                   $hook          Action hook.
+	 * @param array<int|string, mixed> $args          Hook arguments.
+	 * @param bool                     $cron_fallback Use WP-Cron when Action Scheduler is not ready or refuses the job.
+	 *                                                False for work the caller would rather finish inline.
+	 * @param int                      $cron_delay    Seconds from now for the WP-Cron fallback.
+	 * @return bool Whether a scheduler holds the job (accepted here, or a WP-Cron copy with these arguments already
+	 *              waits); false means the caller should do the work now.
 	 */
-	public static function async( string $hook, array $args = array() ): bool {
-		if ( self::has_as() ) {
-			return (bool) as_enqueue_async_action( $hook, $args, self::GROUP );
+	public static function async( string $hook, array $args = array(), bool $cron_fallback = true, int $cron_delay = 0 ): bool {
+		// as_enqueue_async_action() answers 0 when the store refuses the job; that is not a hand-off.
+		if ( self::has_as() && as_enqueue_async_action( $hook, $args, self::GROUP ) ) {
+			return true;
 		}
-		return true === wp_schedule_single_event( time(), $hook, array_values( $args ), true );
+		if ( ! $cron_fallback ) {
+			return false;
+		}
+		$args = array_values( $args );
+		if ( wp_next_scheduled( $hook, $args ) ) {
+			return true;
+		}
+		return true === wp_schedule_single_event( time() + $cron_delay, $hook, $args, true );
 	}
 
 	/**
 	 * Queue a job unless a copy with the same arguments is already waiting to start. A copy that is running now does
-	 * not count: it may have read its data before the change that queues this one.
+	 * not count: it may have read its data before the change that queues this one, so a chain may queue its next pass.
+	 * Once Action Scheduler is ready only its own pending copies count: a WP-Cron copy left by an early request is not
+	 * a reason to skip the Action Scheduler job.
 	 *
 	 * @since 2.6.5
 	 *
@@ -128,7 +174,8 @@ final class Jobs {
 	 * @return bool Whether a copy is waiting now (queued here or already); false means the caller should do the work now.
 	 */
 	public static function async_once( string $hook, array $args = array() ): bool {
-		return self::is_pending( $hook, $args ) || self::async( $hook, $args );
+		$waiting = self::has_as() ? self::as_pending( $hook, $args ) : self::is_pending( $hook, $args );
+		return $waiting || self::async( $hook, $args );
 	}
 
 	/**
@@ -176,36 +223,48 @@ final class Jobs {
 	 * @return bool
 	 */
 	public static function is_pending( string $hook, ?array $args = null ): bool {
-		if ( self::has_as() ) {
-			$query = array(
-				'hook'     => $hook,
-				'status'   => \ActionScheduler_Store::STATUS_PENDING,
-				'per_page' => 1,
-			);
-			if ( null !== $args ) {
-				$query['args'] = $args;
-			}
-			if ( as_get_scheduled_actions( $query, 'ids' ) ) {
-				return true;
-			}
+		if ( self::has_as() && self::as_pending( $hook, $args ) ) {
+			return true;
 		}
 		return null === $args ? self::cron_has( $hook ) : false !== wp_next_scheduled( $hook, array_values( $args ) );
 	}
 
 	/**
-	 * Next run time of a pending Action Scheduler copy with any arguments.
+	 * Whether Action Scheduler holds a pending copy. Call only when has_as().
+	 *
+	 * @param string                        $hook Action hook.
+	 * @param array<int|string, mixed>|null $args Exact arguments, or null for any.
+	 * @return bool
+	 */
+	private static function as_pending( string $hook, ?array $args ): bool {
+		$query = array(
+			'hook'     => $hook,
+			'status'   => \ActionScheduler_Store::STATUS_PENDING,
+			'per_page' => 1,
+		);
+		if ( null !== $args ) {
+			$query['args'] = $args;
+		}
+		return (bool) as_get_scheduled_actions( $query, 'ids' );
+	}
+
+	/**
+	 * Next run time of a pending copy with any arguments.
 	 *
 	 * @since 2.6.5
 	 *
 	 * @param string $hook Action hook.
-	 * @return int Unix time; 0 when none is pending, or one is running now.
+	 * @return int Unix time; 0 when none is pending, one is running now, or the soonest is an async copy (use
+	 *             is_pending() to ask whether any copy waits).
 	 */
 	public static function next( string $hook ): int {
-		if ( ! self::has_as() ) {
-			return (int) wp_next_scheduled( $hook );
+		if ( self::has_as() ) {
+			$next = as_next_scheduled_action( $hook );
+			if ( is_int( $next ) ) {
+				return $next;
+			}
 		}
-		$next = as_next_scheduled_action( $hook );
-		return is_int( $next ) ? $next : 0;
+		return (int) wp_next_scheduled( $hook );
 	}
 
 	/**
@@ -220,7 +279,7 @@ final class Jobs {
 	 *
 	 * @param string     $hook     Action hook.
 	 * @param int        $first    Unix time of the first run.
-	 * @param int|string $schedule Interval in seconds, or a cron expression when $cron is true.
+	 * @param int|string $schedule Interval in seconds (at least 60), or a cron expression when $cron is true.
 	 * @param bool       $cron     Whether $schedule is a cron expression.
 	 */
 	public static function ensure_recurring( string $hook, int $first, $schedule, bool $cron = false ): void {
@@ -251,7 +310,7 @@ final class Jobs {
 			as_schedule_cron_action( $first, (string) $schedule, $hook, array(), self::GROUP, true );
 			return;
 		}
-		as_schedule_recurring_action( $first, (int) $schedule, $hook, array(), self::GROUP, true );
+		as_schedule_recurring_action( $first, max( MINUTE_IN_SECONDS, (int) $schedule ), $hook, array(), self::GROUP, true );
 	}
 
 	/**
@@ -274,6 +333,9 @@ final class Jobs {
 	 *
 	 * @since 2.6.5
 	 *
+	 * Note the asymmetry with is_queued() and is_pending(): there "any arguments" is null, here it is an empty array,
+	 * because cancelling only the argument-less copy is never what a caller wants. Jetonomy's Queue reads the same.
+	 *
 	 * @param string                   $hook Action hook.
 	 * @param array<int|string, mixed> $args Exact arguments; empty cancels every copy whatever its arguments.
 	 */
@@ -286,6 +348,22 @@ final class Jobs {
 		} else {
 			wp_unschedule_hook( $hook );
 		}
+	}
+
+	/**
+	 * Cancel every pending Action Scheduler row of exactly these hooks, in any group, set-based (10,000 per UPDATE).
+	 * For deactivation: once a plugin is off its listeners are gone, and Action Scheduler (often loaded by another
+	 * plugin) would run its rows with no listener and mark them complete, so the work is lost either way; cancelling
+	 * says so. Callers pass their own hook list, never a group: 'mvs' is shared by Free and Pro. Unlike cancel() it
+	 * needs no Action Scheduler store and costs a few queries for any number of rows; it does not touch WP-Cron.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string[] $hooks Exact hook names.
+	 * @return int Rows cancelled.
+	 */
+	public static function cancel_pending( array $hooks ): int {
+		return \WPMediaVerse\Repository\JobRepository::cancel_pending( $hooks );
 	}
 
 	/**
@@ -305,6 +383,8 @@ final class Jobs {
 				'hook'     => $hook,
 				'status'   => \ActionScheduler_Store::STATUS_PENDING,
 				'per_page' => self::PENDING_READ_LIMIT,
+				'orderby'  => 'date',
+				'order'    => 'ASC',
 			)
 		);
 		return array_values( array_map( static fn( $action ) => (array) $action->get_args(), $actions ) );
@@ -326,42 +406,50 @@ final class Jobs {
 	}
 
 	/**
-	 * Delete MediaVerse's own job history in GROUP (Free and Pro), with the log rows: completed actions older than
-	 * FINISHED_RETENTION_DAYS and failed actions older than FAILED_RETENTION_DAYS. Action Scheduler's own cleaner
-	 * keeps every plugin's history for a month and that site-wide setting is not ours to change, so we trim only our
-	 * own rows. Pending and running rows are never touched. Runs on the existing daily mvs_prune_logs event.
+	 * Delete MediaVerse's own job history in GROUP (Free and Pro), with the log rows: completed and cancelled actions
+	 * older than FINISHED_RETENTION_DAYS and failed actions older than FAILED_RETENTION_DAYS. Action Scheduler's own
+	 * cleaner keeps every plugin's history for a month and that site-wide setting is not ours to change, so we trim
+	 * only our own rows. Pending and running rows are never touched. Runs on the existing daily mvs_prune_logs event,
+	 * for at most TIME_BUDGET seconds and PRUNE_MAX_BATCHES batches per status; the rest goes on the next run.
 	 *
 	 * @since 2.6.5
+	 *
+	 * @return int Rows deleted.
 	 */
-	public static function prune_history(): void {
+	public static function prune_history(): int {
 		if ( ! self::has_as() ) {
-			return;
+			return 0;
 		}
 
 		/**
-		 * Days a completed MediaVerse job is kept before MediaVerse deletes it with its log rows. Only the 'mvs'
-		 * group is touched; pending and running jobs are never deleted, failed ones after 90 days.
+		 * Days a completed or cancelled MediaVerse job is kept before MediaVerse deletes it with its log rows. Only
+		 * the 'mvs' group is touched; pending and running jobs are never deleted, failed ones after 90 days.
 		 *
 		 * @since 2.6.5
 		 *
 		 * @param int $days Whole days, at least 1. Default 7.
 		 */
-		$days = max( 1, (int) apply_filters( 'mvs_finished_action_retention_days', self::FINISHED_RETENTION_DAYS ) );
-		self::delete_finished( \ActionScheduler_Store::STATUS_COMPLETE, $days );
-		self::delete_finished( \ActionScheduler_Store::STATUS_FAILED, self::FAILED_RETENTION_DAYS );
+		$days     = max( 1, (int) apply_filters( 'mvs_finished_action_retention_days', self::FINISHED_RETENTION_DAYS ) );
+		$deadline = microtime( true ) + self::TIME_BUDGET;
+		return self::delete_finished( \ActionScheduler_Store::STATUS_COMPLETE, $days, $deadline )
+			+ self::delete_finished( \ActionScheduler_Store::STATUS_CANCELED, $days, $deadline )
+			+ self::delete_finished( \ActionScheduler_Store::STATUS_FAILED, self::FAILED_RETENTION_DAYS, $deadline );
 	}
 
 	/**
-	 * Delete GROUP's actions of one finished status scheduled more than $days ago, in batches.
+	 * Delete GROUP's actions of one finished status scheduled more than $days ago, in batches, until $deadline.
 	 *
-	 * @param string $status Action Scheduler status.
-	 * @param int    $days   Age in days.
+	 * @param string $status   Action Scheduler status.
+	 * @param int    $days     Age in days.
+	 * @param float  $deadline microtime() after which no new batch starts.
+	 * @return int Rows deleted.
 	 */
-	private static function delete_finished( string $status, int $days ): void {
-		$before = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
-		$store  = \ActionScheduler::store();
+	private static function delete_finished( string $status, int $days, float $deadline ): int {
+		$before  = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
+		$store   = \ActionScheduler::store();
+		$deleted = 0;
 
-		for ( $batch = 0; $batch < self::PRUNE_MAX_BATCHES; $batch++ ) {
+		for ( $batch = 0; $batch < self::PRUNE_MAX_BATCHES && microtime( true ) < $deadline; $batch++ ) {
 			$ids = (array) as_get_scheduled_actions(
 				array(
 					'group'        => self::GROUP,
@@ -376,16 +464,22 @@ final class Jobs {
 			foreach ( $ids as $id ) {
 				$store->delete_action( (int) $id ); // The DB logger deletes the action's log rows on this hook.
 			}
+			$deleted += count( $ids );
 			if ( count( $ids ) < self::PRUNE_BATCH ) {
 				break;
 			}
 		}
+		return $deleted;
 	}
 
 	/**
 	 * Move the pending actions of the given hooks out of the pre-2.6.5 groups into GROUP, keeping each one's
-	 * schedule and arguments. Run once from the upgrade routine. Each plugin passes only its own hooks, so a newer
-	 * Free never moves rows an older Pro still looks up by group.
+	 * schedule, arguments and priority. Run from the upgrade routine. Each plugin passes only its own hooks, so a
+	 * newer Free never moves rows an older Pro still looks up by group.
+	 *
+	 * Moves at most ADOPT_MAX_ROWS rows for at most TIME_BUDGET seconds; when rows remain it queues an ADOPT_HOOK job
+	 * with the same hook list to carry on. Only rows no runner has claimed are moved, and the old row is cancelled
+	 * before its copy is saved, so a runner that claims it in between finds it cancelled and skips it.
 	 *
 	 * @since 2.6.5
 	 *
@@ -396,26 +490,36 @@ final class Jobs {
 		if ( ! self::has_as() ) {
 			return 0;
 		}
-		$store = \ActionScheduler::store();
-		$moved = 0;
+		$store    = \ActionScheduler::store();
+		$moved    = 0;
+		$deadline = microtime( true ) + self::TIME_BUDGET;
 		foreach ( $hooks as $hook ) {
 			foreach ( self::LEGACY_GROUPS as $group ) {
 				do {
+					if ( $moved >= self::ADOPT_MAX_ROWS || microtime( true ) >= $deadline ) {
+						self::async( self::ADOPT_HOOK, array( array_values( $hooks ) ) );
+						return $moved;
+					}
 					$actions = (array) as_get_scheduled_actions(
 						array(
-							'hook'     => $hook,
+							'hook'     => (string) $hook,
 							'group'    => $group,
 							'status'   => \ActionScheduler_Store::STATUS_PENDING,
-							'per_page' => self::ADOPT_BATCH,
+							'claimed'  => false,
+							'per_page' => min( self::ADOPT_BATCH, self::ADOPT_MAX_ROWS - $moved ),
 						)
 					);
-					$found   = count( $actions );
 					foreach ( $actions as $id => $action ) {
-						$store->save_action( new \ActionScheduler_Action( $action->get_hook(), $action->get_args(), $action->get_schedule(), self::GROUP ) );
+						// ponytail: a runner that claims and starts the row between the query and this cancel still
+						// runs it once more as the copy; the window is one query wide.
+						$store->cancel_action( (int) $id );
+						$copy = new \ActionScheduler_Action( $action->get_hook(), $action->get_args(), $action->get_schedule(), self::GROUP );
+						$copy->set_priority( $action->get_priority() );
+						$store->save_action( $copy );
 						$store->delete_action( (int) $id );
 						++$moved;
 					}
-				} while ( self::ADOPT_BATCH === $found );
+				} while ( count( $actions ) === self::ADOPT_BATCH );
 			}
 		}
 		return $moved;

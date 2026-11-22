@@ -305,6 +305,22 @@ register_deactivation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Deactivator', 
 // Bootstrap the plugin.
 add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\Plugin', 'init' ) );
 
+// Daily: delete our own finished Action Scheduler rows past their retention.
+add_action(
+	'mvs_prune_logs',
+	static function (): void {
+		\WPMediaVerse\Core\Jobs::prune_history();
+	}
+);
+
+// The follow-up run Core\Jobs::adopt_pending() queues when one run reaches its cap.
+add_action(
+	'mvs_adopt_pending_jobs',
+	static function ( $hooks ): void {
+		\WPMediaVerse\Core\Jobs::adopt_pending( (array) $hooks );
+	}
+);
+
 // WP-CLI commands.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	WP_CLI::add_command( 'mvs', 'WPMediaVerse\\CLI\\Commands' );

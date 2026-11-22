@@ -939,7 +939,6 @@ class Plugin {
 			wp_schedule_event( time(), 'daily', 'mvs_prune_logs' );
 		}
 		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
-		add_action( 'mvs_prune_logs', array( Jobs::class, 'prune_history' ) );
 
 		// View-retention cron (daily). Bounded growth on mvs_media_views —
 		// every page view inserts a row, so without retention the table
@@ -1454,14 +1453,14 @@ class Plugin {
 
 	/**
 	 * Queue one AI run for a media item, unless one is already waiting (a re-run click or a backfill over a fresh
-	 * upload would otherwise queue a second paid call for the same file).
+	 * upload would otherwise queue a second paid call for the same file). A run in progress does not count: it may
+	 * have read the file before the change that asks for this one.
 	 *
 	 * @param int $media_id Media ID.
 	 * @return bool False when the scheduler is not ready or refused the job, so the caller runs it inline.
 	 */
 	public static function enqueue_ai( int $media_id ): bool {
-		return Jobs::is_queued( 'mvs_ai_process_media', array( $media_id ) )
-			|| Jobs::async( 'mvs_ai_process_media', array( $media_id ) );
+		return Jobs::async_once( 'mvs_ai_process_media', array( $media_id ) );
 	}
 
 	/**

@@ -45,10 +45,7 @@ class RecurringJobsOnceTest extends WP_UnitTestCase {
 	}
 
 	public function test_duplicates_collapse_and_repeat_calls_add_nothing(): void {
-		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
-			$this->markTestSkipped( 'Action Scheduler is not loaded.' );
-		}
-
+		$this->assertGreaterThan( 0, did_action( 'action_scheduler_init' ), 'Action Scheduler must be loaded: the bundled copy boots with Free.' );
 		// What the old check-then-schedule left behind after a burst of requests.
 		for ( $i = 0; $i < 3; $i++ ) {
 			as_schedule_recurring_action( time() + 300 + $i, 300, self::HOOK, array(), 'mvs-test' );
@@ -64,18 +61,13 @@ class RecurringJobsOnceTest extends WP_UnitTestCase {
 	}
 
 	public function test_schedules_when_none_is_pending(): void {
-		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
-			$this->markTestSkipped( 'Action Scheduler is not loaded.' );
-		}
-
+		$this->assertGreaterThan( 0, did_action( 'action_scheduler_init' ), 'Action Scheduler must be loaded: the bundled copy boots with Free.' );
 		Jobs::ensure_recurring( self::HOOK, time() + 300, 300 );
 		$this->assertSame( 1, $this->pending() );
 	}
 
 	public function test_a_cursor_continuation_does_not_count_as_the_recurring_row(): void {
-		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
-			$this->markTestSkipped( 'Action Scheduler is not loaded.' );
-		}
+		$this->assertGreaterThan( 0, did_action( 'action_scheduler_init' ), 'Action Scheduler must be loaded: the bundled copy boots with Free.' );
 		// A batch job that continues itself carries a cursor; it is not the daily row.
 		as_enqueue_async_action( self::HOOK, array( 500 ), 'mvs' );
 

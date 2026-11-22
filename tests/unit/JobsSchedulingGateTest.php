@@ -27,9 +27,7 @@ class JobsSchedulingGateTest extends WP_UnitTestCase {
 	}
 
 	public function test_visitor_request_does_not_touch_the_scheduler(): void {
-		if ( ! function_exists( 'as_next_scheduled_action' ) ) {
-			$this->markTestSkipped( 'Action Scheduler not loaded.' );
-		}
+		$this->assertGreaterThan( 0, did_action( 'action_scheduler_init' ), 'Action Scheduler must be loaded: the bundled copy boots with Free.' );
 		$this->assertFalse( Jobs::is_scheduling_request() );
 
 		global $wpdb;
@@ -40,13 +38,29 @@ class JobsSchedulingGateTest extends WP_UnitTestCase {
 	}
 
 	public function test_admin_page_load_arms_the_job(): void {
-		if ( ! function_exists( 'as_next_scheduled_action' ) ) {
-			$this->markTestSkipped( 'Action Scheduler not loaded.' );
-		}
+		$this->assertGreaterThan( 0, did_action( 'action_scheduler_init' ), 'Action Scheduler must be loaded: the bundled copy boots with Free.' );
 		set_current_screen( 'dashboard' );
 		$this->assertTrue( Jobs::is_scheduling_request() );
 
 		Jobs::ensure_recurring( self::HOOK, time() + 60, 3600 );
 		$this->assertNotFalse( as_next_scheduled_action( self::HOOK ) );
+	}
+
+	public function test_the_daily_housekeeping_run_arms_the_job_inside_admin_ajax(): void {
+		$this->assertGreaterThan( 0, did_action( 'action_scheduler_init' ), 'Action Scheduler must be loaded: the bundled copy boots with Free.' );
+		// Action Scheduler's async runner executes queued actions inside an admin-ajax request.
+		set_current_screen( 'dashboard' );
+		add_filter( 'wp_doing_ajax', '__return_true' );
+		$this->assertFalse( Jobs::is_scheduling_request(), 'Fixture: a bare admin-ajax request is not a scheduling request.' );
+
+		$arm = static function (): void {
+			Jobs::ensure_recurring( self::HOOK, time() + 60, 3600 );
+		};
+		add_action( 'action_scheduler_ensure_recurring_actions', $arm );
+		do_action( 'action_scheduler_ensure_recurring_actions' );
+		remove_action( 'action_scheduler_ensure_recurring_actions', $arm );
+		remove_filter( 'wp_doing_ajax', '__return_true' );
+
+		$this->assertNotFalse( as_next_scheduled_action( self::HOOK ), 'The housekeeping run inside admin-ajax did not arm the job.' );
 	}
 }
