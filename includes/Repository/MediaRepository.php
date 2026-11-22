@@ -7006,11 +7006,15 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.6.5
 	 *
+	 * Pass the last id of the previous page as $after_id to walk the drive: a caller
+	 * that leaves some items in place still reaches the ones after them.
+	 *
 	 * @param int $space_id Space id.
 	 * @param int $limit    Rows to return, 1 to 500.
+	 * @param int $after_id Return only ids greater than this (0 = from the oldest).
 	 * @return int[] Media ids, oldest first.
 	 */
-	public function space_drive_media_ids( int $space_id, int $limit = 100 ): array {
+	public function space_drive_media_ids( int $space_id, int $limit = 100, int $after_id = 0 ): array {
 		global $wpdb;
 
 		if ( $space_id <= 0 ) {
@@ -7021,8 +7025,8 @@ class MediaRepository implements MediaRepositoryInterface {
 
 		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"SELECT media_id FROM {$this->index_table()} WHERE drive_type = 'space' AND drive_id = %d AND status = 'publish' AND {$type_sql} ORDER BY media_id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				array_merge( array( $space_id ), $type_params, array( max( 1, min( 500, $limit ) ) ) )
+				"SELECT media_id FROM {$this->index_table()} WHERE drive_type = 'space' AND drive_id = %d AND status = 'publish' AND {$type_sql} AND media_id > %d ORDER BY media_id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_merge( array( $space_id ), $type_params, array( max( 0, $after_id ), max( 1, min( 500, $limit ) ) ) )
 			)
 		);
 
