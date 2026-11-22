@@ -209,9 +209,8 @@ class Plugin {
 			update_option( 'mvs_caps_version', MVS_VERSION, true );
 		}
 
-		// Run pending DB migrations on every load (cheap version check).
-		$migrator = new Migrator();
-		$migrator->run();
+		// Run pending DB migrations on every load (cheap version check), and recreate missing tables daily.
+		Migrator::boot();
 
 		// v29's drive backfill continues in bounded batches rather than stamping
 		// every row inside the upgrade request — see Migrator::migrate_to_29().

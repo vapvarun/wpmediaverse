@@ -36,6 +36,9 @@ class Activator {
 		// Run database migrations.
 		$migrator = new Migrator();
 		$migrator->run();
+		// Tables dropped while the version option stayed (the migrator skips then): switching the plugin off and on
+		// is what an owner tries first, so it has to rebuild them.
+		$migrator->repair_missing_tables();
 
 		// Add capabilities to roles.
 		MediaCapabilities::add_caps();

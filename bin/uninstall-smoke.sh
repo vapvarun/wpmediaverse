@@ -9,6 +9,7 @@
 #   ON   Free's uninstall, then Pro's (when Pro is installed): no mvs_ table, mvs_ option (bar the opt-in, which
 #        stays while the other plugin is installed), mvs_ user meta or album is left, no PHP error.
 #   Reinstall after ON: activation recreates every Migrator::tables() table and the mvs/v1 REST index answers.
+#   Self-heal: a table dropped while its options stay is rebuilt by Migrator::maybe_repair() (the daily admin check).
 #
 # DESTRUCTIVE: the ON pass deletes every MediaVerse row on the site. Run it only on a throwaway site.
 #
@@ -134,6 +135,14 @@ report "$(run_php '<?php '"$TABLES_PHP"'
 echo $missing ? "FAIL reinstall did not recreate: " . implode( ", ", $missing ) . "\n" : "OK reinstall recreated all " . count( $tables ) . " Free tables\n";
 $r = rest_do_request( new WP_REST_Request( "GET", "/mvs/v1" ) );
 echo 200 === $r->get_status() ? "OK REST mvs/v1 answers after reinstall\n" : "FAIL REST mvs/v1 answered " . $r->get_status() . "\n";')"
+
+# --- self-heal: a table dropped while the options stay is rebuilt by the daily admin check -------------------------
+echo "== self-heal"
+report "$(run_php '<?php global $wpdb;
+$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}mvs_reports" );
+delete_transient( \WPMediaVerse\Core\Migrator::SCHEMA_RECHECK_TRANSIENT );
+\WPMediaVerse\Core\Migrator::maybe_repair();
+echo $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $wpdb->prefix . "mvs_reports" ) ) ? "OK a dropped table is recreated by the daily admin check\n" : "FAIL a dropped table stayed missing\n";')"
 
 echo
 if [ "$FAILS" -gt 0 ]; then

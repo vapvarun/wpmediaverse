@@ -108,9 +108,75 @@ class Migrator {
 	}
 
 	/**
-	 * Run pending migrations.
+	 * Transient that spaces the admin-side table check to once a day.
 	 */
-	public function run(): void {
+	const SCHEMA_RECHECK_TRANSIENT = 'mvs_schema_recheck';
+
+	/**
+	 * One-time steps that apply an owner-facing choice, skipped when a repair
+	 * re-runs the migrations: v45 takes the moderator caps off Editors, and a
+	 * repair must not take back a re-grant the owner made since.
+	 */
+	const NOT_ON_REPAIR = array( 45 );
+
+	/**
+	 * Run pending migrations on this request, and check for missing tables once a day on an admin request.
+	 *
+	 * @since 2.6.5
+	 */
+	public static function boot(): void {
+		( new self() )->run();
+		add_action( 'admin_init', array( self::class, 'maybe_repair' ) );
+	}
+
+	/**
+	 * At most once a day, on an admin request: recreate any table that has gone missing.
+	 *
+	 * The version option alone cannot see a table dropped after it was written (a partial restore, a host
+	 * clean-up, a data wipe that kept the options): the migrator then skips, and every upload fails.
+	 *
+	 * @since 2.6.5
+	 */
+	public static function maybe_repair(): void {
+		if ( get_transient( self::SCHEMA_RECHECK_TRANSIENT ) ) {
+			return;
+		}
+		set_transient( self::SCHEMA_RECHECK_TRANSIENT, 1, DAY_IN_SECONDS );
+		( new self() )->repair_missing_tables();
+	}
+
+	/**
+	 * Recreate missing tables by re-running the migrations from the start.
+	 *
+	 * The migrations are idempotent (each table is created, then altered, by the steps it is listed in), so
+	 * running them again rebuilds a dropped table with every later column and index, and leaves the rest as they
+	 * are. One query when nothing is missing.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @return string[] The tables that were missing (unprefixed).
+	 */
+	public function repair_missing_tables(): array {
+		global $wpdb;
+
+		$have = (array) $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $wpdb->prefix . 'mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$have = array_map( static fn( $t ) => substr( (string) $t, strlen( $wpdb->prefix ) ), $have );
+
+		$missing = array_values( array_diff( self::tables(), $have ) );
+		if ( $missing ) {
+			update_option( self::VERSION_OPTION, 0 );
+			$this->run( true );
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * Run pending migrations.
+	 *
+	 * @param bool $repair True when re-running every step to rebuild missing tables (skips NOT_ON_REPAIR).
+	 */
+	public function run( bool $repair = false ): void {
 		$installed_version = (int) get_option( self::VERSION_OPTION, 0 );
 
 		if ( $installed_version >= self::CURRENT_VERSION ) {
@@ -127,7 +193,7 @@ class Migrator {
 		try {
 			for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
 				$method = "migrate_to_{$v}";
-				if ( method_exists( $this, $method ) ) {
+				if ( method_exists( $this, $method ) && ! ( $repair && in_array( $v, self::NOT_ON_REPAIR, true ) ) ) {
 					$this->$method();
 				}
 				// Saved per step, so a timeout resumes at the next one instead of
