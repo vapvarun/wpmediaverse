@@ -48,6 +48,7 @@ class RequeueUnheardJobsTest extends WP_UnitTestCase {
 	/** Queue a cleanup, deactivate, and let a runner take it with nothing listening. */
 	private function failed_while_off( array $paths ): int {
 		$id = as_enqueue_async_action( self::HOOK, array( $paths, 1 ), 'mvs' );
+		$this->setExpectedDeprecated( Deactivator::class . '::clear_scheduled' );
 		Deactivator::clear_scheduled( false );
 		$this->assertSame( 'pending', $this->status( $id ), 'Fixture: deactivation leaves a state job.' );
 		remove_all_actions( self::HOOK );
@@ -56,7 +57,9 @@ class RequeueUnheardJobsTest extends WP_UnitTestCase {
 		return $id;
 	}
 
+	/** Turn the plugin back on: its listener is registered again, and activation sets the note. */
 	private function activate(): void {
+		add_action( self::HOOK, '__return_null' );
 		set_transient( Activator::REQUEUE_TRANSIENT, 1, DAY_IN_SECONDS );
 		Jobs::requeue_after_activation( Activator::REQUEUE_TRANSIENT, Deactivator::STATE_JOB_HOOKS );
 	}
@@ -109,13 +112,113 @@ class RequeueUnheardJobsTest extends WP_UnitTestCase {
 		$this->assertNotFalse( get_transient( Activator::REQUEUE_TRANSIENT ), 'The note went with failed rows still left.' );
 		Jobs::requeue_after_activation( Activator::REQUEUE_TRANSIENT, Deactivator::STATE_JOB_HOOKS );
 
-		$this->assertCount( Jobs::REQUEUE_BATCH + 1, as_get_scheduled_actions( array( 'hook' => self::HOOK, 'status' => 'pending', 'per_page' => -1 ), 'ids' ) );
+		$this->assertCount(
+			Jobs::REQUEUE_BATCH + 1,
+			as_get_scheduled_actions(
+				array(
+					'hook' => self::HOOK,
+					'status' => 'pending',
+					'per_page' => -1,
+				),
+				'ids'
+			)
+		);
 		$this->assertFalse( get_transient( Activator::REQUEUE_TRANSIENT ) );
+	}
+
+	/**
+	 * Two scheduling requests (an admin page load and the cron spawn) read the same failed rows. The second finds
+	 * rows the first already moved and deleted: it must neither throw nor queue a job with no hook.
+	 */
+	public function test_two_requests_over_the_same_rows_neither_throw_nor_queue_an_empty_job(): void {
+		global $wpdb;
+		for ( $i = 0; $i < Jobs::REQUEUE_BATCH; $i++ ) {
+			$this->failed_while_off( array( "e{$i}.jpg" ) );
+		}
+		add_action( self::HOOK, '__return_null' );
+
+		// The live store on a migrated site: unlike the test bootstrap's hybrid store, it throws on a missing row.
+		$slot = new \ReflectionProperty( \ActionScheduler_Store::class, 'store' );
+		$slot->setAccessible( true );
+		$was = $slot->getValue();
+		$slot->setValue( null, new \ActionScheduler_DBStore() );
+
+		// Request B runs between request A queueing the copy of its first row and deleting that row, so A then
+		// deletes a row B already deleted, and works through 199 more that B moved.
+		$nested = false;
+		$second = static function () use ( &$nested ): void {
+			if ( ! $nested ) {
+				$nested = true;
+				Jobs::requeue_unheard( Deactivator::STATE_JOB_HOOKS );
+			}
+		};
+		add_action( 'action_scheduler_stored_action', $second );
+		try {
+			Jobs::requeue_unheard( Deactivator::STATE_JOB_HOOKS );
+		} finally {
+			remove_action( 'action_scheduler_stored_action', $second );
+			$slot->setValue( null, $was );
+		}
+
+		$this->assertTrue( $nested, 'Fixture: the second request ran.' );
+		$this->assertSame( 0, (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$wpdb->prefix}actionscheduler_actions WHERE hook = ''" ), 'A job with no hook was queued.' );
+		$this->assertCount(
+			Jobs::REQUEUE_BATCH,
+			as_get_scheduled_actions(
+				array(
+					'hook' => self::HOOK,
+					'status' => 'pending',
+					'per_page' => -1,
+				),
+				'ids'
+			),
+			'One copy per row expected.'
+		);
+		$this->assertSame(
+			array(),
+			as_get_scheduled_actions(
+				array(
+					'hook' => self::HOOK,
+					'status' => 'failed',
+					'per_page' => -1,
+				),
+				'ids'
+			),
+			'Failed rows were left.'
+		);
+	}
+
+	public function test_a_row_that_failed_more_than_a_week_ago_stays_failed(): void {
+		global $wpdb;
+		$id = $this->failed_while_off( array( 'f.jpg' ) );
+		$wpdb->update( $wpdb->prefix . 'actionscheduler_actions', array( 'last_attempt_gmt' => gmdate( 'Y-m-d H:i:s', time() - 8 * DAY_IN_SECONDS ) ), array( 'action_id' => $id ) );
+
+		$this->activate();
+
+		$this->assertSame( 'failed', $this->status( $id ), 'Week-old work was queued again.' );
+	}
+
+	public function test_a_hook_with_no_listener_now_stays_failed(): void {
+		$id = $this->failed_while_off( array( 'g.jpg' ) );
+
+		set_transient( Activator::REQUEUE_TRANSIENT, 1, DAY_IN_SECONDS );
+		Jobs::requeue_after_activation( Activator::REQUEUE_TRANSIENT, Deactivator::STATE_JOB_HOOKS );
+
+		$this->assertSame( 'failed', $this->status( $id ), 'A row was queued again for a hook nothing listens to.' );
 	}
 
 	public function test_activation_sets_the_note(): void {
 		delete_transient( Activator::REQUEUE_TRANSIENT );
 		Activator::activate();
 		$this->assertNotFalse( get_transient( Activator::REQUEUE_TRANSIENT ) );
+	}
+
+	public function test_an_update_that_runs_the_migrations_sets_the_note(): void {
+		delete_transient( Activator::REQUEUE_TRANSIENT );
+		update_option( \WPMediaVerse\Core\Migrator::VERSION_OPTION, \WPMediaVerse\Core\Migrator::CURRENT_VERSION - 1 );
+
+		( new \WPMediaVerse\Core\Migrator() )->run();
+
+		$this->assertNotFalse( get_transient( Activator::REQUEUE_TRANSIENT ), 'A one-click update fires no activation hook; the migration runner must set the note.' );
 	}
 }

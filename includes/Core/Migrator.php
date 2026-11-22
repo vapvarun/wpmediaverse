@@ -206,6 +206,8 @@ class Migrator {
 		}
 
 		try {
+			// A one-click update fires no activation hook; rows a runner failed while files were swapped come back too.
+			set_transient( Activator::REQUEUE_TRANSIENT, 1, WEEK_IN_SECONDS );
 			for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
 				$method = "migrate_to_{$v}";
 				if ( method_exists( $this, $method ) && ! ( $repair && in_array( $v, self::NOT_ON_REPAIR, true ) ) ) {

@@ -63,6 +63,10 @@ class Deactivator {
 	 * section 6.
 	 */
 	public const STATE_JOB_HOOKS = array(
+		'mvs_backfill_drive_columns',
+		'mvs_close_orphan_reports',
+		'mvs_deliver_webhook',
+		Jobs::ADOPT_HOOK,
 		'mvs_cleanup_media_files',
 		'mvs_cloud_repatriate_media',
 		'mvs_repair_storage_paths',
@@ -104,6 +108,9 @@ class Deactivator {
 		$hooks = array_merge( self::CRON_HOOKS, self::JOB_HOOKS );
 		if ( ! $include_state_jobs ) {
 			$hooks = array_diff( $hooks, self::STATE_JOB_HOOKS );
+			if ( ! doing_action( 'deactivate_' . MVS_PLUGIN_BASENAME ) ) {
+				_deprecated_argument( __METHOD__, '2.6.5', esc_html__( 'Before 2.6.5 false cleared only the recurring events; it now also cancels every one-off job except STATE_JOB_HOOKS.', 'wpmediaverse' ) );
+			}
 		}
 		foreach ( $hooks as $hook ) {
 			wp_unschedule_hook( $hook );

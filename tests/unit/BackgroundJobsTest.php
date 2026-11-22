@@ -25,6 +25,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 
 	public function tear_down(): void {
 		$this->clear();
+		set_current_screen( 'front' );
 		remove_all_filters( 'mvs_finished_action_retention_days' );
 		parent::tear_down();
 	}
@@ -69,6 +70,16 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		$id    = as_schedule_single_action( time() - $days_ago * DAY_IN_SECONDS, self::HOOK, array( $days_ago, $group, $failed ), $group );
 		$store = \ActionScheduler::store();
 		$failed ? $store->mark_failure( $id ) : $store->mark_complete( $id );
+		// Prune ages a finished row by its last attempt, which marking it just set to now.
+		$when = gmdate( 'Y-m-d H:i:s', time() - $days_ago * DAY_IN_SECONDS );
+		$GLOBALS['wpdb']->update(
+			$GLOBALS['wpdb']->prefix . 'actionscheduler_actions',
+			array(
+				'last_attempt_gmt' => $when,
+				'last_attempt_local' => $when,
+			),
+			array( 'action_id' => $id )
+		);
 		return $id;
 	}
 
@@ -110,7 +121,17 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		$this->assertTrue( \WPMediaVerse\Core\Jobs::async_once( self::HOOK, array( 7 ) ) );
 		$this->assertTrue( \WPMediaVerse\Core\Jobs::is_pending( self::HOOK, array( 7 ) ), 'async_once() did not queue beside a running copy.' );
 		\WPMediaVerse\Core\Jobs::async_once( self::HOOK, array( 7 ) );
-		$this->assertCount( 1, as_get_scheduled_actions( array( 'hook' => self::HOOK, 'status' => 'pending' ), 'ids' ), 'async_once() queued a second waiting copy.' );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook' => self::HOOK,
+					'status' => 'pending',
+				),
+				'ids'
+			),
+			'async_once() queued a second waiting copy.'
+		);
 	}
 
 	public function test_the_wp_cron_fallback_passes_keyed_arguments_positionally(): void {
@@ -139,6 +160,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 	}
 
 	public function test_a_second_upgrade_run_changes_nothing(): void {
+		set_current_screen( 'dashboard' ); // The move runs on scheduling requests only.
 		as_schedule_single_action( time() + HOUR_IN_SECONDS, ReportRepository::SWEEP_HOOK, array( 42 ), 'wpmediaverse' );
 
 		for ( $run = 0; $run < 2; $run++ ) {
@@ -150,6 +172,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 	}
 
 	public function test_upgrade_moves_pending_jobs_from_the_old_groups_keeping_args_and_time(): void {
+		set_current_screen( 'dashboard' ); // The move runs on scheduling requests only.
 		$when = time() + HOUR_IN_SECONDS;
 		as_schedule_single_action( $when, ReportRepository::SWEEP_HOOK, array( 42 ), 'wpmediaverse' );
 		update_option( Migrator::VERSION_OPTION, Migrator::CURRENT_VERSION - 1 );
@@ -157,7 +180,13 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		( new Migrator() )->run();
 
 		$this->assertSame( array( 'mvs' ), $this->pending_groups( ReportRepository::SWEEP_HOOK ) );
-		$ids    = as_get_scheduled_actions( array( 'hook' => ReportRepository::SWEEP_HOOK, 'status' => 'pending' ), 'ids' );
+		$ids    = as_get_scheduled_actions(
+			array(
+				'hook' => ReportRepository::SWEEP_HOOK,
+				'status' => 'pending',
+			),
+			'ids'
+		);
 		$action = \ActionScheduler::store()->fetch_action( (int) current( $ids ) );
 		$this->assertSame( array( 42 ), $action->get_args() );
 		$this->assertSame( $when, $action->get_schedule()->get_date()->getTimestamp() );
@@ -208,7 +237,17 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 
 		$this->assertTrue( Jobs::async_once( self::HOOK, array( 9 ) ) );
 
-		$this->assertCount( 1, as_get_scheduled_actions( array( 'hook' => self::HOOK, 'status' => 'pending' ), 'ids' ), 'A WP-Cron copy left by an early request stopped the Action Scheduler job.' );
+		$this->assertCount(
+			1,
+			as_get_scheduled_actions(
+				array(
+					'hook' => self::HOOK,
+					'status' => 'pending',
+				),
+				'ids'
+			),
+			'A WP-Cron copy left by an early request stopped the Action Scheduler job.'
+		);
 	}
 
 	public function test_next_falls_back_to_wp_cron_and_pending_args_are_oldest_first(): void {
@@ -226,11 +265,18 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		Jobs::ensure_recurring( self::HOOK, time() + HOUR_IN_SECONDS, 10 );
 		set_current_screen( 'front' );
 
-		$ids = as_get_scheduled_actions( array( 'hook' => self::HOOK, 'status' => 'pending' ), 'ids' );
+		$ids = as_get_scheduled_actions(
+			array(
+				'hook' => self::HOOK,
+				'status' => 'pending',
+			),
+			'ids'
+		);
 		$this->assertSame( MINUTE_IN_SECONDS, (int) \ActionScheduler::store()->fetch_action( (int) current( $ids ) )->get_schedule()->get_recurrence() );
 	}
 
 	public function test_adopt_keeps_priority_skips_claimed_rows_and_hands_the_rest_to_a_follow_up(): void {
+		set_current_screen( 'dashboard' ); // The move runs on scheduling requests only.
 		global $wpdb;
 		$table = $wpdb->prefix . 'actionscheduler_actions';
 
@@ -248,11 +294,38 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		$this->assertSame( 2000, $moved, 'One call must stop at its row cap.' );
 		$this->assertSame( array( array( array( self::HOOK ) ) ), Jobs::pending_args( Jobs::ADOPT_HOOK ), 'No follow-up job carries the rest.' );
 		$this->assertTrue( $this->exists( $claimed ), 'A claimed row was moved while a runner holds it.' );
-		$ids  = as_get_scheduled_actions( array( 'hook' => self::HOOK, 'group' => 'mvs', 'status' => 'pending', 'per_page' => 1 ), 'ids' );
+		$ids  = as_get_scheduled_actions(
+			array(
+				'hook' => self::HOOK,
+				'group' => 'mvs',
+				'status' => 'pending',
+				'per_page' => 1,
+			),
+			'ids'
+		);
 		$this->assertSame( 5, \ActionScheduler::store()->fetch_action( (int) current( $ids ) )->get_priority(), 'The moved row lost its priority.' );
 
 		Jobs::adopt_pending( array( self::HOOK ) );
 		$left = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} a JOIN {$wpdb->prefix}actionscheduler_groups g ON g.group_id = a.group_id WHERE a.hook = %s AND a.status = 'pending' AND g.slug = 'wpmediaverse'", self::HOOK ) );
 		$this->assertSame( 1, $left, 'The follow-up did not move the rest; only the claimed row may stay.' );
+	}
+
+	public function test_a_visitor_request_hands_the_move_to_a_job_instead_of_doing_it(): void {
+		as_schedule_single_action( time() + HOUR_IN_SECONDS, self::HOOK, array( 'later' ), 'wpmediaverse' );
+
+		$this->assertSame( 0, Jobs::adopt_pending( array( self::HOOK ) ), 'A visitor request moved rows.' );
+		$this->assertSame( array( 'wpmediaverse' ), $this->pending_groups( self::HOOK ) );
+		$this->assertSame( array( array( array( self::HOOK ) ) ), Jobs::pending_args( Jobs::ADOPT_HOOK ), 'No job was queued to do the move.' );
+	}
+
+	public function test_a_job_finished_long_ago_is_pruned_by_when_it_finished_not_when_it_was_due(): void {
+		add_filter( 'mvs_finished_action_retention_days', static fn() => 3 );
+		// Due 30 days ago, finished an hour ago (a long stalled queue).
+		$id = as_schedule_single_action( time() - 30 * DAY_IN_SECONDS, self::HOOK, array( 'late' ), 'mvs' );
+		\ActionScheduler::store()->mark_complete( $id );
+
+		Jobs::prune_history();
+
+		$this->assertTrue( $this->exists( $id ), 'A job that finished an hour ago was pruned by its due date.' );
 	}
 }

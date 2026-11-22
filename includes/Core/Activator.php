@@ -41,7 +41,7 @@ class Activator {
 	 */
 	public static function activate(): void {
 		// Jobs a runner failed while MediaVerse was off are queued again on the next scheduling request.
-		set_transient( self::REQUEUE_TRANSIENT, 1, DAY_IN_SECONDS );
+		set_transient( self::REQUEUE_TRANSIENT, 1, WEEK_IN_SECONDS );
 
 		// Run database migrations.
 		$migrator = new Migrator();

@@ -39,8 +39,8 @@ class DeactivationCancelsJobsTest extends WP_UnitTestCase {
 			$wpdb->query( $wpdb->prepare( "INSERT INTO {$table} ( {$cols} ) SELECT {$cols} FROM {$table} WHERE hook = %s AND status = 'pending' LIMIT %d", 'mvs_ai_process_media', self::ROWS - $have ) );
 		}
 
-		as_enqueue_async_action( 'mvs_deliver_webhook', array( 1 ), 'mvs' );
 		$state = array(
+			as_enqueue_async_action( 'mvs_deliver_webhook', array( 1 ), 'mvs' ),
 			as_enqueue_async_action( 'mvs_cleanup_media_files', array( array( '2026/10/a.jpg' ), 1 ), 'mvs' ),
 			as_enqueue_async_action( 'mvs_rotate_media_files', array( 'ids' => array( 1, 2 ) ), 'mvs' ),
 			as_enqueue_async_action( 'mvs_user_deletion_cascade', array( 7 ), 'mvs' ),
@@ -53,13 +53,13 @@ class DeactivationCancelsJobsTest extends WP_UnitTestCase {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', 'mvs_story_cleanup' );
 
 		$start = microtime( true );
+		$this->setExpectedDeprecated( Deactivator::class . '::clear_scheduled' );
 		Deactivator::clear_scheduled( false ); // What deactivate() runs.
 		$took = microtime( true ) - $start;
 
 		$this->assertLessThan( 10, $took, sprintf( 'Cancelling %d pending jobs took %.1f s.', self::ROWS, $took ) );
 		fwrite( STDERR, sprintf( "\nDeactivation over %d pending rows: %.2f s.\n", self::ROWS, $took ) ); // phpcs:ignore
 		$this->assertSame( 0, $this->count_pending( 'mvs_ai_process_media' ), 'A pending Free job survived deactivation.' );
-		$this->assertSame( 0, $this->count_pending( 'mvs_deliver_webhook' ), 'A pending webhook survived deactivation.' );
 		foreach ( $state as $id ) {
 			$this->assertSame( 'pending', $this->status( $id ), 'Deactivation cancelled a job that finishes a committed action.' );
 		}

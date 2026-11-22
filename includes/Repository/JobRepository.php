@@ -1,6 +1,6 @@
 <?php
 /**
- * Set-based writes to Action Scheduler's table that its API cannot do fast enough.
+ * Set-based reads and writes on Action Scheduler's tables that its API cannot do fast enough.
  *
  * Called through Core\Jobs only.
  *
@@ -53,16 +53,18 @@ final class JobRepository {
 	}
 
 	/**
-	 * Failed rows of exactly these hooks whose log holds one of the needles, oldest first.
+	 * Failed rows of exactly these hooks, last attempted within $days, whose log holds one of the needles, oldest
+	 * first, with the hook and arguments so the caller needs no query per row.
 	 *
 	 * @since 2.6.5
 	 *
 	 * @param string[] $hooks   Exact hook names.
 	 * @param string[] $needles Log message fragments.
 	 * @param int      $limit   Rows at most.
-	 * @return int[] Action ids.
+	 * @param int      $days    Only rows whose last attempt is newer than this.
+	 * @return array<int, array{id: int, hook: string, args: array<int|string, mixed>}>
 	 */
-	public static function unheard_failed( array $hooks, array $needles, int $limit ): array {
+	public static function unheard_failed( array $hooks, array $needles, int $limit, int $days ): array {
 		global $wpdb;
 		$hooks   = array_values( array_filter( array_map( 'strval', $hooks ) ) );
 		$needles = array_values( array_filter( array_map( 'strval', $needles ) ) );
@@ -71,9 +73,20 @@ final class JobRepository {
 		}
 		$in    = implode( ',', array_fill( 0, count( $hooks ), '%s' ) );
 		$likes = implode( ' OR ', array_fill( 0, count( $needles ), 'l.message LIKE %s' ) );
-		$args  = array_merge( $hooks, array_map( static fn( string $n ): string => '%' . $wpdb->esc_like( $n ) . '%', $needles ), array( $limit ) );
+		$since = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
+		$args  = array_merge( $hooks, array( $since ), array_map( static fn( string $n ): string => '%' . $wpdb->esc_like( $n ) . '%', $needles ), array( $limit ) );
 
+		// Long arguments live in extended_args; args then holds only their hash.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- table names and placeholder lists built above.
-		return array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT a.action_id FROM {$wpdb->prefix}actionscheduler_actions a WHERE a.status = 'failed' AND a.hook IN ( {$in} ) AND EXISTS ( SELECT 1 FROM {$wpdb->prefix}actionscheduler_logs l WHERE l.action_id = a.action_id AND ( {$likes} ) ) ORDER BY a.action_id LIMIT %d", $args ) ) );
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT a.action_id, a.hook, COALESCE( a.extended_args, a.args ) AS args FROM {$wpdb->prefix}actionscheduler_actions a WHERE a.status = 'failed' AND a.hook IN ( {$in} ) AND a.last_attempt_gmt > %s AND EXISTS ( SELECT 1 FROM {$wpdb->prefix}actionscheduler_logs l WHERE l.action_id = a.action_id AND ( {$likes} ) ) ORDER BY a.action_id LIMIT %d", $args ) );
+
+		return array_map(
+			static fn( object $row ): array => array(
+				'id'   => (int) $row->action_id,
+				'hook' => (string) $row->hook,
+				'args' => (array) json_decode( (string) $row->args, true ),
+			),
+			$rows
+		);
 	}
 }
