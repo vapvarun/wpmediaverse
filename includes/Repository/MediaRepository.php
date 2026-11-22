@@ -3438,6 +3438,30 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Which of these media ids exist in mvs_media_index, in one query.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param int[] $media_ids Media ids.
+	 * @return int[] The ids that exist.
+	 */
+	public function existing_ids( array $media_ids ): array {
+		$media_ids = array_values( array_filter( array_unique( array_map( 'intval', $media_ids ) ) ) );
+		if ( ! $media_ids ) {
+			return array();
+		}
+
+		global $wpdb;
+
+		return array_map(
+			'intval',
+			(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN (" . implode( ',', $media_ids ) . ')'
+			)
+		);
+	}
+
+	/**
 	 * Check if a media item exists in mvs_media_index.
 	 *
 	 * @param int $media_id Media ID.

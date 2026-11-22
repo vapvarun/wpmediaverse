@@ -1118,6 +1118,7 @@ class Plugin {
 
 		// A deleted item cannot be acted on, so its pending reports stop counting in the moderation queue.
 		add_action( 'mvs_media_deleted', array( new \WPMediaVerse\Repository\ReportRepository(), 'on_media_deleted' ) );
+		add_action( \WPMediaVerse\Repository\ReportRepository::SWEEP_HOOK, array( \WPMediaVerse\Repository\ReportRepository::class, 'sweep_orphans' ) );
 	}
 
 	/**

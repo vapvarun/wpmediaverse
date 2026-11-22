@@ -20,6 +20,13 @@ defined( 'ABSPATH' ) || exit;
 class ReportRepository {
 
 	/**
+	 * Action Scheduler hook of the orphan-report sweep.
+	 *
+	 * @since 2.6.5
+	 */
+	public const SWEEP_HOOK = 'mvs_close_orphan_reports';
+
+	/**
 	 * Ids of the pending reports filed against one target.
 	 *
 	 * @param string $target_type Target type (media, album, comment...).
@@ -70,5 +77,87 @@ class ReportRepository {
 				$target_id
 			)
 		);
+	}
+
+	/**
+	 * Close one batch of pending media reports whose media no longer exists (MediaRepository::existing_ids()).
+	 *
+	 * For sites that deleted media before reports were closed on delete. Same silent close as
+	 * close_pending_silently(): rows kept for the audit trail, reporters not notified.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param int $after_id Report id to continue after (keyset cursor).
+	 * @param int $limit    Batch size.
+	 * @return array{scanned:int, closed:int, last_id:int} Rows looked at, rows closed, last report id looked at.
+	 */
+	public function close_orphan_media_reports( int $after_id, int $limit = 500 ): array {
+		global $wpdb;
+
+		$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT id, target_id FROM {$wpdb->prefix}mvs_reports WHERE id > %d AND target_type = 'media' AND status = 'pending' ORDER BY id ASC LIMIT %d",
+				$after_id,
+				$limit
+			)
+		);
+
+		$live    = array_flip( ( new MediaRepository() )->existing_ids( wp_list_pluck( $rows, 'target_id' ) ) );
+		$orphans = array();
+		foreach ( $rows as $row ) {
+			if ( ! isset( $live[ (int) $row->target_id ] ) ) {
+				$orphans[] = (int) $row->id;
+			}
+		}
+
+		$closed = 0;
+		if ( $orphans ) {
+			$closed = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved' WHERE status = 'pending' AND id IN (" . implode( ',', $orphans ) . ')'
+			);
+		}
+
+		return array(
+			'scanned' => count( $rows ),
+			'closed'  => $closed,
+			'last_id' => $rows ? (int) end( $rows )->id : $after_id,
+		);
+	}
+
+	/**
+	 * Start the sweep: one queued job, or inline batches when Action Scheduler is absent.
+	 *
+	 * @since 2.6.5
+	 */
+	public static function queue_sweep(): void {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			self::sweep_orphans( 0 );
+			return;
+		}
+		if ( ! as_has_scheduled_action( self::SWEEP_HOOK, null, 'wpmediaverse' ) ) {
+			as_enqueue_async_action( self::SWEEP_HOOK, array( 0 ), 'wpmediaverse' );
+		}
+	}
+
+	/**
+	 * Action Scheduler job: close one batch, then queue the next while batches come back full.
+	 *
+	 * Without Action Scheduler the batches run inline, one after another.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param int $after_id Report id to continue after.
+	 */
+	public static function sweep_orphans( $after_id = 0 ): void {
+		$repo  = new self();
+		$batch = $repo->close_orphan_media_reports( (int) $after_id );
+
+		while ( 500 === $batch['scanned'] ) {
+			if ( function_exists( 'as_enqueue_async_action' ) ) {
+				as_enqueue_async_action( self::SWEEP_HOOK, array( $batch['last_id'] ), 'wpmediaverse' );
+				return;
+			}
+			$batch = $repo->close_orphan_media_reports( $batch['last_id'] );
+		}
 	}
 }

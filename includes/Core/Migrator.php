@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 45;
+	const CURRENT_VERSION = 46;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -227,6 +227,22 @@ class Migrator {
 	 */
 	private function migrate_to_45(): void {
 		\WPMediaVerse\Capabilities\MediaCapabilities::strip_editor_moderation();
+	}
+
+	/**
+	 * Migration v46 - close pending reports whose media was deleted before reports closed on delete.
+	 *
+	 * Data only, batched in the background (ReportRepository::sweep_orphans); a re-run finds nothing to close.
+	 *
+	 * @since 2.6.5
+	 */
+	private function migrate_to_46(): void {
+		// Migrations run before Action Scheduler's data store is ready, so queue on its init hook (or now, if it has run).
+		if ( did_action( 'action_scheduler_init' ) ) {
+			\WPMediaVerse\Repository\ReportRepository::queue_sweep();
+		} else {
+			add_action( 'action_scheduler_init', array( \WPMediaVerse\Repository\ReportRepository::class, 'queue_sweep' ) );
+		}
 	}
 
 	/**
