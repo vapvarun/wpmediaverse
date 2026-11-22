@@ -118,7 +118,7 @@ final class DirectDelivery {
 	 * Admin page loads and cron only: where loopback probes and job checks may
 	 * run without costing a visitor's request.
 	 *
-	 * @deprecated 2.6.5 Use \WPMediaVerse\Core\Jobs::is_scheduling_request(), the one rule for the family.
+	 * @deprecated 2.6.5 Removed in 4.0.0. Use \WPMediaVerse\Core\Jobs::is_scheduling_request(), the one rule for the family.
 	 *
 	 * @return bool
 	 */

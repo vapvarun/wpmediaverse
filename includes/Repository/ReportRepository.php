@@ -27,6 +27,19 @@ class ReportRepository {
 	public const SWEEP_HOOK = 'mvs_close_orphan_reports';
 
 	/**
+	 * Reports one orphan-sweep batch looks at.
+	 *
+	 * @since 2.6.5
+	 */
+	public const SWEEP_BATCH = 500;
+
+	/**
+	 * Batches the sweep runs inline when no scheduler takes the next one. Both schedulers refusing means a broken
+	 * site, and one request must not loop over every report.
+	 */
+	private const SWEEP_INLINE_MAX_BATCHES = 20;
+
+	/**
 	 * Ids of the pending reports filed against one target.
 	 *
 	 * @param string $target_type Target type (media, album, comment...).
@@ -110,7 +123,7 @@ class ReportRepository {
 	 * @param int $limit    Batch size.
 	 * @return array{scanned:int, closed:int, last_id:int} Rows looked at, rows closed, last report id looked at.
 	 */
-	public function close_orphan_media_reports( int $after_id, int $limit = 500 ): array {
+	public function close_orphan_media_reports( int $after_id, int $limit = self::SWEEP_BATCH ): array {
 		global $wpdb;
 
 		$rows = (array) $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
@@ -147,7 +160,10 @@ class ReportRepository {
 	}
 
 	/**
-	 * Start the sweep: one queued job, or inline batches when the scheduler is not ready.
+	 * Start the sweep: one queued job, or inline batches when no scheduler takes it.
+	 *
+	 * Any copy, pending or running, means a chain is already under way (its continuations queue unguarded with the
+	 * next cursor), so this checks is_queued() for any arguments rather than async_once() for the first cursor.
 	 *
 	 * @since 2.6.5
 	 */
@@ -163,7 +179,8 @@ class ReportRepository {
 	/**
 	 * Action Scheduler job: close one batch, then queue the next while batches come back full.
 	 *
-	 * When the scheduler is not ready the batches run inline, one after another.
+	 * When no scheduler takes the next batch, up to SWEEP_INLINE_MAX_BATCHES run inline and the rest stay open
+	 * for a moderator; a later queue_sweep() closes nothing twice.
 	 *
 	 * @since 2.6.5
 	 *
@@ -173,7 +190,7 @@ class ReportRepository {
 		$repo  = new self();
 		$batch = $repo->close_orphan_media_reports( (int) $after_id );
 
-		while ( 500 === $batch['scanned'] ) {
+		for ( $inline = 0; self::SWEEP_BATCH === $batch['scanned'] && $inline < self::SWEEP_INLINE_MAX_BATCHES; $inline++ ) {
 			if ( \WPMediaVerse\Core\Jobs::async( self::SWEEP_HOOK, array( $batch['last_id'] ) ) ) {
 				return;
 			}

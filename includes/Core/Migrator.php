@@ -51,6 +51,21 @@ class Migrator {
 	const DRIVE_BACKFILL_HOOK = 'mvs_backfill_drive_columns';
 
 	/**
+	 * Seconds from the upgrade to the first drive backfill batch.
+	 */
+	private const DRIVE_BACKFILL_FIRST_DELAY = 30;
+
+	/**
+	 * Seconds between drive backfill batches.
+	 */
+	private const DRIVE_BACKFILL_NEXT_DELAY = 60;
+
+	/**
+	 * Seconds a migration lock holds before another request may take it over.
+	 */
+	private const LOCK_TTL = 10 * MINUTE_IN_SECONDS;
+
+	/**
 	 * Rows stamped per backfill batch.
 	 *
 	 * @since 2.4.0
@@ -217,7 +232,7 @@ class Migrator {
 		if ( ! class_exists( 'WP_Upgrader' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		}
-		return \WP_Upgrader::create_lock( $name, 10 * MINUTE_IN_SECONDS );
+		return \WP_Upgrader::create_lock( $name, self::LOCK_TTL );
 	}
 
 	/**
@@ -2251,7 +2266,7 @@ class Migrator {
 		}
 
 		if ( ! Jobs::is_pending( self::DRIVE_BACKFILL_HOOK ) ) {
-			Jobs::at( time() + 30, self::DRIVE_BACKFILL_HOOK );
+			Jobs::at( time() + self::DRIVE_BACKFILL_FIRST_DELAY, self::DRIVE_BACKFILL_HOOK );
 		}
 	}
 
@@ -2363,7 +2378,7 @@ class Migrator {
 
 		// More to do — come back for it.
 		if ( ! Jobs::is_pending( self::DRIVE_BACKFILL_HOOK ) ) {
-			Jobs::at( time() + 60, self::DRIVE_BACKFILL_HOOK );
+			Jobs::at( time() + self::DRIVE_BACKFILL_NEXT_DELAY, self::DRIVE_BACKFILL_HOOK );
 		}
 
 		return $stamped;

@@ -34,6 +34,11 @@ class UserDeletionService {
 	public const PURGE_HOOK = 'mvs_user_deletion_purge';
 
 	/**
+	 * Purge passes run inside the delete request before the rest moves to a PURGE_HOOK job.
+	 */
+	private const PURGE_INLINE_PASSES = 40;
+
+	/**
 	 * Media items torn down per batch. Running the whole cascade (file I/O + child-table deletes per
 	 * item) inline on the `deleted_user` request does not scale for a member with thousands of uploads; this bounds each request
 	 * / AS run to a fixed amount of work.
@@ -424,7 +429,7 @@ class UserDeletionService {
 			return;
 		}
 		$purger = new \WPMediaVerse\Privacy\MemberPurger();
-		for ( $pass = 0; $pass < 40; $pass++ ) {
+		for ( $pass = 0; $pass < self::PURGE_INLINE_PASSES; $pass++ ) {
 			$counts = $purger->purge( $user_id );
 			if ( 0 === $counts['removed'] + $counts['retained'] ) {
 				return;
