@@ -22,6 +22,15 @@ import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
  * @param {string} s Date string.
  * @return {number} Epoch ms (returns Date.now() on an unparseable value).
  */
+// Date options in the site timezone PHP passes (Time Standard); an offset zone an older browser rejects falls back to its own.
+const inSiteZone = ( tz, opts = {} ) => {
+	try {
+		return new Intl.DateTimeFormat( undefined, { timeZone: tz || undefined } ) && { ...opts, timeZone: tz || undefined };
+	} catch {
+		return opts;
+	}
+};
+
 function gmtToMs( s ) {
 	s = String( s || '' );
 	const base = /[tT]/.test( s ) ? s : s.replace( ' ', 'T' );
@@ -91,7 +100,7 @@ async function fetchComments( ctx ) {
 					// Keep ISO for the <time datetime> attribute and tooltip; display
 					// the human-readable "2 days ago" coming from the REST payload.
 					date: c.date,
-					date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined ),
+					date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined, inSiteZone( store( 'mvs/media-social' ).state.timeZone ) ),
 					content: c.content,
 					// Kept so the delete confirm can say how many replies go with it.
 					replies: Array.isArray( c.replies ) ? c.replies : [],
@@ -120,7 +129,7 @@ async function fetchStats( ctx ) {
 		const data = res.data;
 		if ( data?.views !== undefined ) {
 			const i = store( 'mvs/media-social' ).state.i18n || {};
-			ctx.viewCount = ( 1 === data.views ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', data.views );
+			ctx.viewCount = data.views_label || ( 1 === data.views ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', data.views );
 		}
 	} catch {
 		// Ignore.

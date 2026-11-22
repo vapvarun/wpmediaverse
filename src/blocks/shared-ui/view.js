@@ -33,6 +33,15 @@ let savedListenerAdded = false;
  * @param {string} s Date string.
  * @return {number} Epoch ms (NaN-safe: returns Date.now() on an unparseable value).
  */
+// Date options in the site timezone PHP passes (Time Standard); an offset zone an older browser rejects falls back to its own.
+const inSiteZone = ( tz, opts = {} ) => {
+	try {
+		return new Intl.DateTimeFormat( undefined, { timeZone: tz || undefined } ) && { ...opts, timeZone: tz || undefined };
+	} catch {
+		return opts;
+	}
+};
+
 function gmtToMs( s ) {
 	s = String( s || '' );
 	const base = /[tT]/.test( s ) ? s : s.replace( ' ', 'T' );
@@ -159,6 +168,8 @@ function lightboxRememberTrigger() {
  */
 // Who opened the edit modal / the confirm, so focus can go back on close.
 let editReturnFocus = null;
+// Media id whose lightbox opened the edit modal: dismissing the modal goes back to that lightbox (one layer at a time).
+let editFromLightbox = 0;
 let confirmReturnFocus = null;
 
 /**
@@ -238,7 +249,7 @@ function mapLightboxComment( c ) {
 		author_avatar: c.author_avatar || '',
 		author_url: c.author_url || '',
 		date: c.date,
-		date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined ),
+		date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined, inSiteZone( state.timeZone ) ),
 		content: c.content,
 		// Kept so the delete confirm can say how many replies go with it.
 		replies: Array.isArray( c.replies ) ? c.replies : [],
@@ -792,12 +803,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const s = state.lightboxStats;
 			const views = s?.views || 0;
 			const downloads = s?.downloads || 0;
-			// One/other forms seeded from PHP (_n with 1 and 2), the same pattern as deleteCommentReply(ies).
-			// ponytail: languages with more plural forms get the "other" form; per-count server labels if that matters.
+			// The stats route sends labels made with _n() and the real count (every plural form); the seeded pair is the fallback.
 			const i = state.i18n || {};
-			let text = ( views === 1 ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', views );
+			let text = s?.views_label || ( views === 1 ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', views );
 			if ( downloads > 0 ) {
-				text += ' · ' + ( downloads === 1 ? ( i.downloadOne || '%s download' ) : ( i.downloadMany || '%s downloads' ) ).replace( '%s', downloads );
+				text += ' · ' + ( s?.downloads_label || ( downloads === 1 ? ( i.downloadOne || '%s download' ) : ( i.downloadMany || '%s downloads' ) ).replace( '%s', downloads ) );
 			}
 			return text;
 		},
@@ -1171,6 +1181,10 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalError = state.i18n?.loadMediaFailed || 'Could not load this media. Try again.';
 			}
 			state.editModalLoading = false;
+			if ( inline && ! state.editModalError ) {
+				// The inline panel opens in the page: start the member on its first field.
+				focusWhenShown( '.mvs-inline-edit:not([hidden]) .mvs-modal-field-input' );
+			}
 		},
 		closeEditModal() {
 			const wasModal = 'modal' === state.editModalMode;
@@ -1191,9 +1205,18 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalCanRetry = false;
 			state.editModalSaving = false;
 			state.editModalMode = 'modal';
+			const backTo = editFromLightbox;
+			editFromLightbox = 0;
 			if ( wasModal ) {
 				document.body.style.overflow = '';
-				returnFocus( editReturnFocus );
+				if ( backTo ) {
+					// Escape, X or Cancel steps back to the lightbox it came from, which keeps the tile as its return target.
+					const tile = editReturnFocus;
+					actions.openLightboxById( backTo );
+					lightboxReturnFocus = tile;
+				} else {
+					returnFocus( editReturnFocus );
+				}
 				editReturnFocus = null;
 			}
 		},
@@ -1347,12 +1370,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					/\/media\/[^/]+\/?$/.test( window.location.pathname )
 				) {
 					actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
+					editFromLightbox = 0;
 					actions.closeEditModal();
 					window.location.replace( updated.link );
 					return;
 				}
 
 				actions.showToast( ( state.i18n?.settingsSaved || 'Media settings saved.' ), 'success' );
+				editFromLightbox = 0;
 				actions.closeEditModal();
 				announceMediaUpdated( id, updated, false );
 			} catch ( err ) {
@@ -2193,6 +2218,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			editReturnFocus = lightboxReturnFocus;
 			lightboxReturnFocus = null;
 			actions.closeLightbox();
+			editFromLightbox = mediaId;
 			await actions.openEditModal( mediaId );
 		},
 		async lightboxShare() {

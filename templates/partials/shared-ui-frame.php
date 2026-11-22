@@ -64,6 +64,7 @@ wp_interactivity_state(
 		// URL as the lightbox's 'Log in to comment' link.
 		'exploreUrl'          => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url(),
 		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
+		'timeZone'            => \WPMediaVerse\Core\TemplateHelpers::display_timezone(),
 		'i18n'                => array(
 			'reportPrompt'         => __( 'Why are you reporting this?', 'wpmediaverse' ),
 			'confirm'              => __( 'Confirm', 'wpmediaverse' ),

@@ -20,6 +20,9 @@ class MediaTag {
 	/** Media per batch; a delete touching no more than this runs inline, like a small merge. */
 	private const FORGET_BATCH = 200;
 
+	/** Per-user transient prefix: tags this admin deleted whose cleanup went to the background (name and total). */
+	public const CLEANUP_TRANSIENT = 'mvs_tag_cleanup_';
+
 	/**
 	 * Drop a deleted tag from each media item's stored tag list.
 	 *
@@ -38,6 +41,19 @@ class MediaTag {
 		}
 
 		$batches = array_chunk( array_map( 'intval', (array) $object_ids ), self::FORGET_BATCH );
+
+		// Remember the full total for the Tags screen, which otherwise only sees the batches still queued.
+		$user_id = get_current_user_id();
+		if ( count( $batches ) > 1 && $user_id ) {
+			$pending = get_transient( self::CLEANUP_TRANSIENT . $user_id );
+			$pending = is_array( $pending ) ? $pending : array();
+
+			$pending[ strtolower( $deleted_term->name ) ] = array(
+				'name'  => $deleted_term->name,
+				'total' => count( (array) $object_ids ),
+			);
+			set_transient( self::CLEANUP_TRANSIENT . $user_id, $pending, DAY_IN_SECONDS );
+		}
 
 		foreach ( $batches as $i => $ids ) {
 			// A popular tag must not be walked inside the delete request: the first batch is cheap, the rest

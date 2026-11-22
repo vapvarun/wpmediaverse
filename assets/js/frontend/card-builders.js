@@ -474,7 +474,13 @@
 			var when = new Date( String( item.date ).replace( ' ', 'T' ) + ( /Z|[+-]\d\d:?\d\d$/.test( item.date ) ? '' : 'Z' ) );
 			if ( ! isNaN( when.getTime() ) ) {
 				var time = el( 'time', 'mvs-grid-item-date', { datetime: when.toISOString() } );
-				time.textContent = when.toLocaleDateString( document.documentElement.lang || undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
+				var dateOpts = { year: 'numeric', month: 'long', day: 'numeric' };
+				try {
+					// Site timezone from PHP (Time Standard); an offset zone an older browser rejects keeps its own.
+					time.textContent = when.toLocaleDateString( document.documentElement.lang || undefined, Object.assign( { timeZone: ( window.mvsCardBuildersI18n || {} ).timeZone || undefined }, dateOpts ) );
+				} catch ( e ) {
+					time.textContent = when.toLocaleDateString( document.documentElement.lang || undefined, dateOpts );
+				}
 				details.appendChild( time );
 			}
 		}

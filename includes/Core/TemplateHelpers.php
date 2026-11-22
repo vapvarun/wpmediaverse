@@ -2477,6 +2477,26 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Timezone that browser-side dates and times display in (Time Standard: never the visitor's browser zone).
+	 *
+	 * The site timezone by default; a site can return a member's own zone through the filter.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @return string IANA name, or a "+05:30" style offset on sites set to a UTC offset.
+	 */
+	public static function display_timezone(): string {
+		/**
+		 * Filters the timezone JavaScript formats dates and times in.
+		 *
+		 * @since 2.6.5
+		 *
+		 * @param string $timezone IANA name or UTC offset; defaults to the site timezone.
+		 */
+		return (string) apply_filters( 'mvs_display_timezone', wp_timezone_string() );
+	}
+
+	/**
 	 * Accessible names for the reaction buttons, keyed by reaction type.
 	 *
 	 * One list for the lightbox row and the media page's social bar (the page bound the raw slug before).
@@ -2514,7 +2534,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 			array(
 				'emojiBase'      => self::emoji_base_url(),
 				'reactionLabels' => self::reaction_labels(),
-				'i18n'      => array(
+				'timeZone'       => self::display_timezone(),
+				'i18n'           => array(
 					/* translators: %s: number of views (1). */
 					'viewOne'              => _n( '%s view', '%s views', 1, 'wpmediaverse' ),
 					/* translators: %s: number of views (2 or more). */

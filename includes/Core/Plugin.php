@@ -126,6 +126,7 @@ class Plugin {
 	 */
 	private static function card_builders_i18n(): array {
 		return array(
+			'timeZone'     => TemplateHelpers::display_timezone(),
 			'deleteMedia'  => __( 'Delete media', 'wpmediaverse' ),
 			'video'        => __( 'Video', 'wpmediaverse' ),
 			'viewMedia'    => __( 'View media', 'wpmediaverse' ),
@@ -2856,6 +2857,7 @@ class Plugin {
 		$user   = wp_get_current_user();
 		$config = array(
 			'restBase'           => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			'timeZone'           => \WPMediaVerse\Core\TemplateHelpers::display_timezone(),
 			// Fluent emoji folder: known reaction characters render as the same
 			// SVGs as media reactions (messaging.js EMOJI_FILES).
 			'emojiBase'          => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),

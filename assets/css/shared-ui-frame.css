@@ -1046,6 +1046,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 /* Retry after a failed save: a link-style button with a full tap target. */
 .mvs-modal-error__retry {
 	min-height: 44px;
+	min-width: 44px;
 	padding: 0 4px;
 	margin-inline-start: 4px;
 	border: 0;
@@ -1083,6 +1084,18 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	justify-content: flex-end;
 	padding: 16px 24px;
 	border-top: 1px solid var( --mvs-border-light, #e5e5e5 );
+}
+
+/* In the dialog, Save stays in view while the form scrolls (an error line can push it below the fold). */
+.mvs-edit-modal-overlay .mvs-modal-footer {
+	position: sticky;
+	bottom: 0;
+	background: var( --mvs-surface );
+}
+
+/* Focusing the error scrolls it clear of that sticky footer. */
+.mvs-edit-modal-overlay .mvs-modal-error p {
+	scroll-margin-bottom: 96px;
 }
 
 /* Mobile sizing — full-screen on small viewports for premium feel. */

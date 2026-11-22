@@ -51,6 +51,8 @@ class TagManagementPage {
 		add_action( 'admin_init', array( $this, 'handle_create' ) );
 		add_action( 'admin_init', array( $this, 'handle_merge' ) );
 		add_action( 'admin_notices', array( $this, 'show_admin_notices' ) );
+		// WordPress strips these from the address bar after load, so a reload does not repeat the notice.
+		add_filter( 'removable_query_args', static fn( $args ) => array_merge( $args, array( 'deleted', 'updated', 'created', 'merged' ) ) );
 	}
 
 	/**
@@ -142,8 +144,7 @@ class TagManagementPage {
 		<div class="wrap wpmediaverse-admin">
 			<h1 class="wp-heading-inline"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></h1>
 			<a href="<?php echo esc_url( add_query_arg( 'action', 'new', $base_url ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New Tag', 'wpmediaverse' ); ?></a>
-			<?php // Refresh keeps a just-deleted tag in the URL, so the owner sees "removed from all media" once its cleanup ends. ?>
-			<a href="<?php echo esc_url( isset( $_GET['removed_tag'] ) ? add_query_arg( 'removed_tag', rawurlencode( sanitize_text_field( rawurldecode( wp_unslash( $_GET['removed_tag'] ) ) ) ), $base_url ) : $base_url ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>" class="page-title-action"><?php esc_html_e( 'Refresh', 'wpmediaverse' ); ?></a>
+			<a href="<?php echo esc_url( $base_url ); ?>" class="page-title-action"><?php esc_html_e( 'Refresh', 'wpmediaverse' ); ?></a>
 			<hr class="wp-header-end">
 
 			<form method="get" action="">
@@ -743,7 +744,6 @@ class TagManagementPage {
 			wp_die( esc_html__( 'Security check failed.', 'wpmediaverse' ) );
 		}
 
-		$term   = get_term( $tag_id, 'mvs_tag' );
 		$result = wp_delete_term( $tag_id, 'mvs_tag' );
 
 		if ( is_wp_error( $result ) ) {
@@ -763,9 +763,8 @@ class TagManagementPage {
 
 		$redirect_url = add_query_arg(
 			array(
-				'deleted'     => 1,
-				'removed_tag' => $term instanceof WP_Term ? rawurlencode( $term->name ) : false,
-				'paged'       => $paged,
+				'deleted' => 1,
+				'paged'   => $paged,
 				's'       => isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			),
 			admin_url( 'admin.php?page=mvs-tags' )
@@ -799,7 +798,7 @@ class TagManagementPage {
 		$media_offset   = ( $media_paged - 1 ) * $media_per_page;
 
 		global $wpdb;
-		$media_total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$media_total       = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
@@ -1059,19 +1058,32 @@ class TagManagementPage {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tags merged successfully.', 'wpmediaverse' ) . '</p></div>';
 		}
 
-		// One-time success after a single delete whose cleanup has finished (the flag lives only in this URL).
-		$removed = isset( $_GET['removed_tag'] ) ? sanitize_text_field( rawurldecode( wp_unslash( $_GET['removed_tag'] ) ) ) : '';
-		if ( '' !== $removed && ! isset( $running['removals'][ strtolower( $removed ) ] ) ) {
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		// Tags this admin deleted in the background: the full total while running, then one success line, once.
+		$key     = \WPMediaVerse\Taxonomies\MediaTag::CLEANUP_TRANSIENT . get_current_user_id();
+		$tracked = get_transient( $key );
+		$tracked = is_array( $tracked ) ? $tracked : array();
+		foreach ( $tracked as $lower => $tag ) {
+			if ( isset( $running['removals'][ $lower ] ) ) {
+				$running['removals'][ $lower ]['items'] = (int) $tag['total'];
+				continue;
+			}
+			unset( $tracked[ $lower ] );
 			printf(
 				'<div class="notice notice-success is-dismissible" role="status"><p>%s</p></div>',
 				wp_kses(
 					/* translators: %s: tag name. */
-					sprintf( __( 'Tag %s removed from all media.', 'wpmediaverse' ), '<strong>' . esc_html( $removed ) . '</strong>' ),
+					sprintf( __( 'Tag %s removed from all media.', 'wpmediaverse' ), '<strong>' . esc_html( (string) $tag['name'] ) . '</strong>' ),
 					array( 'strong' => array() )
 				)
 			);
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		if ( $tracked ) {
+			set_transient( $key, $tracked, DAY_IN_SECONDS );
+		} else {
+			delete_transient( $key );
+		}
 
 		foreach ( $running['removals'] as $removal ) {
 			$this->print_running_notice(
