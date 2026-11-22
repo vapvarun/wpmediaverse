@@ -52,12 +52,29 @@ wp_clear_scheduled_hook( 'edd_sl_sdk_weekly_license_check_wpmediaverse' );
 // Action Scheduler rows left by this plugin's jobs (Action Scheduler belongs to whichever plugin bundles it, so only
 // our own hooks are removed, and Pro's mvs_pro_ hooks are left for Pro).
 $mvs_as_actions = $wpdb->prefix . 'actionscheduler_actions';
-if ( $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_actions ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-	$mvs_as_logs = $wpdb->prefix . 'actionscheduler_logs';
-	if ( $mvs_as_logs === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_logs ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery
-		$wpdb->query( $wpdb->prepare( "DELETE l FROM {$mvs_as_logs} l INNER JOIN {$mvs_as_actions} a ON a.action_id = l.action_id WHERE a.hook LIKE %s AND a.hook NOT LIKE %s", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	}
-	$wpdb->query( $wpdb->prepare( "DELETE FROM {$mvs_as_actions} WHERE hook LIKE %s AND hook NOT LIKE %s", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+$mvs_as_logs    = $wpdb->prefix . 'actionscheduler_logs';
+// phpcs:disable WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders
+if ( $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_actions ) ) ) ) {
+	$mvs_as_has_logs = $mvs_as_logs === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_logs ) ) );
+	// In batches of 1,000, logs first, so a site with years of rows never runs one huge locking DELETE.
+	do {
+		$mvs_as_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$mvs_as_actions} WHERE hook LIKE %s AND hook NOT LIKE %s LIMIT 1000", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%' ) ) );
+		if ( $mvs_as_ids ) {
+			$mvs_as_in = implode( ',', $mvs_as_ids );
+			if ( $mvs_as_has_logs ) {
+				$wpdb->query( "DELETE FROM {$mvs_as_logs} WHERE action_id IN ( {$mvs_as_in} )" );
+			}
+			$wpdb->query( "DELETE FROM {$mvs_as_actions} WHERE action_id IN ( {$mvs_as_in} )" );
+		}
+	} while ( count( $mvs_as_ids ) === 1000 );
+}
+// phpcs:enable
+
+// Free owns the library's runner event (Pro uses Free's copy). It is scheduled with args ( 'WP Cron' ), so it is cleared
+// for every args set, and only when no other active plugin still loads Action Scheduler (Free is inactive here, so a
+// loaded ActionScheduler class is someone else's copy, which still needs its runner).
+if ( ! class_exists( 'ActionScheduler' ) ) {
+	wp_unschedule_hook( 'action_scheduler_run_queue' );
 }
 
 $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like( '_transient_mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
