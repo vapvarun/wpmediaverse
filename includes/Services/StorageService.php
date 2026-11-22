@@ -85,7 +85,7 @@ class StorageService {
 		// Local-only trees (Pro documents) never reach a cloud bucket, so asking
 		// the cloud driver is a wasted HTTP call that sends the private per-install
 		// path segment to the provider — and an unconfigured driver's false would
-		// retry the batch five times over nothing.
+		// retry the batch over nothing.
 		if ( '' !== LocalDriver::local_only_prefix( $rel_path ) ) {
 			return $ok;
 		}

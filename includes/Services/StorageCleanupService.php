@@ -44,9 +44,9 @@ class StorageCleanupService {
 	const AS_GROUP = 'wpmediaverse';
 
 	/**
-	 * Maximum delete attempts per path batch before giving up with an error log.
+	 * Maximum delete attempts per path batch (the first try plus two retries) before giving up with an error log.
 	 */
-	const MAX_ATTEMPTS = 5;
+	const MAX_ATTEMPTS = 3;
 
 	/**
 	 * Storage service (driver factory).
@@ -54,6 +54,19 @@ class StorageCleanupService {
 	 * @var StorageService
 	 */
 	private $storage;
+
+	/**
+	 * Paths orphaned during this request, queued together at shutdown.
+	 *
+	 * @var string[]
+	 */
+	private $pending = array();
+
+	/**
+	 * Encoded size cap per queued action's paths. Action Scheduler refuses args over 8,000 JSON characters (and the
+	 * refused paths would be orphaned for good), so a bulk delete is packed into as few actions as fit under it.
+	 */
+	const ARGS_BUDGET = 7000;
 
 	/**
 	 * Constructor.
@@ -91,12 +104,39 @@ class StorageCleanupService {
 		}
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::CLEANUP_HOOK, array( $paths, 1 ), self::AS_GROUP );
+			if ( ! $this->pending ) {
+				// WordPress fires `shutdown` from a registered shutdown function, so the flush runs after a fatal too.
+				add_action( 'shutdown', array( $this, 'flush' ) );
+			}
+			array_push( $this->pending, ...$paths );
 			return;
 		}
 
 		// No Action Scheduler — delete inline so nothing is left orphaned.
 		$this->process( $paths );
+	}
+
+	/**
+	 * Queue this request's orphaned paths, packed into actions of at most ARGS_BUDGET encoded characters.
+	 */
+	public function flush(): void {
+		$paths         = array_values( array_unique( $this->pending ) );
+		$this->pending = array();
+		$chunk         = array();
+		$size          = 0;
+		foreach ( $paths as $path ) {
+			$len = strlen( (string) wp_json_encode( $path ) ) + 1;
+			if ( $chunk && $size + $len > self::ARGS_BUDGET ) {
+				as_enqueue_async_action( self::CLEANUP_HOOK, array( $chunk, 1 ), self::AS_GROUP );
+				$chunk = array();
+				$size  = 0;
+			}
+			$chunk[] = $path;
+			$size   += $len;
+		}
+		if ( $chunk ) {
+			as_enqueue_async_action( self::CLEANUP_HOOK, array( $chunk, 1 ), self::AS_GROUP );
+		}
 	}
 
 	/**
