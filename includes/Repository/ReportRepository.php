@@ -72,7 +72,8 @@ class ReportRepository {
 
 		return (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
-				"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved' WHERE target_type = %s AND target_id = %d AND status = 'pending'",
+				"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved', details = CONCAT( COALESCE( details, '' ), %s ) WHERE target_type = %s AND target_id = %d AND status = 'pending'",
+				self::removed_note( $target_type ),
 				$target_type,
 				$target_id
 			)
@@ -80,7 +81,25 @@ class ReportRepository {
 	}
 
 	/**
+	 * The audit line added to a report closed because its target is gone, so "resolved" is not read as a moderator decision.
+	 *
+	 * Stored in the site language at the time of closing (it is a record, not interface text).
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string $target_type Target type.
+	 * @return string
+	 */
+	private static function removed_note( string $target_type ): string {
+		return "\n\n" . ( 'media' === $target_type
+			? __( 'Closed (media removed)', 'wpmediaverse' )
+			: __( 'Closed (reported item removed)', 'wpmediaverse' ) );
+	}
+
+	/**
 	 * Close one batch of pending media reports whose media no longer exists (MediaRepository::existing_ids()).
+	 *
+	 * Media targets only: reports on albums, comments or members are left for a moderator.
 	 *
 	 * For sites that deleted media before reports were closed on delete. Same silent close as
 	 * close_pending_silently(): rows kept for the audit trail, reporters not notified.
@@ -112,8 +131,11 @@ class ReportRepository {
 
 		$closed = 0;
 		if ( $orphans ) {
-			$closed = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved' WHERE status = 'pending' AND id IN (" . implode( ',', $orphans ) . ')'
+			$closed = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+				$wpdb->prepare(
+					"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved', details = CONCAT( COALESCE( details, '' ), %s ) WHERE status = 'pending' AND id IN (" . implode( ',', $orphans ) . ')', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- ids are ints from the query above.
+					self::removed_note( 'media' )
+				)
 			);
 		}
 
