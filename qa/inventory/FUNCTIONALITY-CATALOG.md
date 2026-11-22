@@ -1797,6 +1797,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Settings that change it:** "Remove Data on Delete" (`mvs_delete_data_on_uninstall`), default `false`.
 - **Edge cases:** If MediaVerse Pro is also installed, Free's uninstall must NOT drop tables/options while Pro is still relying on them — the option is meant to be read by whichever plugin is uninstalled last.
 
+#### MV-SET-036 — Background jobs across a deactivation
+- **Edition:** Free + Pro
+- **Who:** Admin who switches MediaVerse off and on (including the update flow: deactivate, replace, activate).
+- **Where:** Plugins screen; Tools > Scheduled Actions (search `mvs_`).
+- **Setup:** Pending jobs of both kinds: delete a few media (file cleanup, kept) and enable webhooks then upload (webhook delivery, cancelled). For Pro, trash a folder.
+- **Steps:** 1. Deactivate MediaVerse. 2. Check Scheduled Actions: cleanup and folder rows stay Pending, webhook rows show Canceled. 3. Reactivate and open any admin page: the Pending rows run. 4. With another plugin keeping Action Scheduler running (WooCommerce), deactivate, wait two minutes: the kept rows turn Failed ("no callbacks are registered"). 5. Reactivate and open an admin page: each Failed row is replaced by a Pending copy with the same arguments.
+- **Expected:** Deactivation cancels only recomputable jobs (`Deactivator::STATE_JOB_HOOKS` / `Lifecycle::STATE_JOB_HOOKS` stay). After reactivation, state jobs failed only for lack of a listener are queued again, 200 per admin request. A job that ran and errored stays Failed. Other plugins' jobs are never touched.
+- **UX expectation:** Nothing a member or owner already did (deleted media, a privacy change, a member deletion, a folder action) is silently lost by switching the plugin off and on.
+- **Settings that change it:** none.
+- **Edge cases:** Failed rows older than 90 days are already pruned and cannot come back. Check: QA command without PHPUnit for the reaper case: `wp eval-file wp-content/plugins/wpmediaverse-pro/bin/qa-reaper-check.php`.
+
 #### MV-SET-007 — Storage driver (Where files are stored)
 - **Edition:** Free (Free is `local`-only; cloud drivers need Pro)
 - **Who:** Admin sets.

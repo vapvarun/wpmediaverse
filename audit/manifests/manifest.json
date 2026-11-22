@@ -7538,7 +7538,7 @@
     "doc": "docs/standards/background-jobs.md",
     "since": "2.6.5",
     "lookups": "is_queued: pending or running (start guards); is_pending: waiting only (continuations); async_once: queue unless a copy is waiting; cancel_pending: set-based cancel of exact hooks (deactivation). Differences from Jetonomy Queue are listed in docs/standards/background-jobs.md section 1",
-    "deactivation": "Deactivator::clear_scheduled(false) on deactivate cancels pending rows of Free's own CRON_HOOKS + JOB_HOOKS minus STATE_JOB_HOOKS (left pending), uninstall clear_scheduled(true) all (Jobs::cancel_pending, 10,000 per UPDATE, exact hooks never group); Pro Lifecycle::clear_scheduled the same for Pro's lists and Lifecycle::STATE_JOB_HOOKS; Pro re-arms its tick and streak check after activation (transient mvs_pro_rearm_jobs)",
+    "deactivation": "Deactivator::clear_scheduled(false) on deactivate cancels pending rows of Free's own CRON_HOOKS + JOB_HOOKS minus STATE_JOB_HOOKS (left pending), uninstall clear_scheduled(true) all (Jobs::cancel_pending, 10,000 per UPDATE, exact hooks never group); Pro Lifecycle::clear_scheduled the same for Pro's lists and Lifecycle::STATE_JOB_HOOKS; Pro re-arms its tick and streak check after activation (transient mvs_pro_rearm_jobs); after activation both requeue their STATE_JOB_HOOKS rows a runner failed with 'no callbacks are registered' (Jobs::requeue_after_activation, 200 per scheduling request; Free transient mvs_requeue_unheard_jobs)",
     "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }

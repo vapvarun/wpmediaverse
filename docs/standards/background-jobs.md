@@ -24,6 +24,8 @@ ensure_recurring( string $hook, int $first, int|string $schedule, bool $cron = f
 is_scheduling_request(): bool
 cancel( string $hook, array $args = [] ): void
 cancel_pending( array $hooks ): int
+requeue_after_activation( string $transient, array $hooks ): void
+requeue_unheard( array $hooks ): int
 pending_args( string $hook ): array
 prune_history(): int
 adopt_pending( array $hooks ): int
@@ -52,6 +54,10 @@ adopt_pending( array $hooks ): int
   is never what a caller wants.
 - `cancel_pending( $hooks )` marks the pending Action Scheduler rows of exactly these hooks cancelled with
   set-based UPDATEs of 10,000 rows. It is the deactivation path (section 3, rule 9).
+- `requeue_unheard( $hooks )` queues again, with the same arguments, the failed rows of these hooks that failed
+  only because no listener was registered, and deletes them with their logs (200 per call).
+  `requeue_after_activation( $transient, $hooks )` runs it on scheduling requests while the activation transient
+  is set (section 6).
 
 Differences from Jetonomy's `\Jetonomy\Queue` (shared names behave the same):
 
@@ -61,7 +67,8 @@ Differences from Jetonomy's `\Jetonomy\Queue` (shared names behave the same):
   `action_scheduler_ensure_recurring_actions`.
 - No `delete_rows()`: uninstall deletes rows by hook list directly, since `Jobs` is not loaded there.
 - `adopt_pending()` exists only here: Jetonomy never used another group. `cancel_pending()` exists only here
-  too; it follows BuddyNext's set-based deactivation cancel, scoped by hook instead of group.
+  too; it follows BuddyNext's set-based deactivation cancel, scoped by hook instead of group. So do
+  `requeue_unheard()` and `requeue_after_activation()`.
 - `prune_history()` also stops after 10 seconds, besides the batch cap.
 - Lookups and cancels match by hook and arguments in **any** group. Every MediaVerse hook starts with `mvs_`
   and belongs to us alone, and a row queued before 2.6.5 may still sit in an old group.
@@ -226,9 +233,21 @@ WP-Cron housekeeping (direct `wp_schedule_event()`, light hourly or daily): `mvs
 **Left pending** (`STATE_JOB_HOOKS`). These stay pending while the plugin is off, and the supported update
 (deactivate, replace the files, activate) loses none of them. If the plugin stays off while Action Scheduler keeps
 running for another plugin (about a minute), the runner takes those rows, finds no listener and marks them
-complete. That loss is what the Recovery column covers.
+**failed**, logging "Scheduled action for <hook> will not be executed as no callbacks are registered."
+(`ActionScheduler_Action::execute()`). Action Scheduler never retries a failed row by itself.
 
-| Hook | Why it is left | Recovery if a runner consumes it while off |
+**Recovery after reactivation.** Activation sets a note (Free `Activator::REQUEUE_TRANSIENT`, Pro
+`Lifecycle::ACTIVATED_TRANSIENT`). On the next scheduling requests, `Jobs::requeue_after_activation()` queues again
+every failed row of the plugin's state hooks whose log carries that message, with the same arguments, 200 per
+request until none are left. It keeps one pending copy per hook and arguments and deletes the failed row with its
+logs. A row that ran and errored keeps its own message and stays failed. Still lost:
+
+- failed rows older than 90 days (`FAILED_RETENTION_DAYS`): `prune_history()` has deleted them;
+- rows whose message was logged in another language than the site's language at reactivation.
+
+The last column says what repairs a job if it is lost anyway.
+
+| Hook | Why it is left | Repair if it is lost anyway |
 |---|---|---|
 | `mvs_cleanup_media_files` | file paths of media rows already deleted live only here | **none**: files stay on disk or CDN |
 | `mvs_cloud_repatriate_media` | finishes a privacy change already made | manual `wp mvs migrate-storage --from=<cloud> --to=local --include-non-public --media-id=<id>`; nothing finds which |
