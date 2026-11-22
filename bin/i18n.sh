@@ -22,7 +22,12 @@ DOMAIN="wpmediaverse"
 LANGS="languages"
 
 echo "==> make-pot ($DOMAIN)"
-"$WP" i18n make-pot . "$LANGS/$DOMAIN.pot" --slug="$DOMAIN" --domain="$DOMAIN" --skip-audit
+# PHP, block.json and JS (built bundles + classic scripts in assets/js). src/ is left out: build/ carries the
+# same calls, and make-json needs the build/ path that WordPress loads. dist/ (a staging copy of this plugin),
+# libs/ and vendor/ (third-party strings), tests/ and node_modules/ are never ours to translate.
+"$WP" i18n make-pot . "$LANGS/$DOMAIN.pot" --slug="$DOMAIN" --domain="$DOMAIN" --skip-audit \
+	--exclude=dist,libs,vendor,tests,node_modules,src,docs,marketing,qa \
+	--headers='{"Report-Msgid-Bugs-To":"https://wbcomdesigns.com/support/"}'
 
 if [ "${1:-all}" = "pot" ]; then
 	echo "Done (.pot only)."

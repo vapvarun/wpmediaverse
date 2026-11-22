@@ -2887,6 +2887,7 @@ class Plugin {
 			// the store reads these instead.
 			'i18n'               => array(
 				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
+				'File too large.'                      => __( 'File too large.', 'wpmediaverse' ),
 				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
 				'Could not share media.'               => __( 'Could not share media.', 'wpmediaverse' ),
 				'Upload failed'                        => __( 'Upload failed', 'wpmediaverse' ),

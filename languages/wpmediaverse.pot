@@ -3,13 +3,13 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: MediaVerse 2.6.4\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/wpmediaverse\n"
+"Report-Msgid-Bugs-To: https://wbcomdesigns.com/support/\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-22T14:03:17+00:00\n"
+"POT-Creation-Date: 2026-11-22T14:10:04+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpmediaverse\n"
@@ -50,6 +50,568 @@ msgstr ""
 msgid "https://wbcomdesigns.com/"
 msgstr ""
 
+#: build/blocks/album-viewer/render.php:33
+#: templates/404.php:44
+msgid "Album not found"
+msgstr ""
+
+#: build/blocks/album-viewer/render.php:35
+msgid "This block points at an album that no longer exists. Pick another album in the block settings."
+msgstr ""
+
+#: build/blocks/album-viewer/render.php:36
+msgid "Choose an album in the block settings to display it here."
+msgstr ""
+
+#: build/blocks/album-viewer/render.php:134
+msgid "Empty album"
+msgstr ""
+
+#: build/blocks/album-viewer/render.php:135
+#: includes/Integrations/BuddyPress/GroupTabIntegration.php:207
+#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:406
+#: templates/album.php:407
+msgid "This album is empty."
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:73
+#: assets/js/frontend/load-more.js:183
+msgid "Couldn’t load more. Tap to retry."
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:74
+msgid "(untitled)"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:112
+#: includes/Admin/MediaListPage.php:224
+#: includes/Core/Plugin.php:1828
+#: templates/explore.php:201
+msgid "Search media..."
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:113
+#: templates/explore.php:194
+#: templates/explore.php:199
+msgid "Search media"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:146
+#: includes/Admin/MediaListPage.php:320
+#: templates/documents.php:95
+#: templates/partials/chat-list.php:34
+#: templates/partials/explore-tag-cloud.php:66
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "All"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:147
+#: includes/Admin/Settings/FieldRenderer.php:156
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/member-photos/index.js:1
+msgid "Images"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:148
+#: includes/Admin/CollectionMetaBox.php:259
+#: includes/Admin/MediaListPage.php:1633
+#: includes/Admin/Settings/FieldRenderer.php:162
+#: includes/Core/Plugin.php:130
+#: includes/Core/Plugin.php:2904
+#: includes/Messaging/MessagingService.php:2420
+#: templates/partials/dashboard-content.php:189
+#: templates/partials/usage-history.php:31
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+msgid "Video"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:149
+#: includes/Admin/CollectionMetaBox.php:260
+#: includes/Admin/MediaListPage.php:1634
+#: includes/Admin/Settings/FieldRenderer.php:166
+#: includes/Core/Plugin.php:2905
+#: includes/Core/TemplateHelpers.php:2145
+#: includes/Messaging/MessagingService.php:2421
+#: templates/partials/dashboard-content.php:190
+#: templates/partials/usage-history.php:32
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/member-photos/index.js:1
+msgid "Audio"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:196
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:637
+#: templates/album.php:398
+#: templates/collection.php:153
+#: templates/explore.php:508
+#: templates/partials/dashboard-content.php:1016
+#: templates/partials/dashboard-content.php:1124
+#: templates/partials/dashboard-content.php:1243
+#: templates/partials/dashboard-content.php:1380
+msgid "Load More"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:197
+#: templates/partials/chat-conversation.php:151
+msgid "Loading..."
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:205
+#: build/blocks/media-grid/render.php:355
+#: includes/Admin/MediaListPage.php:267
+#: templates/partials/dashboard-content.php:985
+msgid "No media yet"
+msgstr ""
+
+#: build/blocks/explore-feed/render.php:206
+#: build/blocks/media-grid/render.php:356
+msgid "No media items found."
+msgstr ""
+
+#. translators: %d: number of items in the gallery.
+#. translators: %d: number of items in the gallery (one).
+#. translators: %d: number of items
+#. translators: %d: item count
+#. translators: %d: number of media items.
+#. translators: %d: number of items in the album.
+#: build/blocks/media-grid/render.php:306
+#: includes/Core/Plugin.php:146
+#: includes/Core/TemplateHelpers.php:1518
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:772
+#: templates/album.php:113
+#: templates/collection.php:91
+#: templates/cpt-archive.php:153
+#: templates/cpt-archive.php:162
+#: templates/partials/dashboard-content.php:247
+#: build/blocks/album-viewer/index.js:1
+#, php-format,js-format
+msgid "%d item"
+msgid_plural "%d items"
+msgstr[0] ""
+msgstr[1] ""
+
+#: build/blocks/media-grid/render.php:316
+#: includes/Core/Plugin.php:131
+#: includes/Core/TemplateHelpers.php:1509
+msgid "View media"
+msgstr ""
+
+#. translators: 1: current page, 2: total pages
+#: build/blocks/media-grid/render.php:329
+#, php-format
+msgid "Page %1$d of %2$d (%3$d items)"
+msgstr ""
+
+#: build/blocks/media-grid/render.php:339
+#: templates/documents.php:264
+#: templates/partials/shared-ui-frame.php:446
+msgid "Previous"
+msgstr ""
+
+#: build/blocks/media-grid/render.php:340
+#: templates/documents.php:281
+#: templates/partials/shared-ui-frame.php:484
+msgid "Next"
+msgstr ""
+
+#: build/blocks/media-player/render.php:30
+#: includes/Admin/MediaListPage.php:617
+#: includes/Admin/MediaListPage.php:1331
+msgid "Media not found"
+msgstr ""
+
+#: build/blocks/media-player/render.php:32
+msgid "This player points at media that no longer exists. Pick another item in the block settings."
+msgstr ""
+
+#: build/blocks/media-player/render.php:33
+msgid "Choose a video or audio item in the block settings to play it here."
+msgstr ""
+
+#: build/blocks/media-player/render.php:66
+msgid "Not a playable item"
+msgstr ""
+
+#: build/blocks/media-player/render.php:67
+msgid "The media player only handles video and audio. Use the Media Grid block to display an image."
+msgstr ""
+
+#: build/blocks/media-player/render.php:163
+#: templates/media-single.php:409
+#: templates/partials/shared-ui-frame.php:462
+msgid "This video cannot play here."
+msgstr ""
+
+#: build/blocks/media-player/render.php:165
+#: templates/media-single.php:411
+#: templates/partials/shared-ui-frame.php:465
+msgid "Download it instead"
+msgstr ""
+
+#: build/blocks/media-player/render.php:170
+#: templates/media-single.php:416
+msgid "Start over"
+msgstr ""
+
+#: build/blocks/media-player/render.php:195
+#: templates/media-single.php:535
+#: templates/partials/shared-ui-frame.php:606
+msgid "Download"
+msgstr ""
+
+#: build/blocks/media-stats/render.php:100
+#: includes/Services/GDPRService.php:165
+#: includes/Services/GDPRService.php:206
+msgid "Media Items"
+msgstr ""
+
+#: build/blocks/media-stats/render.php:106
+#: build/blocks/media-stats/render.php:150
+#: includes/Admin/StatsPage.php:283
+#: includes/Core/Plugin.php:134
+msgid "Views"
+msgstr ""
+
+#: build/blocks/media-stats/render.php:113
+msgid "Downloads"
+msgstr ""
+
+#: build/blocks/media-stats/render.php:120
+#: build/blocks/media-stats/render.php:151
+#: includes/Admin/StatsPage.php:265
+#: includes/Admin/StatsPage.php:284
+#: includes/Privacy/MemberDataMap.php:89
+#: includes/Services/GDPRService.php:248
+#: templates/media-single.php:664
+#: templates/partials/shared-ui-frame.php:523
+msgid "Reactions"
+msgstr ""
+
+#: build/blocks/media-stats/render.php:145
+msgid "Top Media"
+msgstr ""
+
+#: build/blocks/media-stats/render.php:149
+#: includes/Admin/MediaListPage.php:237
+#: includes/Admin/MediaListPage.php:283
+#: includes/Admin/MediaListPage.php:1434
+#: includes/Admin/ModerationQueue.php:382
+#: includes/Admin/OverviewPage.php:437
+#: includes/Admin/StatsPage.php:282
+#: includes/Admin/TagManagementPage.php:916
+#: includes/Services/GDPRService.php:169
+#: templates/admin/document-single.php:65
+#: templates/admin/documents.php:145
+#: templates/admin/documents.php:174
+#: templates/album.php:196
+#: templates/documents.php:170
+#: templates/partials/dashboard-content.php:1412
+#: templates/partials/dashboard-content.php:1555
+#: templates/partials/media-edit-form.php:30
+#: build/blocks/media-grid/index.js:1
+msgid "Title"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:19
+msgid "Log in to upload"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:20
+msgid "You need an account to share media."
+msgstr ""
+
+#: build/blocks/media-upload/render.php:33
+msgid "Uploading is not open to your account"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:34
+msgid "Ask the site owner if you should be able to share media here."
+msgstr ""
+
+#: build/blocks/media-upload/render.php:97
+#: includes/Shortcodes/Shortcodes.php:773
+#: templates/partials/profile-edit-panel.php:81
+#: templates/profile-edit.php:136
+msgid "Uploading..."
+msgstr ""
+
+#: build/blocks/media-upload/render.php:98
+msgid "Upload 1 file"
+msgstr ""
+
+#. translators: %d: number of files.
+#: build/blocks/media-upload/render.php:100
+#, php-format
+msgid "Upload %d files"
+msgstr ""
+
+#. translators: %d: number of files.
+#: build/blocks/media-upload/render.php:102
+#, php-format
+msgid "Uploading %d file(s)..."
+msgstr ""
+
+#. translators: %1$d: current file number, %2$d: total number of files.
+#. translators: 1: current file number, 2: total files
+#. translators: 1: current file number, 2: total files.
+#: build/blocks/media-upload/render.php:104
+#: includes/Core/Plugin.php:1908
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:525
+#: templates/partials/dashboard-content.php:252
+#, php-format
+msgid "Uploading %1$d of %2$d..."
+msgstr ""
+
+#. translators: %s: file name.
+#: build/blocks/media-upload/render.php:106
+#, php-format
+msgid "Upload failed for %s."
+msgstr ""
+
+#. translators: %s: file name.
+#: build/blocks/media-upload/render.php:108
+#, php-format
+msgid "Network error uploading %s."
+msgstr ""
+
+#. translators: %d: number of files uploaded.
+#: build/blocks/media-upload/render.php:110
+#, php-format
+msgid "%d file(s) uploaded successfully!"
+msgstr ""
+
+#. translators: %1$d: number uploaded, %2$d: total number of files.
+#. translators: 1: uploaded count, 2: total files.
+#: build/blocks/media-upload/render.php:112
+#: templates/partials/dashboard-content.php:256
+#, php-format
+msgid "%1$d of %2$d file(s) uploaded."
+msgstr ""
+
+#. translators: %1$d: number of duplicate files, %2$d: existing media ID.
+#. translators: 1: number of duplicate files, 2: existing media ID.
+#: build/blocks/media-upload/render.php:114
+#: templates/partials/dashboard-content.php:260
+#: templates/partials/shared-ui-frame.php:114
+#, php-format
+msgid "You had already uploaded %1$d of these files."
+msgstr ""
+
+#. translators: %d: number of files picked, followed by their names.
+#: build/blocks/media-upload/render.php:116
+#, php-format
+msgid "%d files: "
+msgstr ""
+
+#: build/blocks/media-upload/render.php:117
+msgid "images, videos, and audio files"
+msgstr ""
+
+#. translators: %1$s: rejected file names, %2$s: supported formats.
+#: build/blocks/media-upload/render.php:119
+#, php-format
+msgid "File type not allowed: %1$s. Supported formats: %2$s."
+msgstr ""
+
+#. translators: 1: storage used, 2: storage limit, e.g. "48 MB of 500 MB".
+#: build/blocks/media-upload/render.php:121
+#: includes/Core/TemplateHelpers.php:785
+#, php-format
+msgid "Used %1$s of %2$s"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:155
+#: templates/partials/dashboard-content.php:806
+msgid "Upload media files"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:170
+#: templates/partials/shared-ui-frame.php:262
+msgid "Drag & drop files here or click to browse"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:174
+msgid "Choose files to upload"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:183
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:488
+msgid "Who can see this media"
+msgstr ""
+
+#. translators: %s: link to the member's Documents library.
+#: build/blocks/media-upload/render.php:195
+#, php-format
+msgid "Looking to upload a document? Use your %s."
+msgstr ""
+
+#: build/blocks/media-upload/render.php:196
+msgid "Documents library"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:204
+#: build/blocks/media-upload/render.php:205
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:472
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:473
+#: templates/partials/dashboard-content.php:831
+#: templates/partials/shared-ui-frame.php:308
+msgid "Title (optional)"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:208
+#: build/blocks/media-upload/render.php:209
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:554
+#: templates/partials/dashboard-content.php:834
+#: templates/partials/shared-ui-frame.php:311
+msgid "Description (optional)"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:212
+#: build/blocks/media-upload/render.php:213
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:478
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:479
+#: templates/partials/dashboard-content.php:838
+#: templates/partials/shared-ui-frame.php:314
+msgid "Tags (comma separated)"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:220
+#: templates/partials/dashboard-content.php:853
+msgid "Add details above (optional), then upload."
+msgstr ""
+
+#: build/blocks/media-upload/render.php:223
+#: includes/Admin/MemberModeration.php:294
+#: includes/Core/Plugin.php:1795
+#: includes/Core/Plugin.php:2930
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:497
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:559
+#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:809
+#: templates/album.php:227
+#: templates/album.php:254
+#: templates/media-single.php:830
+#: templates/media-single.php:882
+#: templates/partials/chat-composer.php:73
+#: templates/partials/chat-new.php:72
+#: templates/partials/dashboard-content.php:864
+#: templates/partials/dashboard-content.php:1524
+#: templates/partials/dashboard-content.php:1650
+#: templates/partials/profile-actions.php:120
+#: templates/partials/profile-edit-panel.php:172
+#: templates/partials/shared-ui-frame.php:351
+#: templates/partials/shared-ui-frame.php:386
+#: templates/partials/shared-ui-frame.php:688
+#: templates/partials/shared-ui-frame.php:761
+msgid "Cancel"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:228
+msgid "Dismiss error"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:232
+#: templates/partials/dashboard-content.php:871
+#: templates/partials/shared-ui-frame.php:270
+msgid "Upload progress"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:238
+msgid "View it"
+msgstr ""
+
+#: build/blocks/media-upload/render.php:239
+msgid "Go to My Media"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:103
+msgid "This widget shows the displayed member's media — visit a BuddyPress profile, set a User ID in the block sidebar, or log in to see it in action."
+msgstr ""
+
+#. translators: %s: member display name.
+#: build/blocks/member-photos/render.php:177
+#: templates/partials/dashboard-content.php:552
+#, php-format
+msgid "View %s's profile"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:205
+msgid "Member statistics"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:208
+#: includes/Core/TemplateHelpers.php:2143
+msgid "Photos"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:214
+msgid "View followers"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:216
+#: templates/partials/follows-modal.php:37
+msgid "Followers"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:222
+msgid "View following"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:224
+#: build/blocks/member-photos/render.php:240
+#: includes/Core/Plugin.php:1854
+#: includes/Services/GDPRService.php:278
+#: templates/media-single.php:205
+#: templates/partials/follows-modal.php:38
+#: templates/partials/profile-actions.php:64
+msgid "Following"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:231
+#: templates/partials/dashboard-content.php:565
+msgid "View profile"
+msgstr ""
+
+#: build/blocks/member-photos/render.php:239
+#: includes/Core/Plugin.php:1855
+#: templates/media-single.php:204
+#: templates/partials/profile-actions.php:64
+msgid "Follow"
+msgstr ""
+
+#: build/blocks/pdf-viewer/render.php:77
+msgid "No PDF selected. Edit this block and set a Media ID to display a PDF."
+msgstr ""
+
+#: build/blocks/pdf-viewer/render.php:84
+msgid "PDF not found."
+msgstr ""
+
+#: build/blocks/pdf-viewer/render.php:95
+msgid "Documents have their own viewer and cannot be embedded here. Pick a PDF media file instead."
+msgstr ""
+
+#: build/blocks/pdf-viewer/render.php:104
+msgid "This block can only display PDF files. Pick a media item whose file is a PDF."
+msgstr ""
+
+#: build/blocks/pdf-viewer/render.php:117
+msgid "You do not have permission to view this PDF."
+msgstr ""
+
+#: build/blocks/pdf-viewer/render.php:131
+msgid "PDF document"
+msgstr ""
+
 #: cleanup-demo-data.php:68
 msgid "No demo users found. Nothing to clean."
 msgstr ""
@@ -61,6 +623,7 @@ msgid "Cleaned %1$d demo media item(s), %2$d album(s)/collection(s), %3$d demo u
 msgstr ""
 
 #: includes/Admin/AlbumMetaBox.php:64
+#: build/blocks/album-viewer/index.js:1
 msgid "Album Settings"
 msgstr ""
 
@@ -166,16 +729,19 @@ msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:244
 #: templates/partials/dashboard-content.php:1486
+#: build/blocks/media-grid/index.js:1
 msgid "Media Type"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:245
 #: templates/partials/dashboard-content.php:1487
+#: build/blocks/media-grid/index.js:1
 msgid "Tag"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:246
 #: templates/partials/dashboard-content.php:1488
+#: build/blocks/media-grid/index.js:1
 msgid "Category"
 msgstr ""
 
@@ -227,30 +793,6 @@ msgstr ""
 msgid "Image"
 msgstr ""
 
-#: includes/Admin/CollectionMetaBox.php:259
-#: includes/Admin/MediaListPage.php:1633
-#: includes/Admin/Settings/FieldRenderer.php:162
-#: includes/Core/Plugin.php:130
-#: includes/Core/Plugin.php:2903
-#: includes/Messaging/MessagingService.php:2420
-#: src/blocks/explore-feed/render.php:148
-#: templates/partials/dashboard-content.php:189
-#: templates/partials/usage-history.php:31
-msgid "Video"
-msgstr ""
-
-#: includes/Admin/CollectionMetaBox.php:260
-#: includes/Admin/MediaListPage.php:1634
-#: includes/Admin/Settings/FieldRenderer.php:166
-#: includes/Core/Plugin.php:2904
-#: includes/Core/TemplateHelpers.php:2145
-#: includes/Messaging/MessagingService.php:2421
-#: src/blocks/explore-feed/render.php:149
-#: templates/partials/dashboard-content.php:190
-#: templates/partials/usage-history.php:32
-msgid "Audio"
-msgstr ""
-
 #: includes/Admin/CollectionMetaBox.php:261
 #: includes/Admin/MediaListPage.php:1635
 #: templates/partials/dashboard-content.php:191
@@ -269,7 +811,7 @@ msgid "Public"
 msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:270
-#: includes/Core/Plugin.php:2933
+#: includes/Core/Plugin.php:2934
 #: templates/partials/chat-conversation.php:88
 #: templates/partials/follows-modal.php:30
 msgid "Members"
@@ -295,6 +837,8 @@ msgstr ""
 
 #: includes/Admin/CollectionMetaBox.php:307
 #: templates/partials/dashboard-content.php:232
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/member-photos/index.js:1
 msgid "User ID"
 msgstr ""
 
@@ -514,6 +1058,7 @@ msgstr ""
 #: includes/Services/GDPRService.php:286
 #: includes/Services/GDPRService.php:311
 #: templates/partials/usage-history.php:50
+#: build/blocks/media-grid/index.js:1
 msgid "Date"
 msgstr ""
 
@@ -642,16 +1187,11 @@ msgstr ""
 msgid "All Privacy"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:224
-#: includes/Core/Plugin.php:1828
-#: src/blocks/explore-feed/render.php:112
-#: templates/explore.php:201
-msgid "Search media..."
-msgstr ""
-
 #: includes/Admin/MediaListPage.php:225
 #: includes/Core/TemplateHelpers.php:2298
 #: templates/collection.php:109
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/media-player/index.js:1
 msgid "Search"
 msgstr ""
 
@@ -664,26 +1204,6 @@ msgstr ""
 #: includes/Admin/MediaListPage.php:282
 #: includes/Admin/ModerationQueue.php:381
 msgid "Thumb"
-msgstr ""
-
-#: includes/Admin/MediaListPage.php:237
-#: includes/Admin/MediaListPage.php:283
-#: includes/Admin/MediaListPage.php:1434
-#: includes/Admin/ModerationQueue.php:382
-#: includes/Admin/OverviewPage.php:437
-#: includes/Admin/StatsPage.php:282
-#: includes/Admin/TagManagementPage.php:916
-#: includes/Services/GDPRService.php:169
-#: src/blocks/media-stats/render.php:149
-#: templates/admin/document-single.php:65
-#: templates/admin/documents.php:145
-#: templates/admin/documents.php:174
-#: templates/album.php:196
-#: templates/documents.php:170
-#: templates/partials/dashboard-content.php:1412
-#: templates/partials/dashboard-content.php:1555
-#: templates/partials/media-edit-form.php:30
-msgid "Title"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:239
@@ -727,23 +1247,8 @@ msgstr ""
 msgid "Clear filters"
 msgstr ""
 
-#: includes/Admin/MediaListPage.php:267
-#: src/blocks/explore-feed/render.php:205
-#: src/blocks/media-grid/render.php:355
-#: templates/partials/dashboard-content.php:985
-msgid "No media yet"
-msgstr ""
-
 #: includes/Admin/MediaListPage.php:268
 msgid "Once users upload media it will appear here."
-msgstr ""
-
-#: includes/Admin/MediaListPage.php:320
-#: src/blocks/explore-feed/render.php:146
-#: templates/documents.php:95
-#: templates/partials/chat-list.php:34
-#: templates/partials/explore-tag-cloud.php:66
-msgid "All"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:353
@@ -802,12 +1307,6 @@ msgstr ""
 #: includes/Admin/MediaListPage.php:1651
 #: includes/Admin/ReportsPage.php:209
 msgid "Pending"
-msgstr ""
-
-#: includes/Admin/MediaListPage.php:617
-#: includes/Admin/MediaListPage.php:1331
-#: src/blocks/media-player/render.php:30
-msgid "Media not found"
 msgstr ""
 
 #: includes/Admin/MediaListPage.php:618
@@ -1147,31 +1646,6 @@ msgstr ""
 
 #: includes/Admin/MemberModeration.php:174
 msgid "The member asked to delete their account, which also suspended it. Unticking Suspended cancels the deletion as well."
-msgstr ""
-
-#: includes/Admin/MemberModeration.php:294
-#: includes/Core/Plugin.php:1795
-#: includes/Core/Plugin.php:2929
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:497
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:559
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:809
-#: src/blocks/media-upload/render.php:223
-#: templates/album.php:227
-#: templates/album.php:254
-#: templates/media-single.php:830
-#: templates/media-single.php:882
-#: templates/partials/chat-composer.php:73
-#: templates/partials/chat-new.php:72
-#: templates/partials/dashboard-content.php:864
-#: templates/partials/dashboard-content.php:1524
-#: templates/partials/dashboard-content.php:1650
-#: templates/partials/profile-actions.php:120
-#: templates/partials/profile-edit-panel.php:172
-#: templates/partials/shared-ui-frame.php:351
-#: templates/partials/shared-ui-frame.php:386
-#: templates/partials/shared-ui-frame.php:688
-#: templates/partials/shared-ui-frame.php:761
-msgid "Cancel"
 msgstr ""
 
 #: includes/Admin/MemberModeration.php:303
@@ -1761,6 +2235,8 @@ msgid "Media Display"
 msgstr ""
 
 #: includes/Admin/Settings/DisplaySettingsRegistrar.php:37
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
 msgid "Layout"
 msgstr ""
 
@@ -1794,6 +2270,8 @@ msgstr ""
 
 #: includes/Admin/Settings/DisplaySettingsRegistrar.php:72
 #: includes/Admin/SetupWizard.php:281
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
 msgid "Items Per Page"
 msgstr ""
 
@@ -1827,13 +2305,8 @@ msgstr ""
 msgid "Maximum file size per upload. Server limit: %s MB."
 msgstr ""
 
-#: includes/Admin/Settings/FieldRenderer.php:156
-#: src/blocks/explore-feed/render.php:147
-msgid "Images"
-msgstr ""
-
 #: includes/Admin/Settings/FieldRenderer.php:348
-#: includes/Core/Plugin.php:2939
+#: includes/Core/Plugin.php:2940
 #: templates/partials/chat-new.php:52
 #: templates/partials/dashboard-content.php:1217
 #: templates/partials/profile-edit-panel.php:90
@@ -2074,7 +2547,7 @@ msgstr ""
 #: includes/Admin/Settings/MessagingSettingsRegistrar.php:38
 #: includes/Admin/Settings/MessagingSettingsRegistrar.php:57
 #: includes/Admin/Settings/SettingsPage.php:329
-#: includes/Core/Plugin.php:3737
+#: includes/Core/Plugin.php:3738
 #: includes/Privacy/MemberDataMap.php:146
 #: templates/messages.php:26
 #: templates/partials/chat-list.php:14
@@ -2316,6 +2789,7 @@ msgstr ""
 #: includes/Social/ReportService.php:228
 #: templates/admin/ai-review.php:69
 #: templates/explore.php:194
+#: build/blocks/media-player/index.js:1
 msgid "Media"
 msgstr ""
 
@@ -2686,7 +3160,8 @@ msgid "Track views, downloads, reactions, and AI usage across your media library
 msgstr ""
 
 #: includes/Admin/StatsPage.php:232
-#: includes/Core/Plugin.php:2909
+#: includes/Core/Plugin.php:2910
+#: assets/js/messaging.js:120
 msgid "Today"
 msgstr ""
 
@@ -2706,26 +3181,8 @@ msgstr ""
 msgid "Export CSV"
 msgstr ""
 
-#: includes/Admin/StatsPage.php:265
-#: includes/Admin/StatsPage.php:284
-#: includes/Privacy/MemberDataMap.php:89
-#: includes/Services/GDPRService.php:248
-#: src/blocks/media-stats/render.php:120
-#: src/blocks/media-stats/render.php:151
-#: templates/media-single.php:664
-#: templates/partials/shared-ui-frame.php:523
-msgid "Reactions"
-msgstr ""
-
 #: includes/Admin/StatsPage.php:275
 msgid "Top Media by Views"
-msgstr ""
-
-#: includes/Admin/StatsPage.php:283
-#: includes/Core/Plugin.php:134
-#: src/blocks/media-stats/render.php:106
-#: src/blocks/media-stats/render.php:150
-msgid "Views"
 msgstr ""
 
 #: includes/Admin/StatsPage.php:313
@@ -2797,7 +3254,7 @@ msgstr ""
 #: includes/Admin/TagManagementPage.php:294
 #: includes/Admin/TagManagementPage.php:345
 #: includes/Core/Plugin.php:1796
-#: includes/Core/Plugin.php:2945
+#: includes/Core/Plugin.php:2946
 #: includes/Core/TemplateHelpers.php:2561
 #: templates/explore.php:450
 #: templates/media-single.php:795
@@ -3212,6 +3669,7 @@ msgid "Edit profile"
 msgstr ""
 
 #: includes/Core/DocumentTypes.php:426
+#: build/blocks/pdf-viewer/index.js:1
 msgid "PDF"
 msgstr ""
 
@@ -3260,12 +3718,6 @@ msgstr ""
 msgid "Delete media"
 msgstr ""
 
-#: includes/Core/Plugin.php:131
-#: includes/Core/TemplateHelpers.php:1509
-#: src/blocks/media-grid/render.php:316
-msgid "View media"
-msgstr ""
-
 #: includes/Core/Plugin.php:133
 msgid "Likes"
 msgstr ""
@@ -3306,26 +3758,6 @@ msgstr[1] ""
 #, php-format
 msgid "%s comment"
 msgid_plural "%s comments"
-msgstr[0] ""
-msgstr[1] ""
-
-#. translators: %d: number of items in the gallery (one).
-#. translators: %d: number of items in the gallery.
-#. translators: %d: number of items
-#. translators: %d: item count
-#. translators: %d: number of media items.
-#: includes/Core/Plugin.php:146
-#: includes/Core/TemplateHelpers.php:1518
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:772
-#: src/blocks/media-grid/render.php:306
-#: templates/album.php:113
-#: templates/collection.php:91
-#: templates/cpt-archive.php:153
-#: templates/cpt-archive.php:162
-#: templates/partials/dashboard-content.php:247
-#, php-format
-msgid "%d item"
-msgid_plural "%d items"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -3374,24 +3806,9 @@ msgstr ""
 #: includes/Core/Plugin.php:1830
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:198
 #: templates/explore.php:171
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
 msgid "media"
-msgstr ""
-
-#: includes/Core/Plugin.php:1854
-#: includes/Services/GDPRService.php:278
-#: src/blocks/member-photos/render.php:224
-#: src/blocks/member-photos/render.php:240
-#: templates/media-single.php:205
-#: templates/partials/follows-modal.php:38
-#: templates/partials/profile-actions.php:64
-msgid "Following"
-msgstr ""
-
-#: includes/Core/Plugin.php:1855
-#: src/blocks/member-photos/render.php:239
-#: templates/media-single.php:204
-#: templates/partials/profile-actions.php:64
-msgid "Follow"
 msgstr ""
 
 #: includes/Core/Plugin.php:1856
@@ -3419,17 +3836,6 @@ msgstr ""
 msgid "Unblock this member"
 msgstr ""
 
-#. translators: 1: current file number, 2: total files
-#. translators: 1: current file number, 2: total files.
-#. translators: %1$d: current file number, %2$d: total number of files.
-#: includes/Core/Plugin.php:1908
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:525
-#: src/blocks/media-upload/render.php:104
-#: templates/partials/dashboard-content.php:252
-#, php-format
-msgid "Uploading %1$d of %2$d..."
-msgstr ""
-
 #: includes/Core/Plugin.php:1909
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:528
 msgid "Adding to album..."
@@ -3447,6 +3853,8 @@ msgstr ""
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:531
 #: templates/partials/dashboard-content.php:254
 #: templates/partials/shared-ui-frame.php:112
+#: assets/js/bp-activity-media.js:237
+#: assets/js/bp-activity-media.js:420
 msgid "Upload failed. Please try again."
 msgstr ""
 
@@ -3495,142 +3903,159 @@ msgid "Anyone"
 msgstr ""
 
 #: includes/Core/Plugin.php:2889
+#: assets/js/messaging.js:76
 msgid "Request failed"
 msgstr ""
 
 #: includes/Core/Plugin.php:2890
-msgid "Could not open conversation."
+msgid "File too large."
 msgstr ""
 
 #: includes/Core/Plugin.php:2891
-msgid "Could not share media."
+#: assets/js/messaging.js:787
+msgid "Could not open conversation."
 msgstr ""
 
 #: includes/Core/Plugin.php:2892
+#: assets/js/messaging.js:890
+msgid "Could not share media."
+msgstr ""
+
+#: includes/Core/Plugin.php:2893
+#: assets/js/messaging.js:1612
+#: assets/js/messaging.js:1731
 msgid "Upload failed"
 msgstr ""
 
 #. translators: %s: file name
-#: includes/Core/Plugin.php:2894
+#: includes/Core/Plugin.php:2895
 #, php-format
 msgid "Uploading %s…"
 msgstr ""
 
-#: includes/Core/Plugin.php:2895
+#: includes/Core/Plugin.php:2896
 msgid "Only image, video, and audio files can be shared in messages."
 msgstr ""
 
-#: includes/Core/Plugin.php:2896
+#: includes/Core/Plugin.php:2897
+#: assets/js/messaging.js:1684
 msgid "Microphone access denied"
 msgstr ""
 
-#: includes/Core/Plugin.php:2897
+#: includes/Core/Plugin.php:2898
+#: assets/js/messaging.js:279
 msgid "You reacted. Tap to remove."
 msgstr ""
 
-#: includes/Core/Plugin.php:2898
+#: includes/Core/Plugin.php:2899
+#: assets/js/messaging.js:280
 msgid "Reacted"
 msgstr ""
 
-#: includes/Core/Plugin.php:2901
+#: includes/Core/Plugin.php:2902
 #: includes/Messaging/MessagingService.php:2418
 msgid "Voice message"
 msgstr ""
 
-#: includes/Core/Plugin.php:2902
+#: includes/Core/Plugin.php:2903
 #: includes/Messaging/MessagingService.php:2419
 msgid "Photo"
 msgstr ""
 
-#: includes/Core/Plugin.php:2905
+#: includes/Core/Plugin.php:2906
 #: includes/Messaging/MessagingService.php:2422
 #: templates/media-single.php:513
 #: templates/media-single.php:516
 msgid "File"
 msgstr ""
 
-#: includes/Core/Plugin.php:2906
+#: includes/Core/Plugin.php:2907
 #: includes/Messaging/MessagingService.php:2423
 msgid "Shared a media"
 msgstr ""
 
-#: includes/Core/Plugin.php:2907
+#: includes/Core/Plugin.php:2908
 #: includes/Messaging/MessagingService.php:2437
 msgid "Attachment"
 msgstr ""
 
-#: includes/Core/Plugin.php:2910
+#: includes/Core/Plugin.php:2911
+#: assets/js/messaging.js:123
 msgid "Yesterday"
 msgstr ""
 
-#: includes/Core/Plugin.php:2912
+#: includes/Core/Plugin.php:2913
+#: assets/js/messaging.js:504
 msgid "Mute notifications"
 msgstr ""
 
-#: includes/Core/Plugin.php:2913
+#: includes/Core/Plugin.php:2914
+#: assets/js/messaging.js:503
 msgid "Unmute notifications"
 msgstr ""
 
-#: includes/Core/Plugin.php:2914
+#: includes/Core/Plugin.php:2915
+#: assets/js/messaging.js:1652
 msgid "Voice messages need a secure (https) connection."
 msgstr ""
 
-#: includes/Core/Plugin.php:2918
+#: includes/Core/Plugin.php:2919
 msgid "Online"
 msgstr ""
 
 #. translators: %s: a relative time in the page language, such as "5 minutes ago".
-#: includes/Core/Plugin.php:2920
+#: includes/Core/Plugin.php:2921
 #, php-format
 msgid "Active %s"
 msgstr ""
 
 #. translators: %s: a date, formatted for the viewer's locale.
-#: includes/Core/Plugin.php:2922
+#: includes/Core/Plugin.php:2923
 #, php-format
 msgid "Active on %s"
 msgstr ""
 
-#: includes/Core/Plugin.php:2924
+#: includes/Core/Plugin.php:2925
 #: templates/partials/chat-new.php:17
 msgid "New Message"
 msgstr ""
 
-#: includes/Core/Plugin.php:2925
+#: includes/Core/Plugin.php:2926
 msgid "New Group"
 msgstr ""
 
-#: includes/Core/Plugin.php:2926
+#: includes/Core/Plugin.php:2927
 #: templates/partials/chat-new.php:32
 msgid "New group"
 msgstr ""
 
-#: includes/Core/Plugin.php:2927
+#: includes/Core/Plugin.php:2928
 #: templates/partials/chat-new.php:40
 msgid "Group name (optional)"
 msgstr ""
 
-#: includes/Core/Plugin.php:2928
+#: includes/Core/Plugin.php:2929
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:558
 #: templates/partials/chat-new.php:67
 #: templates/partials/dashboard-content.php:1529
 #: templates/partials/dashboard-content.php:1655
+#: assets/js/bp-activity-media.js:619
 msgid "Create"
 msgstr ""
 
-#: includes/Core/Plugin.php:2930
+#: includes/Core/Plugin.php:2931
 #: templates/partials/chat-conversation.php:31
 #: templates/partials/chat-conversation.php:32
 #: templates/partials/chat-conversation.php:58
 msgid "Group info"
 msgstr ""
 
-#: includes/Core/Plugin.php:2931
+#: includes/Core/Plugin.php:2932
 #: templates/partials/chat-conversation.php:73
 msgid "Rename"
 msgstr ""
 
-#: includes/Core/Plugin.php:2932
+#: includes/Core/Plugin.php:2933
 #: templates/album.php:222
 #: templates/media-single.php:693
 #: templates/media-single.php:737
@@ -3647,75 +4072,75 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
-#: includes/Core/Plugin.php:2934
+#: includes/Core/Plugin.php:2935
 #: templates/partials/chat-conversation.php:120
 msgid "Admin"
 msgstr ""
 
-#: includes/Core/Plugin.php:2935
+#: includes/Core/Plugin.php:2936
 #: templates/partials/chat-conversation.php:94
 msgid "Add people"
 msgstr ""
 
-#: includes/Core/Plugin.php:2936
+#: includes/Core/Plugin.php:2937
 #: templates/partials/chat-conversation.php:103
 msgid "Search users…"
 msgstr ""
 
-#: includes/Core/Plugin.php:2937
+#: includes/Core/Plugin.php:2938
 #: templates/partials/chat-conversation.php:126
 #: templates/partials/chat-conversation.php:127
 msgid "Remove member"
 msgstr ""
 
-#: includes/Core/Plugin.php:2938
+#: includes/Core/Plugin.php:2939
 msgid "Remove this member from the group?"
 msgstr ""
 
-#: includes/Core/Plugin.php:2940
+#: includes/Core/Plugin.php:2941
 #: templates/partials/chat-conversation.php:141
 msgid "Leave group"
 msgstr ""
 
-#: includes/Core/Plugin.php:2941
+#: includes/Core/Plugin.php:2942
 msgid "Leave this group? You will no longer receive its messages."
 msgstr ""
 
-#: includes/Core/Plugin.php:2942
+#: includes/Core/Plugin.php:2943
 msgid "Leave"
 msgstr ""
 
-#: includes/Core/Plugin.php:2943
+#: includes/Core/Plugin.php:2944
 msgid "Delete this message for everyone? This cannot be undone."
 msgstr ""
 
-#: includes/Core/Plugin.php:2944
+#: includes/Core/Plugin.php:2945
 msgid "Unsend this message for everyone? Any attached file is deleted too."
 msgstr ""
 
-#: includes/Core/Plugin.php:2946
+#: includes/Core/Plugin.php:2947
 msgid "Unsend"
 msgstr ""
 
 #. translators: %d: number of active group members.
-#: includes/Core/Plugin.php:2948
+#: includes/Core/Plugin.php:2949
 #, php-format
 msgid "%d members"
 msgstr ""
 
-#: includes/Core/Plugin.php:2949
+#: includes/Core/Plugin.php:2950
 msgid "A group can have at most 50 members."
 msgstr ""
 
-#: includes/Core/Plugin.php:2950
+#: includes/Core/Plugin.php:2951
 msgid "Could not create the group."
 msgstr ""
 
-#: includes/Core/Plugin.php:3610
+#: includes/Core/Plugin.php:3611
 msgid "Messages is turned off"
 msgstr ""
 
-#: includes/Core/Plugin.php:3612
+#: includes/Core/Plugin.php:3613
 msgid "Turn it on in Settings > Messages"
 msgstr ""
 
@@ -3808,13 +4233,6 @@ msgstr ""
 msgid "Only me: hidden from everyone else"
 msgstr ""
 
-#. translators: 1: storage used, 2: storage limit, e.g. "48 MB of 500 MB".
-#: includes/Core/TemplateHelpers.php:785
-#: src/blocks/media-upload/render.php:121
-#, php-format
-msgid "Used %1$s of %2$s"
-msgstr ""
-
 #. translators: %s: how long a story stays up, e.g. "24 hours" or "2 days".
 #: includes/Core/TemplateHelpers.php:882
 #, php-format
@@ -3905,12 +4323,8 @@ msgstr ""
 msgid "All types"
 msgstr ""
 
-#: includes/Core/TemplateHelpers.php:2143
-#: src/blocks/member-photos/render.php:208
-msgid "Photos"
-msgstr ""
-
 #: includes/Core/TemplateHelpers.php:2144
+#: build/blocks/member-photos/index.js:1
 msgid "Videos"
 msgstr ""
 
@@ -3942,6 +4356,7 @@ msgstr ""
 
 #: includes/Core/TemplateHelpers.php:2158
 #: templates/partials/dashboard-content.php:63
+#: build/blocks/media-grid/index.js:1
 msgid "Most viewed"
 msgstr ""
 
@@ -4228,6 +4643,8 @@ msgstr ""
 
 #: includes/Integrations/BuddyPress/ActivitySyncIntegration.php:351
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:76
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/media-player/index.js:1
 msgid "Untitled"
 msgstr ""
 
@@ -4300,32 +4717,9 @@ msgstr ""
 msgid "Drop files here or click to upload"
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:472
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:473
-#: src/blocks/media-upload/render.php:204
-#: src/blocks/media-upload/render.php:205
-#: templates/partials/dashboard-content.php:831
-#: templates/partials/shared-ui-frame.php:308
-msgid "Title (optional)"
-msgstr ""
-
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:475
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:476
 msgid "Caption (optional)"
-msgstr ""
-
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:478
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:479
-#: src/blocks/media-upload/render.php:212
-#: src/blocks/media-upload/render.php:213
-#: templates/partials/dashboard-content.php:838
-#: templates/partials/shared-ui-frame.php:314
-msgid "Tags (comma separated)"
-msgstr ""
-
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:488
-#: src/blocks/media-upload/render.php:183
-msgid "Who can see this media"
 msgstr ""
 
 #. translators: %d: number of files.
@@ -4352,28 +4746,8 @@ msgstr ""
 msgid "Enter album name..."
 msgstr ""
 
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:554
-#: src/blocks/media-upload/render.php:208
-#: src/blocks/media-upload/render.php:209
-#: templates/partials/dashboard-content.php:834
-#: templates/partials/shared-ui-frame.php:311
-msgid "Description (optional)"
-msgstr ""
-
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:555
 msgid "Album description..."
-msgstr ""
-
-#: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:637
-#: src/blocks/explore-feed/render.php:196
-#: templates/album.php:398
-#: templates/collection.php:153
-#: templates/explore.php:508
-#: templates/partials/dashboard-content.php:1016
-#: templates/partials/dashboard-content.php:1124
-#: templates/partials/dashboard-content.php:1243
-#: templates/partials/dashboard-content.php:1380
-msgid "Load More"
 msgstr ""
 
 #: includes/Integrations/BuddyPress/BaseBPTabIntegration.php:641
@@ -4422,13 +4796,6 @@ msgstr ""
 #: includes/Integrations/BuddyPress/GroupTabIntegration.php:203
 #: includes/Integrations/BuddyPress/ProfileTabIntegration.php:402
 msgid "This album is empty. Add some media!"
-msgstr ""
-
-#: includes/Integrations/BuddyPress/GroupTabIntegration.php:207
-#: includes/Integrations/BuddyPress/ProfileTabIntegration.php:406
-#: src/blocks/album-viewer/render.php:135
-#: templates/album.php:407
-msgid "This album is empty."
 msgstr ""
 
 #: includes/Integrations/BuddyPress/MediaDisplayHelper.php:201
@@ -4681,6 +5048,7 @@ msgid "This message could not be delivered."
 msgstr ""
 
 #: includes/PostTypes/Album.php:23
+#: build/blocks/album-viewer/index.js:1
 msgid "Album"
 msgstr ""
 
@@ -5502,12 +5870,6 @@ msgstr ""
 msgid "%1$s was kept but anonymised. %2$s"
 msgstr ""
 
-#: includes/Services/GDPRService.php:165
-#: includes/Services/GDPRService.php:206
-#: src/blocks/media-stats/render.php:100
-msgid "Media Items"
-msgstr ""
-
 #: includes/Services/GDPRService.php:173
 #: templates/admin/document-single.php:83
 #: templates/album.php:201
@@ -5523,6 +5885,7 @@ msgstr ""
 
 #: includes/Services/GDPRService.php:252
 #: includes/Services/GDPRService.php:307
+#: build/blocks/pdf-viewer/index.js:1
 msgid "Media ID"
 msgstr ""
 
@@ -5922,13 +6285,6 @@ msgstr ""
 msgid "Change Avatar"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:773
-#: src/blocks/media-upload/render.php:97
-#: templates/partials/profile-edit-panel.php:81
-#: templates/profile-edit.php:136
-msgid "Uploading..."
-msgstr ""
-
 #: includes/Shortcodes/Shortcodes.php:783
 #: templates/profile-edit.php:146
 msgid "Remove (use Gravatar)"
@@ -6197,6 +6553,7 @@ msgid "Member #%d (deleted)"
 msgstr ""
 
 #: includes/Social/ReportService.php:273
+#: build/blocks/member-photos/index.js:1
 msgid "Member"
 msgstr ""
 
@@ -6278,299 +6635,6 @@ msgstr ""
 
 #: includes/Taxonomies/MediaTag.php:104
 msgid "No tags found."
-msgstr ""
-
-#: src/blocks/album-viewer/render.php:33
-#: templates/404.php:44
-msgid "Album not found"
-msgstr ""
-
-#: src/blocks/album-viewer/render.php:35
-msgid "This block points at an album that no longer exists. Pick another album in the block settings."
-msgstr ""
-
-#: src/blocks/album-viewer/render.php:36
-msgid "Choose an album in the block settings to display it here."
-msgstr ""
-
-#: src/blocks/album-viewer/render.php:134
-msgid "Empty album"
-msgstr ""
-
-#: src/blocks/explore-feed/render.php:73
-msgid "Couldn’t load more. Tap to retry."
-msgstr ""
-
-#: src/blocks/explore-feed/render.php:74
-msgid "(untitled)"
-msgstr ""
-
-#: src/blocks/explore-feed/render.php:113
-#: templates/explore.php:194
-#: templates/explore.php:199
-msgid "Search media"
-msgstr ""
-
-#: src/blocks/explore-feed/render.php:197
-#: templates/partials/chat-conversation.php:151
-msgid "Loading..."
-msgstr ""
-
-#: src/blocks/explore-feed/render.php:206
-#: src/blocks/media-grid/render.php:356
-msgid "No media items found."
-msgstr ""
-
-#. translators: 1: current page, 2: total pages
-#: src/blocks/media-grid/render.php:329
-#, php-format
-msgid "Page %1$d of %2$d (%3$d items)"
-msgstr ""
-
-#: src/blocks/media-grid/render.php:339
-#: templates/documents.php:264
-#: templates/partials/shared-ui-frame.php:446
-msgid "Previous"
-msgstr ""
-
-#: src/blocks/media-grid/render.php:340
-#: templates/documents.php:281
-#: templates/partials/shared-ui-frame.php:484
-msgid "Next"
-msgstr ""
-
-#: src/blocks/media-player/render.php:32
-msgid "This player points at media that no longer exists. Pick another item in the block settings."
-msgstr ""
-
-#: src/blocks/media-player/render.php:33
-msgid "Choose a video or audio item in the block settings to play it here."
-msgstr ""
-
-#: src/blocks/media-player/render.php:66
-msgid "Not a playable item"
-msgstr ""
-
-#: src/blocks/media-player/render.php:67
-msgid "The media player only handles video and audio. Use the Media Grid block to display an image."
-msgstr ""
-
-#: src/blocks/media-player/render.php:163
-#: templates/media-single.php:409
-#: templates/partials/shared-ui-frame.php:462
-msgid "This video cannot play here."
-msgstr ""
-
-#: src/blocks/media-player/render.php:165
-#: templates/media-single.php:411
-#: templates/partials/shared-ui-frame.php:465
-msgid "Download it instead"
-msgstr ""
-
-#: src/blocks/media-player/render.php:170
-#: templates/media-single.php:416
-msgid "Start over"
-msgstr ""
-
-#: src/blocks/media-player/render.php:195
-#: templates/media-single.php:535
-#: templates/partials/shared-ui-frame.php:606
-msgid "Download"
-msgstr ""
-
-#: src/blocks/media-stats/render.php:113
-msgid "Downloads"
-msgstr ""
-
-#: src/blocks/media-stats/render.php:145
-msgid "Top Media"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:19
-msgid "Log in to upload"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:20
-msgid "You need an account to share media."
-msgstr ""
-
-#: src/blocks/media-upload/render.php:33
-msgid "Uploading is not open to your account"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:34
-msgid "Ask the site owner if you should be able to share media here."
-msgstr ""
-
-#: src/blocks/media-upload/render.php:98
-msgid "Upload 1 file"
-msgstr ""
-
-#. translators: %d: number of files.
-#: src/blocks/media-upload/render.php:100
-#, php-format
-msgid "Upload %d files"
-msgstr ""
-
-#. translators: %d: number of files.
-#: src/blocks/media-upload/render.php:102
-#, php-format
-msgid "Uploading %d file(s)..."
-msgstr ""
-
-#. translators: %s: file name.
-#: src/blocks/media-upload/render.php:106
-#, php-format
-msgid "Upload failed for %s."
-msgstr ""
-
-#. translators: %s: file name.
-#: src/blocks/media-upload/render.php:108
-#, php-format
-msgid "Network error uploading %s."
-msgstr ""
-
-#. translators: %d: number of files uploaded.
-#: src/blocks/media-upload/render.php:110
-#, php-format
-msgid "%d file(s) uploaded successfully!"
-msgstr ""
-
-#. translators: %1$d: number uploaded, %2$d: total number of files.
-#. translators: 1: uploaded count, 2: total files.
-#: src/blocks/media-upload/render.php:112
-#: templates/partials/dashboard-content.php:256
-#, php-format
-msgid "%1$d of %2$d file(s) uploaded."
-msgstr ""
-
-#. translators: %1$d: number of duplicate files, %2$d: existing media ID.
-#. translators: 1: number of duplicate files, 2: existing media ID.
-#: src/blocks/media-upload/render.php:114
-#: templates/partials/dashboard-content.php:260
-#: templates/partials/shared-ui-frame.php:114
-#, php-format
-msgid "You had already uploaded %1$d of these files."
-msgstr ""
-
-#. translators: %d: number of files picked, followed by their names.
-#: src/blocks/media-upload/render.php:116
-#, php-format
-msgid "%d files: "
-msgstr ""
-
-#: src/blocks/media-upload/render.php:117
-msgid "images, videos, and audio files"
-msgstr ""
-
-#. translators: %1$s: rejected file names, %2$s: supported formats.
-#: src/blocks/media-upload/render.php:119
-#, php-format
-msgid "File type not allowed: %1$s. Supported formats: %2$s."
-msgstr ""
-
-#: src/blocks/media-upload/render.php:155
-#: templates/partials/dashboard-content.php:806
-msgid "Upload media files"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:170
-#: templates/partials/shared-ui-frame.php:262
-msgid "Drag & drop files here or click to browse"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:174
-msgid "Choose files to upload"
-msgstr ""
-
-#. translators: %s: link to the member's Documents library.
-#: src/blocks/media-upload/render.php:195
-#, php-format
-msgid "Looking to upload a document? Use your %s."
-msgstr ""
-
-#: src/blocks/media-upload/render.php:196
-msgid "Documents library"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:220
-#: templates/partials/dashboard-content.php:853
-msgid "Add details above (optional), then upload."
-msgstr ""
-
-#: src/blocks/media-upload/render.php:228
-msgid "Dismiss error"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:232
-#: templates/partials/dashboard-content.php:871
-#: templates/partials/shared-ui-frame.php:270
-msgid "Upload progress"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:238
-msgid "View it"
-msgstr ""
-
-#: src/blocks/media-upload/render.php:239
-msgid "Go to My Media"
-msgstr ""
-
-#: src/blocks/member-photos/render.php:103
-msgid "This widget shows the displayed member's media — visit a BuddyPress profile, set a User ID in the block sidebar, or log in to see it in action."
-msgstr ""
-
-#. translators: %s: member display name.
-#: src/blocks/member-photos/render.php:177
-#: templates/partials/dashboard-content.php:552
-#, php-format
-msgid "View %s's profile"
-msgstr ""
-
-#: src/blocks/member-photos/render.php:205
-msgid "Member statistics"
-msgstr ""
-
-#: src/blocks/member-photos/render.php:214
-msgid "View followers"
-msgstr ""
-
-#: src/blocks/member-photos/render.php:216
-#: templates/partials/follows-modal.php:37
-msgid "Followers"
-msgstr ""
-
-#: src/blocks/member-photos/render.php:222
-msgid "View following"
-msgstr ""
-
-#: src/blocks/member-photos/render.php:231
-#: templates/partials/dashboard-content.php:565
-msgid "View profile"
-msgstr ""
-
-#: src/blocks/pdf-viewer/render.php:77
-msgid "No PDF selected. Edit this block and set a Media ID to display a PDF."
-msgstr ""
-
-#: src/blocks/pdf-viewer/render.php:84
-msgid "PDF not found."
-msgstr ""
-
-#: src/blocks/pdf-viewer/render.php:95
-msgid "Documents have their own viewer and cannot be embedded here. Pick a PDF media file instead."
-msgstr ""
-
-#: src/blocks/pdf-viewer/render.php:104
-msgid "This block can only display PDF files. Pick a media item whose file is a PDF."
-msgstr ""
-
-#: src/blocks/pdf-viewer/render.php:117
-msgid "You do not have permission to view this PDF."
-msgstr ""
-
-#: src/blocks/pdf-viewer/render.php:131
-msgid "PDF document"
 msgstr ""
 
 #. translators: %s: username.
@@ -6900,6 +6964,7 @@ msgid "Date added"
 msgstr ""
 
 #: templates/documents.php:176
+#: build/blocks/media-grid/index.js:1
 msgid "Direction"
 msgstr ""
 
@@ -7149,6 +7214,7 @@ msgstr ""
 #: templates/media-single.php:693
 #: templates/partials/shared-ui-frame.php:93
 #: templates/partials/shared-ui-frame.php:560
+#: assets/js/bp-activity-media.js:1255
 msgid "Favorite"
 msgstr ""
 
@@ -7749,6 +7815,14 @@ msgid "Create a smart collection that fills itself from rules you set."
 msgstr ""
 
 #: templates/partials/dashboard-content.php:1422
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
 msgid "Visibility"
 msgstr ""
 
@@ -7937,6 +8011,7 @@ msgstr ""
 
 #: templates/partials/shared-ui-frame.php:94
 #: templates/partials/shared-ui-frame.php:560
+#: assets/js/bp-activity-media.js:1254
 msgid "Favorited"
 msgstr ""
 
@@ -8148,262 +8223,1074 @@ msgstr ""
 msgid "MediaVerse %1$s works best with MediaVerse Pro %3$s or later (you have Pro %2$s). Please update MediaVerse Pro for full compatibility."
 msgstr ""
 
-#: src/blocks/album-viewer/block.json
+#: assets/js/admin/secret-fields.js:46
+msgid "Will be removed when you save"
+msgstr ""
+
+#: assets/js/bp-activity-media.js:144
+#: assets/js/bp-activity-media.js:156
+msgid "Media preview"
+msgstr ""
+
+#: assets/js/bp-activity-media.js:168
+msgid "Remove media"
+msgstr ""
+
+#. translators: %d: number of files being uploaded.
+#: assets/js/bp-activity-media.js:335
+#: assets/js/bp-activity-media.js:373
+#, js-format
+msgid "Uploading %d files..."
+msgstr ""
+
+#: assets/js/bp-activity-media.js:603
+msgid "Creating..."
+msgstr ""
+
+#. translators: %d: number of views.
+#: assets/js/bp-activity-media.js:1230
+#, js-format
+msgid "%d view"
+msgid_plural "%d views"
+msgstr[0] ""
+msgstr[1] ""
+
+#: assets/js/bp-activity-media.js:1463
+msgid "Copied!"
+msgstr ""
+
+#: assets/js/frontend/mvs-rest.js:496
+msgid "Please enter an album name."
+msgstr ""
+
+#: assets/js/frontend/mvs-rest.js:524
+msgid "Network error. Please try again."
+msgstr ""
+
+#: assets/js/frontend/mvs-rest.js:533
+msgid "Failed to create album."
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Desktop"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Tablet"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Mobile"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Top"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Right"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Bottom"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Left"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Unlink sides"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Link sides"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Unit"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Box Shadow"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "X"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Y"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Blur"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Spread"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Shadow Color"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Default"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Uppercase"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Lowercase"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Capitalize"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "None"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "TL"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "TR"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "BR"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "BL"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Border Radius"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "All corners"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Unlink corners"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Link corners"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Device Visibility"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Hide on Desktop"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Hide on Tablet"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Hide on Mobile"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Spacing"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Padding"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Margin"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Border"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-player/index.js:1
+#: build/blocks/media-stats/index.js:1
+#: build/blocks/media-upload/index.js:1
+#: build/blocks/member-photos/index.js:1
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Shadow"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/media-player/index.js:1
+msgid "Search by title…"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/media-player/index.js:1
+msgid "Nothing found."
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/media-player/index.js:1
+msgid "None chosen"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/media-player/index.js:1
+msgid "Not found"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+msgid "Browse albums"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/member-photos/index.js:1
+msgid "Columns"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+msgid "Show Title"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+msgid "Show Description"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+msgid "Album Viewer"
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+msgid "This album was not found or is private."
+msgstr ""
+
+#: build/blocks/album-viewer/index.js:1
+msgid "Choose an album in the sidebar."
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+msgid "Explore Settings"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+msgid "Site default"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/member-photos/index.js:1
+msgid "Grid"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+msgid "Justified rows"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+msgid "List"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+msgid "Show Type Filters"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+msgid "Show Search"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+msgid "Search media…"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+#: build/blocks/media-grid/index.js:1
+msgid "Loading your media…"
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+msgid "Could not load a preview. The feed will still render on the published page."
+msgstr ""
+
+#: build/blocks/explore-feed/index.js:1
+msgid "No media to show yet. Upload media first - the published page shows whatever exists at the time."
+msgstr ""
+
+#. translators: %d: items per page setting.
+#: build/blocks/explore-feed/index.js:2
+#, js-format
+msgid "Preview sample. Visitors filter and search this feed live; the published page shows up to %d items."
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Type to search. Leave empty for all."
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Grid Settings"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Using admin default from Settings → Display."
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Show pagination"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Show page links under the grid. Turn off for a short strip on a home page."
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Gap (px)"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Filters"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Show only this user's media, or leave empty (0) for no author filter."
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Order By"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Popular (reactions + views)"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Most reactions"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Random"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Newest / highest first"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Oldest / lowest first"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Features"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Lightbox"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+#: build/blocks/media-stats/index.js:1
+msgid "Show Reactions"
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "Could not load a preview. The grid will still render on the published page."
+msgstr ""
+
+#: build/blocks/media-grid/index.js:1
+msgid "No media matches these filters yet. Widen the filters, or upload media first - the published page will show whatever matches at the time."
+msgstr ""
+
+#. translators: 1: number shown in the editor preview, 2: items per page setting.
+#: build/blocks/media-grid/index.js:2
+#, js-format
+msgid "Previewing %1$d of up to %2$d items. Live counts update on the published page."
+msgstr ""
+
+#. translators: %d: items per page setting.
+#: build/blocks/media-grid/index.js:3
+#, js-format
+msgid "Preview sample. The published page shows up to %d items without page links."
+msgstr ""
+
+#. translators: %d: items per page setting.
+#: build/blocks/media-grid/index.js:4
+#, js-format
+msgid "Preview sample. The published page shows up to %d items with pagination."
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Player Settings"
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Browse video & audio"
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Autoplay"
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Loop"
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Show Download Button"
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Media Player"
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "This media was not found or is private."
+msgstr ""
+
+#: build/blocks/media-player/index.js:1
+msgid "Choose a video or audio file in the sidebar."
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Stats Settings"
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Show Views"
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Show Downloads"
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Show Top Media"
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Top Items Count"
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Media Stats Dashboard"
+msgstr ""
+
+#: build/blocks/media-stats/index.js:1
+msgid "Shows user media statistics on the frontend."
+msgstr ""
+
+#: build/blocks/media-upload/index.js:1
+msgid "Upload Settings"
+msgstr ""
+
+#: build/blocks/media-upload/index.js:1
+msgid "Max Files"
+msgstr ""
+
+#: build/blocks/media-upload/index.js:1
+msgid "Show Privacy Selector"
+msgstr ""
+
+#: build/blocks/media-upload/index.js:1
+msgid "Media Upload Form"
+msgstr ""
+
+#: build/blocks/media-upload/index.js:1
+msgid "Drag & drop upload area will appear on the frontend."
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Specific user ID to show, or leave empty (0) to auto-detect: BuddyPress displayed member → post author → current user."
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Show member header"
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Display the member's avatar and name above the grid."
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Items per page"
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Media type"
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Show item actions"
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Auto-detect member"
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "BP displayed member → post author → current user"
+msgstr ""
+
+#: build/blocks/member-photos/index.js:1
+msgid "Member photos load from this user's media on the frontend."
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Numeric ID of an MVS media item whose file is a PDF. Upload your PDF first via the Upload page or shortcode."
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Viewer height (px)"
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Show browser PDF toolbar"
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Toggle the native PDF toolbar (page navigation, zoom, download). Browser support varies — Chrome and Firefox honor it, Safari ignores."
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "PDF Viewer"
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "PDF will render inline on the frontend."
+msgstr ""
+
+#: build/blocks/pdf-viewer/index.js:1
+msgid "Set a Media ID in the sidebar — the file must be a PDF."
+msgstr ""
+
+#: build/blocks/album-viewer/block.json
 msgctxt "block title"
 msgid "Album Viewer"
 msgstr ""
 
-#: src/blocks/album-viewer/block.json
+#: build/blocks/album-viewer/block.json
 msgctxt "block description"
 msgid "Display a MediaVerse album with its media items."
 msgstr ""
 
-#: src/blocks/album-viewer/block.json
+#: build/blocks/album-viewer/block.json
 msgctxt "block keyword"
 msgid "album"
 msgstr ""
 
-#: src/blocks/album-viewer/block.json
-#: src/blocks/media-grid/block.json
-#: src/blocks/member-photos/block.json
+#: build/blocks/album-viewer/block.json
+#: build/blocks/media-grid/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "gallery"
 msgstr ""
 
-#: src/blocks/album-viewer/block.json
+#: build/blocks/album-viewer/block.json
 msgctxt "block keyword"
 msgid "collection"
 msgstr ""
 
-#: src/blocks/dashboard-view/block.json
+#: build/blocks/dashboard-view/block.json
 msgctxt "block title"
 msgid "MVS Dashboard View"
 msgstr ""
 
-#: src/blocks/dashboard-view/block.json
+#: build/blocks/dashboard-view/block.json
 msgctxt "block description"
 msgid "Internal dashboard store for My Media/Albums/Favorites. Not a user-facing block."
 msgstr ""
 
-#: src/blocks/explore-feed/block.json
+#: build/blocks/explore-feed/block.json
 msgctxt "block title"
 msgid "Explore Feed"
 msgstr ""
 
-#: src/blocks/explore-feed/block.json
+#: build/blocks/explore-feed/block.json
 msgctxt "block description"
 msgid "A discover/explore feed showing trending and recent MediaVerse media."
 msgstr ""
 
-#: src/blocks/explore-feed/block.json
+#: build/blocks/explore-feed/block.json
 msgctxt "block keyword"
 msgid "explore"
 msgstr ""
 
-#: src/blocks/explore-feed/block.json
+#: build/blocks/explore-feed/block.json
 msgctxt "block keyword"
 msgid "discover"
 msgstr ""
 
-#: src/blocks/explore-feed/block.json
+#: build/blocks/explore-feed/block.json
 msgctxt "block keyword"
 msgid "feed"
 msgstr ""
 
-#: src/blocks/explore-feed/block.json
+#: build/blocks/explore-feed/block.json
 msgctxt "block keyword"
 msgid "trending"
 msgstr ""
 
-#: src/blocks/explore-view/block.json
+#: build/blocks/explore-view/block.json
 msgctxt "block title"
 msgid "MVS Explore View"
 msgstr ""
 
-#: src/blocks/explore-view/block.json
+#: build/blocks/explore-view/block.json
 msgctxt "block description"
 msgid "Internal explore page tag cloud store. Not a user-facing block."
 msgstr ""
 
-#: src/blocks/media-grid/block.json
+#: build/blocks/media-grid/block.json
 msgctxt "block title"
 msgid "Media Grid"
 msgstr ""
 
-#: src/blocks/media-grid/block.json
+#: build/blocks/media-grid/block.json
 msgctxt "block description"
 msgid "Display a grid of media items from MediaVerse."
 msgstr ""
 
-#: src/blocks/media-grid/block.json
+#: build/blocks/media-grid/block.json
 msgctxt "block keyword"
 msgid "grid"
 msgstr ""
 
-#: src/blocks/media-grid/block.json
-#: src/blocks/media-player/block.json
-#: src/blocks/media-upload/block.json
+#: build/blocks/media-grid/block.json
+#: build/blocks/media-player/block.json
+#: build/blocks/media-upload/block.json
 msgctxt "block keyword"
 msgid "media"
 msgstr ""
 
-#: src/blocks/media-grid/block.json
-#: src/blocks/member-photos/block.json
+#: build/blocks/media-grid/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "photos"
 msgstr ""
 
-#: src/blocks/media-player/block.json
+#: build/blocks/media-player/block.json
 msgctxt "block title"
 msgid "Media Player"
 msgstr ""
 
-#: src/blocks/media-player/block.json
+#: build/blocks/media-player/block.json
 msgctxt "block description"
 msgid "Video and audio player for MediaVerse media items."
 msgstr ""
 
-#: src/blocks/media-player/block.json
+#: build/blocks/media-player/block.json
 msgctxt "block keyword"
 msgid "video"
 msgstr ""
 
-#: src/blocks/media-player/block.json
+#: build/blocks/media-player/block.json
 msgctxt "block keyword"
 msgid "audio"
 msgstr ""
 
-#: src/blocks/media-player/block.json
+#: build/blocks/media-player/block.json
 msgctxt "block keyword"
 msgid "player"
 msgstr ""
 
-#: src/blocks/media-social/block.json
+#: build/blocks/media-social/block.json
 msgctxt "block title"
 msgid "MVS Media Social"
 msgstr ""
 
-#: src/blocks/media-social/block.json
+#: build/blocks/media-social/block.json
 msgctxt "block description"
 msgid "Internal social interactions store for single media/album pages. Not a user-facing block."
 msgstr ""
 
-#: src/blocks/media-stats/block.json
+#: build/blocks/media-stats/block.json
 msgctxt "block title"
 msgid "Media Stats"
 msgstr ""
 
-#: src/blocks/media-stats/block.json
+#: build/blocks/media-stats/block.json
 msgctxt "block description"
 msgid "Display media statistics dashboard for MediaVerse."
 msgstr ""
 
-#: src/blocks/media-stats/block.json
+#: build/blocks/media-stats/block.json
 msgctxt "block keyword"
 msgid "stats"
 msgstr ""
 
-#: src/blocks/media-stats/block.json
+#: build/blocks/media-stats/block.json
 msgctxt "block keyword"
 msgid "analytics"
 msgstr ""
 
-#: src/blocks/media-stats/block.json
+#: build/blocks/media-stats/block.json
 msgctxt "block keyword"
 msgid "dashboard"
 msgstr ""
 
-#: src/blocks/media-upload/block.json
+#: build/blocks/media-upload/block.json
 msgctxt "block title"
 msgid "Media Upload"
 msgstr ""
 
-#: src/blocks/media-upload/block.json
+#: build/blocks/media-upload/block.json
 msgctxt "block description"
 msgid "A drag-and-drop media upload form for MediaVerse."
 msgstr ""
 
-#: src/blocks/media-upload/block.json
+#: build/blocks/media-upload/block.json
 msgctxt "block keyword"
 msgid "upload"
 msgstr ""
 
-#: src/blocks/media-upload/block.json
+#: build/blocks/media-upload/block.json
 msgctxt "block keyword"
 msgid "file"
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block title"
 msgid "Member Photos"
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block description"
 msgid "Display a member's photos. Auto-detects the displayed BuddyPress member, the post author, or the current user — or pick a specific user. Drop into any sidebar, FSE template part, or BuddyPress profile area."
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "member"
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "user"
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "profile"
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "buddypress"
 msgstr ""
 
-#: src/blocks/member-photos/block.json
+#: build/blocks/member-photos/block.json
 msgctxt "block keyword"
 msgid "rtmedia"
 msgstr ""
 
-#: src/blocks/pdf-viewer/block.json
+#: build/blocks/pdf-viewer/block.json
 msgctxt "block title"
 msgid "PDF Viewer"
 msgstr ""
 
-#: src/blocks/pdf-viewer/block.json
+#: build/blocks/pdf-viewer/block.json
 msgctxt "block description"
 msgid "Embed a PDF document inline using the browser's native PDF viewer. Pick a media item that's already been uploaded; the viewer respects the same privacy + access rules as other media."
 msgstr ""
 
-#: src/blocks/pdf-viewer/block.json
+#: build/blocks/pdf-viewer/block.json
 msgctxt "block keyword"
 msgid "pdf"
 msgstr ""
 
-#: src/blocks/pdf-viewer/block.json
+#: build/blocks/pdf-viewer/block.json
 msgctxt "block keyword"
 msgid "document"
 msgstr ""
 
-#: src/blocks/pdf-viewer/block.json
+#: build/blocks/pdf-viewer/block.json
 msgctxt "block keyword"
 msgid "embed"
 msgstr ""
 
-#: src/blocks/pdf-viewer/block.json
+#: build/blocks/pdf-viewer/block.json
 msgctxt "block keyword"
 msgid "viewer"
 msgstr ""
 
-#: src/blocks/shared-ui/block.json
+#: build/blocks/shared-ui/block.json
 msgctxt "block title"
 msgid "MVS Shared UI"
 msgstr ""
 
-#: src/blocks/shared-ui/block.json
+#: build/blocks/shared-ui/block.json
 msgctxt "block description"
 msgid "Internal shared UI store (toast, confirm, tag autocomplete). Not a user-facing block."
 msgstr ""

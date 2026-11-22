@@ -6,43 +6,6 @@ module.exports = function( grunt ) {
 
 		// RTL CSS generation
 
-		// Generate .pot file
-		makepot: {
-			target: {
-				options: {
-					domainPath: 'languages/',
-					potFilename: 'wpmediaverse.pot',
-					type: 'wp-plugin',
-					updateTimestamp: false,
-					// NEVER SCAN A COPY OF OURSELVES. `dist/wpmediaverse/` is a
-					// staging copy of this plugin, so every string in it is a
-					// duplicate of a string in source — makepot recorded both and
-					// the POT grew a `#: dist/...` reference per string, ~2,600 of
-					// them, more with each rebuild.
-					//
-					// `dist` was taught to clean before building, which fixed
-					// `grunt dist`. It did not fix `grunt build`, which runs
-					// makepot with no clean at all — so anyone building after a
-					// dist still polluted the POT, and did until this line. The
-					// exclusion is the durable half: it holds whichever task runs
-					// and whatever is lying in the tree.
-					// `libs/` sits beside `vendor/` here for the same reason: it is
-					// third-party runtime code we ship but do not write, and its
-					// strings are not ours to translate. Missing it put 256 Action
-					// Scheduler and EDD SDK msgids into this plugin's POT the moment
-					// the runtime deps moved out of vendor/ — the same pollution that
-					// was cleaned up days earlier, walking back in through a new door.
-					exclude: [ 'dist/.*', 'node_modules/.*', 'vendor/.*', 'libs/.*', 'tests/.*' ],
-					potHeaders: {
-						poedit: true,
-						// Not on wordpress.org; the default bug address there is a 404.
-						'report-msgid-bugs-to': 'https://wbcomdesigns.com/support/',
-						'x-poedit-keywordslist': true,
-					},
-				},
-			},
-		},
-
 		// CSS minification
 		cssmin: {
 			dist: {
@@ -199,7 +162,6 @@ module.exports = function( grunt ) {
 	} );
 
 	// Load plugins
-	grunt.loadNpmTasks( 'grunt-wp-i18n' );
 	grunt.loadNpmTasks( 'grunt-contrib-cssmin' );
 	grunt.loadNpmTasks( 'grunt-contrib-uglify' );
 	grunt.loadNpmTasks( 'grunt-contrib-clean' );
@@ -361,6 +323,21 @@ module.exports = function( grunt ) {
 	// dir="rtl", so serving an rtlcss-flipped sheet DOUBLE-flips the layout —
 	// verified on an Arabic install, where registering the files moved the
 	// Explore heading and tag chips back to left-aligned on an RTL page.
+	// .pot from PHP, block.json AND JavaScript (bin/i18n.sh pot -> wp i18n make-pot). grunt-wp-i18n read PHP only,
+	// so every wp.i18n string in the editor blocks and classic scripts was missing from the template.
+	grunt.registerTask( 'makepot', 'Regenerate the .pot (PHP + JS) with WP-CLI.', function() {
+		var done = this.async();
+		require( 'child_process' ).execFile( 'bash', [ 'bin/i18n.sh', 'pot' ], function( err, stdout, stderr ) {
+			if ( err ) {
+				grunt.log.error( stderr || stdout );
+				done( false );
+				return;
+			}
+			grunt.log.ok( 'POT regenerated.' );
+			done();
+		} );
+	} );
+
 	grunt.registerTask( 'build', [ 'blocks', 'cssmin', 'uglify', 'makepot' ] );
 
 	// Dist: full build + strip dev deps + package zip + restore dev deps
