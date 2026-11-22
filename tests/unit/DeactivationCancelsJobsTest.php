@@ -1,10 +1,10 @@
 <?php
 /**
- * Deactivating Free cancels Free's own pending jobs, fast, and nobody else's (2.6.5).
+ * Deactivating Free cancels Free's recomputable pending jobs, fast, and nobody else's (2.6.5).
  *
- * With the plugin off nothing listens for its jobs, and Action Scheduler loaded by another plugin would mark them
- * complete unrun. Deactivation used to clear only the WP-Cron housekeeping events, so every one-off job stayed
- * queued; Free's list also named Pro's mvs_story_cleanup, so switching Free off stopped Pro's sweep.
+ * Jobs that finish an action already committed (Deactivator::STATE_JOB_HOOKS) stay pending, so the routine update
+ * (deactivate, replace, activate) resumes them. Free's list used to name Pro's mvs_story_cleanup, so switching Free
+ * off stopped Pro's sweep.
  *
  * @package WPMediaVerse\Tests\Unit
  */
@@ -39,6 +39,12 @@ class DeactivationCancelsJobsTest extends WP_UnitTestCase {
 			$wpdb->query( $wpdb->prepare( "INSERT INTO {$table} ( {$cols} ) SELECT {$cols} FROM {$table} WHERE hook = %s AND status = 'pending' LIMIT %d", 'mvs_ai_process_media', self::ROWS - $have ) );
 		}
 
+		as_enqueue_async_action( 'mvs_deliver_webhook', array( 1 ), 'mvs' );
+		$state = array(
+			as_enqueue_async_action( 'mvs_cleanup_media_files', array( array( '2026/10/a.jpg' ), 1 ), 'mvs' ),
+			as_enqueue_async_action( 'mvs_rotate_media_files', array( 'ids' => array( 1, 2 ) ), 'mvs' ),
+			as_enqueue_async_action( 'mvs_user_deletion_cascade', array( 7 ), 'mvs' ),
+		);
 		$running = as_enqueue_async_action( 'mvs_ai_process_media', array( 2 ), 'mvs' );
 		\ActionScheduler::store()->log_execution( $running );
 		$pro     = as_schedule_single_action( time() + HOUR_IN_SECONDS, 'mvs_document_folder_purge', array( 9 ), 'mvs' );
@@ -47,16 +53,49 @@ class DeactivationCancelsJobsTest extends WP_UnitTestCase {
 		wp_schedule_event( time() + HOUR_IN_SECONDS, 'hourly', 'mvs_story_cleanup' );
 
 		$start = microtime( true );
-		Deactivator::clear_scheduled();
+		Deactivator::clear_scheduled( false ); // What deactivate() runs.
 		$took = microtime( true ) - $start;
 
 		$this->assertLessThan( 10, $took, sprintf( 'Cancelling %d pending jobs took %.1f s.', self::ROWS, $took ) );
+		fwrite( STDERR, sprintf( "\nDeactivation over %d pending rows: %.2f s.\n", self::ROWS, $took ) ); // phpcs:ignore
 		$this->assertSame( 0, $this->count_pending( 'mvs_ai_process_media' ), 'A pending Free job survived deactivation.' );
+		$this->assertSame( 0, $this->count_pending( 'mvs_deliver_webhook' ), 'A pending webhook survived deactivation.' );
+		foreach ( $state as $id ) {
+			$this->assertSame( 'pending', $this->status( $id ), 'Deactivation cancelled a job that finishes a committed action.' );
+		}
 		$this->assertSame( 'in-progress', $this->status( $running ), 'A running job was cancelled under its runner.' );
 		$this->assertSame( 'pending', $this->status( $pro ), 'Free cancelled a Pro job: the group is shared, the hook list is not.' );
 		$this->assertSame( 'pending', $this->status( $story ), 'Free cancelled Pro\'s story sweep.' );
 		$this->assertSame( 'pending', $this->status( $other ), 'Free cancelled another plugin\'s job.' );
 		$this->assertNotFalse( wp_next_scheduled( 'mvs_story_cleanup' ), 'Free cleared Pro\'s hourly story sweep.' );
+	}
+
+	public function test_uninstall_also_clears_the_jobs_deactivation_leaves(): void {
+		$id = as_enqueue_async_action( 'mvs_cleanup_media_files', array( array( '2026/10/a.jpg' ), 1 ), 'mvs' );
+
+		Deactivator::clear_scheduled( true );
+
+		$this->assertSame( 'canceled', $this->status( $id ) );
+	}
+
+	public function test_every_job_deactivation_leaves_is_a_job_free_owns(): void {
+		$this->assertSame( array(), array_values( array_diff( Deactivator::STATE_JOB_HOOKS, Deactivator::JOB_HOOKS ) ) );
+	}
+
+	public function test_a_bulk_delete_of_two_thousand_media_leaves_few_cleanup_rows(): void {
+		$cleanup = new \WPMediaVerse\Services\StorageCleanupService( \WPMediaVerse\Core\Plugin::container()->get( 'storage' ) );
+		for ( $i = 0; $i < 2000; $i++ ) {
+			$base = '2026/10/' . substr( md5( (string) $i ), 0, 16 );
+			// The six files a real image leaves (original, webp, two sizes of each), as seen in a live cleanup row.
+			$cleanup->enqueue( $i, array( "$base.jpg", "$base.webp", "$base-300x200.jpg", "$base-300x200.webp", "$base-150x150.jpg", "$base-150x150.webp" ) );
+		}
+		remove_all_actions( 'shutdown' );
+
+		$cleanup->flush();
+
+		$rows = $this->count_pending( 'mvs_cleanup_media_files' );
+		$this->assertLessThan( 100, $rows, "2,000 deleted media left $rows cleanup rows." );
+		fwrite( STDERR, "\n2,000 deleted media = $rows pending cleanup rows.\n" ); // phpcs:ignore
 	}
 
 	public function test_the_uninstall_path_also_leaves_the_story_sweep(): void {
