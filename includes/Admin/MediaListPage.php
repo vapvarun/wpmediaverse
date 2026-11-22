@@ -1263,8 +1263,7 @@ class MediaListPage {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->set( $media_id, 'ai_status', 'processing' );
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
+		if ( \WPMediaVerse\Core\Plugin::enqueue_ai( $media_id ) ) {
 			$message = sprintf(
 				/* translators: %d: media id */
 				__( 'AI re-run queued for media #%d. Reload this page in a moment to see the new result.', 'wpmediaverse' ),

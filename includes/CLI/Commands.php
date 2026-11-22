@@ -2158,8 +2158,7 @@ class Commands {
 				} else {
 					++$processed;
 				}
-			} elseif ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
+			} elseif ( \WPMediaVerse\Core\Plugin::enqueue_ai( (int) $media_id ) ) {
 				++$queued;
 			} else {
 				$result = $ai->process( $media_id );

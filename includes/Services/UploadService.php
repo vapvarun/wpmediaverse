@@ -2451,11 +2451,10 @@ class UploadService {
 		}
 
 		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action(
-				'mvs_cloud_repatriate_media',
-				array( 'media_id' => $media_id ),
-				'wpmediaverse'
-			);
+			// A privacy flipped twice before the job runs needs one trip home, not two.
+			if ( ! as_has_scheduled_action( 'mvs_cloud_repatriate_media', array( 'media_id' => $media_id ), 'wpmediaverse' ) ) {
+				as_enqueue_async_action( 'mvs_cloud_repatriate_media', array( 'media_id' => $media_id ), 'wpmediaverse' );
+			}
 			return;
 		}
 

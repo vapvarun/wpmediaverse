@@ -1446,15 +1446,26 @@ class Plugin {
 		}
 
 		// Use Action Scheduler if available, otherwise process synchronously.
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action(
-				'mvs_ai_process_media',
-				array( 'media_id' => $media_id ),
-				'wpmediaverse'
-			);
-		} else {
+		if ( ! self::enqueue_ai( $media_id ) ) {
 			$ai->process( $media_id, true );
 		}
+	}
+
+	/**
+	 * Queue one AI run for a media item, unless one is already waiting (a re-run click or a backfill over a fresh
+	 * upload would otherwise queue a second paid call for the same file).
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool False when Action Scheduler is not loaded, so the caller runs it inline.
+	 */
+	public static function enqueue_ai( int $media_id ): bool {
+		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
+			return false;
+		}
+		if ( ! as_has_scheduled_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' ) ) {
+			as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
+		}
+		return true;
 	}
 
 	/**
