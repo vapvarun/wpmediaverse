@@ -2250,8 +2250,8 @@ class Migrator {
 			update_option( self::DRIVE_BACKFILL_OPTION, 0, false );
 		}
 
-		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
-			wp_schedule_single_event( time() + 30, self::DRIVE_BACKFILL_HOOK );
+		if ( ! Jobs::is_pending( self::DRIVE_BACKFILL_HOOK ) ) {
+			Jobs::at( time() + 30, self::DRIVE_BACKFILL_HOOK );
 		}
 	}
 
@@ -2362,8 +2362,8 @@ class Migrator {
 		update_option( self::DRIVE_BACKFILL_OPTION, $highest, false );
 
 		// More to do — come back for it.
-		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
-			wp_schedule_single_event( time() + 60, self::DRIVE_BACKFILL_HOOK );
+		if ( ! Jobs::is_pending( self::DRIVE_BACKFILL_HOOK ) ) {
+			Jobs::at( time() + 60, self::DRIVE_BACKFILL_HOOK );
 		}
 
 		return $stamped;

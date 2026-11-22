@@ -284,7 +284,7 @@ final class MediaFileRotator {
 	 */
 	public static function maybe_start_legacy(): void {
 		$state = get_option( self::LEGACY_OPTION, array() );
-		if ( ! empty( $state['done'] ) || ! DirectDelivery::is_scheduling_request() ) {
+		if ( ! empty( $state['done'] ) || ! \WPMediaVerse\Core\Jobs::is_scheduling_request() ) {
 			return;
 		}
 		$queued = \WPMediaVerse\Core\Jobs::is_queued( self::LEGACY_HOOK );

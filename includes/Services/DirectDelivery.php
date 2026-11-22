@@ -104,7 +104,7 @@ final class DirectDelivery {
 	 * @return void
 	 */
 	public static function maybe_probe(): void {
-		if ( ! self::is_scheduling_request() ) {
+		if ( ! \WPMediaVerse\Core\Jobs::is_scheduling_request() ) {
 			return;
 		}
 		$state = get_option( self::OPTION, array() );
@@ -118,10 +118,13 @@ final class DirectDelivery {
 	 * Admin page loads and cron only: where loopback probes and job checks may
 	 * run without costing a visitor's request.
 	 *
+	 * @deprecated 2.6.5 Use \WPMediaVerse\Core\Jobs::is_scheduling_request(), the one rule for the family.
+	 *
 	 * @return bool
 	 */
 	public static function is_scheduling_request(): bool {
-		return wp_doing_cron() || ( is_admin() && ! wp_doing_ajax() );
+		_deprecated_function( __METHOD__, '2.6.5', '\\WPMediaVerse\\Core\\Jobs::is_scheduling_request()' );
+		return \WPMediaVerse\Core\Jobs::is_scheduling_request();
 	}
 
 	/**

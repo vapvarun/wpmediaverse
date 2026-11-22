@@ -175,7 +175,7 @@ final class ServerFileOffload {
 	 */
 	public static function maybe_probe(): void {
 		$mode = self::configured_mode();
-		if ( '' === $mode || ! DirectDelivery::is_scheduling_request() ) {
+		if ( '' === $mode || ! \WPMediaVerse\Core\Jobs::is_scheduling_request() ) {
 			return;
 		}
 		$state = get_option( self::OPTION, array() );

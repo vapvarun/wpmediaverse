@@ -7,8 +7,17 @@
  * job goes through here, so the group, the "is the store ready" rule and the clean-up of our own finished rows live
  * once. Rules and the job list: docs/standards/background-jobs.md.
  *
- * Lookups (is_queued, cancel) match by hook and arguments in any group: every MediaVerse hook name starts
- * with mvs_ and is ours alone, and a pending row queued by a version before 2.6.5 sits in an older group.
+ * Lookups (is_queued, is_pending, cancel) match by hook and arguments in any group: every MediaVerse hook name
+ * starts with mvs_ and is ours alone, and a pending row queued by a version before 2.6.5 sits in an older group.
+ *
+ * Arguments are passed to the listener positionally on both schedulers. Action Scheduler does that itself; for
+ * WP-Cron they are stored as a list (array_values), because core calls the listener with the stored array as is and
+ * PHP 8 reads string keys as named parameters.
+ *
+ * Deliberately outside this class, on WP-Cron only: the recurring housekeeping events armed on boot
+ * (mvs_prune_logs, mvs_purge_old_views, mvs_process_account_deletions; Pro's boost, story, play-event and
+ * replaced-document sweeps) and the preset licence activation retry, which reads DISABLE_WP_CRON to decide whether
+ * to retry at all. The job list in docs/standards/background-jobs.md names each one.
  *
  * @package WPMediaVerse
  * @since   2.6.5
@@ -34,9 +43,15 @@ final class Jobs {
 	public const LEGACY_GROUPS = array( 'wpmediaverse', 'wpmediaverse-pro', 'mvs-pro', 'mvs-connectors' );
 
 	/**
-	 * Days a finished job is kept by prune_history() (filter: mvs_finished_action_retention_days).
+	 * Days a completed job is kept by prune_history() (filter: mvs_finished_action_retention_days).
 	 */
 	public const FINISHED_RETENTION_DAYS = 7;
+
+	/**
+	 * Days a failed job is kept by prune_history(), long enough to read why it failed. The same rule holds for every
+	 * plugin in the family.
+	 */
+	public const FAILED_RETENTION_DAYS = 90;
 
 	/**
 	 * Finished jobs deleted per batch.
@@ -44,7 +59,7 @@ final class Jobs {
 	private const PRUNE_BATCH = 200;
 
 	/**
-	 * Batches per prune_history() call: at most 10,000 rows a day; anything left goes on the next run.
+	 * Batches per status per prune_history() call: at most 10,000 rows of each a day; the rest goes on the next run.
 	 */
 	private const PRUNE_MAX_BATCHES = 50;
 
@@ -62,6 +77,8 @@ final class Jobs {
 	 * Whether Action Scheduler may be called: its functions exist from plugins_loaded, its store only from
 	 * action_scheduler_init.
 	 *
+	 * @since 2.6.5
+	 *
 	 * @return bool
 	 */
 	public static function has_as(): bool {
@@ -71,6 +88,8 @@ final class Jobs {
 	/**
 	 * Run a callback now if Action Scheduler's store is ready, else on action_scheduler_init. Upgrade routines run
 	 * before the store loads, and queuing before then fails.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param callable $callback Callback.
 	 */
@@ -85,6 +104,8 @@ final class Jobs {
 	/**
 	 * Queue a job to run as soon as possible.
 	 *
+	 * @since 2.6.5
+	 *
 	 * @param string                   $hook Action hook.
 	 * @param array<int|string, mixed> $args Hook arguments.
 	 * @return bool Whether a scheduler accepted the job; false means the caller should do the work now.
@@ -93,11 +114,27 @@ final class Jobs {
 		if ( self::has_as() ) {
 			return (bool) as_enqueue_async_action( $hook, $args, self::GROUP );
 		}
-		return true === wp_schedule_single_event( time(), $hook, $args, true );
+		return true === wp_schedule_single_event( time(), $hook, array_values( $args ), true );
+	}
+
+	/**
+	 * Queue a job unless a copy with the same arguments is already waiting to start. A copy that is running now does
+	 * not count: it may have read its data before the change that queues this one.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string                   $hook Action hook.
+	 * @param array<int|string, mixed> $args Hook arguments.
+	 * @return bool Whether a copy is waiting now (queued here or already); false means the caller should do the work now.
+	 */
+	public static function async_once( string $hook, array $args = array() ): bool {
+		return self::is_pending( $hook, $args ) || self::async( $hook, $args );
 	}
 
 	/**
 	 * Run a job once at a given time.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param int                      $timestamp Unix time.
 	 * @param string                   $hook      Action hook.
@@ -108,11 +145,14 @@ final class Jobs {
 		if ( self::has_as() ) {
 			return (bool) as_schedule_single_action( $timestamp, $hook, $args, self::GROUP );
 		}
-		return true === wp_schedule_single_event( $timestamp, $hook, $args, true );
+		return true === wp_schedule_single_event( $timestamp, $hook, array_values( $args ), true );
 	}
 
 	/**
-	 * Whether a pending or running copy exists, in either scheduler.
+	 * Whether a pending or running copy exists, in either scheduler. Use it to avoid starting the same work twice;
+	 * use is_pending() when the question is whether a later run is still coming.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param string                        $hook Action hook.
 	 * @param array<int|string, mixed>|null $args Exact arguments, or null for any.
@@ -122,11 +162,40 @@ final class Jobs {
 		if ( self::has_as() && as_has_scheduled_action( $hook, $args ) ) {
 			return true;
 		}
-		return null === $args ? self::cron_has( $hook ) : false !== wp_next_scheduled( $hook, $args );
+		return null === $args ? self::cron_has( $hook ) : false !== wp_next_scheduled( $hook, array_values( $args ) );
+	}
+
+	/**
+	 * Whether a copy is waiting to start, in either scheduler. A running copy does not count, so a job armed to run
+	 * after the current one (a reaper, a follow-up pass) is armed even while one runs.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string                        $hook Action hook.
+	 * @param array<int|string, mixed>|null $args Exact arguments, or null for any.
+	 * @return bool
+	 */
+	public static function is_pending( string $hook, ?array $args = null ): bool {
+		if ( self::has_as() ) {
+			$query = array(
+				'hook'     => $hook,
+				'status'   => \ActionScheduler_Store::STATUS_PENDING,
+				'per_page' => 1,
+			);
+			if ( null !== $args ) {
+				$query['args'] = $args;
+			}
+			if ( as_get_scheduled_actions( $query, 'ids' ) ) {
+				return true;
+			}
+		}
+		return null === $args ? self::cron_has( $hook ) : false !== wp_next_scheduled( $hook, array_values( $args ) );
 	}
 
 	/**
 	 * Next run time of a pending Action Scheduler copy with any arguments.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param string $hook Action hook.
 	 * @return int Unix time; 0 when none is pending, or one is running now.
@@ -146,6 +215,8 @@ final class Jobs {
 	 * Scheduler's $unique flag inserts only when no pending copy exists, and copies an older version left behind are
 	 * cancelled here. Only the argument-less row counts: a continuation of the same hook carries a cursor. Runs only
 	 * on a scheduling request; the cron runner re-arms a lost row on action_scheduler_ensure_recurring_actions.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param string     $hook     Action hook.
 	 * @param int        $first    Unix time of the first run.
@@ -184,17 +255,24 @@ final class Jobs {
 	}
 
 	/**
-	 * Whether this request may arm recurring jobs: cron, WP-CLI, or an admin page load (not an admin-ajax call,
-	 * which visitors' pages make too). Each check is a query, so a visitor's request never pays for it.
+	 * Whether this request may do scheduling and upkeep checks: cron, WP-CLI, an admin page load (not an admin-ajax
+	 * call, which visitors' pages make too), or Action Scheduler's daily action_scheduler_ensure_recurring_actions
+	 * run, which its async runner may execute inside an admin-ajax request. Each check costs a query, so a visitor's
+	 * request never pays for it. The one rule for the family; DirectDelivery and the migrations use it too.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @return bool
 	 */
 	public static function is_scheduling_request(): bool {
-		return wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) || ( is_admin() && ! wp_doing_ajax() );
+		return wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) || ( is_admin() && ! wp_doing_ajax() )
+			|| doing_action( 'action_scheduler_ensure_recurring_actions' );
 	}
 
 	/**
 	 * Cancel pending copies of a job in both schedulers.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param string                   $hook Action hook.
 	 * @param array<int|string, mixed> $args Exact arguments; empty cancels every copy whatever its arguments.
@@ -204,7 +282,7 @@ final class Jobs {
 			as_unschedule_all_actions( $hook, $args );
 		}
 		if ( $args ) {
-			wp_clear_scheduled_hook( $hook, $args );
+			wp_clear_scheduled_hook( $hook, array_values( $args ) );
 		} else {
 			wp_unschedule_hook( $hook );
 		}
@@ -212,6 +290,8 @@ final class Jobs {
 
 	/**
 	 * Arguments of the pending Action Scheduler copies of a job, oldest first, for progress read-outs.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param string $hook Action hook.
 	 * @return array<int, array<int|string, mixed>> Up to PENDING_READ_LIMIT argument lists.
@@ -246,10 +326,12 @@ final class Jobs {
 	}
 
 	/**
-	 * Delete MediaVerse's finished job history: completed actions in GROUP (Free and Pro) older than
-	 * FINISHED_RETENTION_DAYS, with their log rows. Action Scheduler's own cleaner keeps every plugin's history for
-	 * a month and that site-wide setting is not ours to change, so we trim only our own rows. Failed, pending and
-	 * running rows are never touched. Runs on the existing daily mvs_prune_logs event, not a job of its own.
+	 * Delete MediaVerse's own job history in GROUP (Free and Pro), with the log rows: completed actions older than
+	 * FINISHED_RETENTION_DAYS and failed actions older than FAILED_RETENTION_DAYS. Action Scheduler's own cleaner
+	 * keeps every plugin's history for a month and that site-wide setting is not ours to change, so we trim only our
+	 * own rows. Pending and running rows are never touched. Runs on the existing daily mvs_prune_logs event.
+	 *
+	 * @since 2.6.5
 	 */
 	public static function prune_history(): void {
 		if ( ! self::has_as() ) {
@@ -257,14 +339,25 @@ final class Jobs {
 		}
 
 		/**
-		 * Days a finished (completed) MediaVerse job is kept before MediaVerse deletes it with its log rows. Only the
-		 * 'mvs' group is touched; failed and pending jobs are never deleted.
+		 * Days a completed MediaVerse job is kept before MediaVerse deletes it with its log rows. Only the 'mvs'
+		 * group is touched; pending and running jobs are never deleted, failed ones after 90 days.
 		 *
 		 * @since 2.6.5
 		 *
 		 * @param int $days Whole days, at least 1. Default 7.
 		 */
-		$days   = max( 1, (int) apply_filters( 'mvs_finished_action_retention_days', self::FINISHED_RETENTION_DAYS ) );
+		$days = max( 1, (int) apply_filters( 'mvs_finished_action_retention_days', self::FINISHED_RETENTION_DAYS ) );
+		self::delete_finished( \ActionScheduler_Store::STATUS_COMPLETE, $days );
+		self::delete_finished( \ActionScheduler_Store::STATUS_FAILED, self::FAILED_RETENTION_DAYS );
+	}
+
+	/**
+	 * Delete GROUP's actions of one finished status scheduled more than $days ago, in batches.
+	 *
+	 * @param string $status Action Scheduler status.
+	 * @param int    $days   Age in days.
+	 */
+	private static function delete_finished( string $status, int $days ): void {
 		$before = gmdate( 'Y-m-d H:i:s', time() - $days * DAY_IN_SECONDS );
 		$store  = \ActionScheduler::store();
 
@@ -272,7 +365,7 @@ final class Jobs {
 			$ids = (array) as_get_scheduled_actions(
 				array(
 					'group'        => self::GROUP,
-					'status'       => \ActionScheduler_Store::STATUS_COMPLETE,
+					'status'       => $status,
 					'date'         => $before,
 					'date_compare' => '<',
 					'per_page'     => self::PRUNE_BATCH,
@@ -293,6 +386,8 @@ final class Jobs {
 	 * Move the pending actions of the given hooks out of the pre-2.6.5 groups into GROUP, keeping each one's
 	 * schedule and arguments. Run once from the upgrade routine. Each plugin passes only its own hooks, so a newer
 	 * Free never moves rows an older Pro still looks up by group.
+	 *
+	 * @since 2.6.5
 	 *
 	 * @param string[] $hooks Action hooks.
 	 * @return int Actions moved.

@@ -178,7 +178,7 @@ final class ChatFiles {
 	 * @return void
 	 */
 	public static function maybe_start(): void {
-		if ( ! DirectDelivery::is_scheduling_request() ) {
+		if ( ! \WPMediaVerse\Core\Jobs::is_scheduling_request() ) {
 			return;
 		}
 		$state = self::state();
