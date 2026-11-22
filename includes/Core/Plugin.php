@@ -939,6 +939,7 @@ class Plugin {
 			wp_schedule_event( time(), 'daily', 'mvs_prune_logs' );
 		}
 		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
+		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Repository\ScheduledActionRepository::class, 'prune_completed' ) );
 
 		// View-retention cron (daily). Bounded growth on mvs_media_views —
 		// every page view inserts a row, so without retention the table
