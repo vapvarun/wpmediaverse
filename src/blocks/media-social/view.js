@@ -56,6 +56,7 @@ async function fetchReactions( ctx ) {
 		ctx.userReaction = data.user_reaction || '';
 		ctx.reactions = REACTION_TYPES.map( ( type ) => ( {
 			type,
+			label: state.reactionLabels?.[ type ] || type,
 			icon: ( state.emojiBase || '' ) + type + '.svg',
 			count: data.counts?.[ type ] || 0,
 			active: data.user_reaction === type,
@@ -90,7 +91,7 @@ async function fetchComments( ctx ) {
 					// Keep ISO for the <time datetime> attribute and tooltip; display
 					// the human-readable "2 days ago" coming from the REST payload.
 					date: c.date,
-					date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
+					date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined ),
 					content: c.content,
 					// Kept so the delete confirm can say how many replies go with it.
 					replies: Array.isArray( c.replies ) ? c.replies : [],

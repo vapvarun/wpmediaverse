@@ -23,7 +23,6 @@ function run_upload_flow_tests(): array {
 	$tmp = tempnam( sys_get_temp_dir(), 'mvs_test_' ) . '.jpg';
 	$img = imagecreatetruecolor( 800, 600 );
 	imagejpeg( $img, $tmp, 90 );
-	imagedestroy( $img );
 	assert_test( 'Test image created', file_exists( $tmp ), filesize( $tmp ) . ' bytes' ) ? $p++ : $f++;
 
 	// Use UploadService directly.

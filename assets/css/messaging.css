@@ -58,7 +58,7 @@ body.dark-mode {
 .mvs-chat-trigger {
 	position: fixed;
 	bottom: 20px;
-	right: 20px;
+	inset-inline-end: 20px;
 	z-index: var(--mvs-z-fab, 9980);
 	width: 56px;
 	height: 56px;
@@ -77,15 +77,15 @@ body.dark-mode {
 
 /* Chat button on the left (setting "Chat Button Position"): the button and its panel mirror to the left edge. */
 .mvs-chat-root--left .mvs-chat-trigger {
-	right: auto;
-	left: 20px;
+	inset-inline-end: auto;
+	inset-inline-start: 20px;
 }
 
 .mvs-chat-root--left .mvs-chat-panel {
-	right: auto;
-	left: 0;
-	border-left: 0;
-	border-right: 1px solid var(--mvs-chat-border);
+	inset-inline-end: auto;
+	inset-inline-start: 0;
+	border-inline-start: 0;
+	border-inline-end: 1px solid var(--mvs-chat-border);
 	transform: translateX(-100%);
 }
 
@@ -107,7 +107,7 @@ body.dark-mode {
 .mvs-chat-trigger__badge {
 	position: absolute;
 	top: -4px;
-	right: -4px;
+	inset-inline-end: -4px;
 	min-width: 20px;
 	height: 20px;
 	padding: 0 6px;
@@ -126,12 +126,12 @@ body.dark-mode {
 .mvs-chat-panel {
 	position: fixed;
 	top: 0;
-	right: 0;
+	inset-inline-end: 0;
 	bottom: 0;
 	width: var(--mvs-chat-panel-width);
 	z-index: var(--mvs-z-chat-panel, 9986);
 	background: var(--mvs-chat-bg);
-	border-left: 1px solid var(--mvs-chat-border);
+	border-inline-start: 1px solid var(--mvs-chat-border);
 	box-shadow: var(--mvs-chat-shadow);
 	display: flex;
 	flex-direction: column;
@@ -315,7 +315,7 @@ body.dark-mode {
 	border: 2px solid var(--mvs-chat-bg);
 	position: absolute;
 	bottom: 0;
-	right: 0;
+	inset-inline-end: 0;
 }
 
 /* ----------------------------------------------------------------
@@ -388,7 +388,7 @@ body.dark-mode {
 	color: #fff;
 	font-size: 11px;
 	line-height: 18px;
-	margin-left: 4px;
+	margin-inline-start: 4px;
 }
 
 /* ----------------------------------------------------------------
@@ -449,7 +449,7 @@ body.dark-mode {
 	border-radius: 0;
 	background: none;
 	width: 100%;
-	text-align: left;
+	text-align: start;
 }
 
 .mvs-chat-conv-item:hover,
@@ -619,13 +619,13 @@ body.dark-mode {
 .mvs-chat-msg--sent .mvs-chat-msg__bubble {
 	background: var(--mvs-chat-bubble-sent);
 	color: var(--mvs-chat-bubble-sent-text);
-	border-bottom-right-radius: 4px;
+	border-end-end-radius: 4px;
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__bubble {
 	background: var(--mvs-chat-bubble-received);
 	color: var(--mvs-chat-bubble-received-text);
-	border-bottom-left-radius: 4px;
+	border-end-start-radius: 4px;
 }
 
 .mvs-chat-msg--system .mvs-chat-msg__bubble {
@@ -653,7 +653,7 @@ body.dark-mode {
 	border-radius: 8px;
 	font-size: 12px;
 	opacity: 0.8;
-	border-left: 3px solid currentColor;
+	border-inline-start: 3px solid currentColor;
 }
 
 .mvs-chat-msg--sent .mvs-chat-msg__reply {
@@ -811,11 +811,11 @@ body.dark-mode {
 }
 
 .mvs-chat-msg--sent .mvs-chat-msg__context-menu {
-	right: 0;
+	inset-inline-end: 0;
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__context-menu {
-	left: 0;
+	inset-inline-start: 0;
 }
 
 .mvs-chat-msg__context-btn {
@@ -1038,7 +1038,7 @@ body.dark-mode {
 	margin-bottom: 4px;
 	background: var(--mvs-chat-surface);
 	border-radius: 8px;
-	border-left: 3px solid var(--mvs-chat-primary);
+	border-inline-start: 3px solid var(--mvs-chat-primary);
 	font-size: 12px;
 	color: var(--mvs-chat-text-secondary);
 }
@@ -1279,7 +1279,7 @@ body.dark-mode {
 	border: none;
 	background: none;
 	width: 100%;
-	text-align: left;
+	text-align: start;
 }
 
 .mvs-chat-new__user:hover {
@@ -1503,7 +1503,7 @@ body.dark-mode {
 
 .mvs-messages-page .mvs-messages-sidebar {
 	width: var(--mvs-chat-sidebar-width);
-	border-right: 1px solid var(--mvs-chat-border);
+	border-inline-end: 1px solid var(--mvs-chat-border);
 	display: flex;
 	flex-direction: column;
 	flex-shrink: 0;
@@ -1684,7 +1684,7 @@ body.dark-mode {
 	border: none;
 	background: none;
 	cursor: pointer;
-	text-align: left;
+	text-align: start;
 	color: var(--mvs-chat-text);
 	font-size: 14px;
 }

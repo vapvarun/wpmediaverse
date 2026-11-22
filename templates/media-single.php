@@ -674,7 +674,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 							data-wp-class--active="context.item.active"
 							data-wp-bind--aria-pressed="context.item.active"
 							data-wp-bind--data-reaction-type="context.item.type"
-							data-wp-bind--aria-label="context.item.type"
+							data-wp-bind--aria-label="context.item.label"
 							data-wp-on--click="actions.toggleReaction">
 							<img class="mvs-reaction-emoji" data-wp-bind--src="context.item.icon" alt="" width="20" height="20" />
 							<span class="mvs-count" data-wp-text="context.item.count" data-wp-bind--hidden="!context.item.count"></span>

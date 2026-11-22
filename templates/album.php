@@ -209,7 +209,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 								<select id="mvs-album-edit-privacy" data-wp-on--change="actions.updateEditPrivacy">
 									<?php foreach ( array( 'public', 'members', 'private' ) as $opt ) : ?>
 										<option value="<?php echo esc_attr( $opt ); ?>" <?php selected( $album_privacy, $opt ); ?>>
-											<?php echo esc_html( ucfirst( $opt ) ); ?>
+											<?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_label( $opt ) ); ?>
 										</option>
 									<?php endforeach; ?>
 								</select>

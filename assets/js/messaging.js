@@ -122,15 +122,15 @@ function dayLabel( dateStr ) {
 	yest.setDate( now.getDate() - 1 );
 	if ( dayKey( d ) === dayKey( yest ) ) return __( 'Yesterday', 'wpmediaverse' );
 	const ageDays = ( now - d ) / 86400000;
-	if ( ageDays < 7 ) return d.toLocaleDateString( undefined, { weekday: 'long' } );
-	return d.toLocaleDateString( undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
+	if ( ageDays < 7 ) return d.toLocaleDateString( document.documentElement.lang || undefined, { weekday: 'long' } );
+	return d.toLocaleDateString( document.documentElement.lang || undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
 }
 
 // Time-only label for a message bubble.
 function messageTimeLabel( dateStr ) {
 	const d = new Date( parseServerDate( dateStr ) );
 	if ( isNaN( d.getTime() ) ) return '';
-	return d.toLocaleTimeString( undefined, { hour: 'numeric', minute: '2-digit' } );
+	return d.toLocaleTimeString( document.documentElement.lang || undefined, { hour: 'numeric', minute: '2-digit' } );
 }
 
 // Temp ID counter for optimistic messages.
@@ -2263,7 +2263,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		formatMessageTime( dateStr ) {
 			if ( ! dateStr ) return '';
 			const d = new Date( parseServerDate( dateStr ) );
-			return d.toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } );
+			return d.toLocaleTimeString( document.documentElement.lang || undefined, { hour: '2-digit', minute: '2-digit' } );
 		},
 	} ),
 

@@ -122,7 +122,7 @@
 	 * @return {string}
 	 */
 	function fmtNum( n ) {
-		return ( typeof n === 'number' ) ? n.toLocaleString() : '0';
+		return ( typeof n === 'number' ) ? n.toLocaleString( document.documentElement.lang || undefined ) : '0';
 	}
 
 	/* ── Canonical media thumbnail builder ─────────────────────────────

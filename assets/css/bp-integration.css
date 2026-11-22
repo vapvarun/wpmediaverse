@@ -83,7 +83,7 @@
     width: 16px;
     height: 16px;
     stroke-width: 2;
-    margin-right: 6px;
+    margin-inline-end: 6px;
     flex-shrink: 0;
 }
 
@@ -460,7 +460,7 @@
 #buddypress .mvs-bp-screen .mvs-grid-item-actions {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     display: flex;
     gap: 6px;
     opacity: 0;
@@ -1276,7 +1276,7 @@
  * theme overrides often hide them; appearance:none + inline SVG gives a
  * consistent look regardless of theme. */
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
-    padding-right: 32px;
+    padding-inline-end: 32px;
     max-width: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -1333,7 +1333,7 @@
 }
 
 #buddypress #whats-new-form #whats-new-options #whats-new-submit {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 /* The wrap grows into the row's free space (otherwise its content-sized
@@ -1353,7 +1353,7 @@
     }
 
     #buddypress #whats-new-form #whats-new-options #whats-new-submit {
-        margin-left: 0;
+        margin-inline-start: 0;
         width: 100%;
     }
 }
@@ -1483,7 +1483,7 @@
  * ============================================================================= */
 @media screen and (min-width: 46.8em) {
     body.wb-reign-theme #buddypress #whats-new-form #whats-new-options > .mvs-activity-media-btn-wrap:first-child {
-        margin-left: 65px;
+        margin-inline-start: 65px;
     }
 }
 

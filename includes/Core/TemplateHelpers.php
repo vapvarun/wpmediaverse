@@ -2477,6 +2477,26 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Accessible names for the reaction buttons, keyed by reaction type.
+	 *
+	 * One list for the lightbox row and the media page's social bar (the page bound the raw slug before).
+	 *
+	 * @since 2.6.5
+	 *
+	 * @return array<string,string>
+	 */
+	public static function reaction_labels(): array {
+		return array(
+			'like'  => __( 'Like', 'wpmediaverse' ),
+			'love'  => __( 'Love', 'wpmediaverse' ),
+			'haha'  => __( 'Haha', 'wpmediaverse' ),
+			'wow'   => __( 'Wow', 'wpmediaverse' ),
+			'sad'   => __( 'Sad', 'wpmediaverse' ),
+			'angry' => __( 'Angry', 'wpmediaverse' ),
+		);
+	}
+
+	/**
 	 * Seed PHP-translated strings for the mvs/media-social Interactivity store.
 	 *
 	 * The store (src/blocks/media-social/view.js) is a script MODULE, so
@@ -2492,7 +2512,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		wp_interactivity_state(
 			'mvs/media-social',
 			array(
-				'emojiBase' => self::emoji_base_url(),
+				'emojiBase'      => self::emoji_base_url(),
+				'reactionLabels' => self::reaction_labels(),
 				'i18n'      => array(
 					/* translators: %s: number of views (1). */
 					'viewOne'              => _n( '%s view', '%s views', 1, 'wpmediaverse' ),
