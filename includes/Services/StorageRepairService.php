@@ -66,7 +66,7 @@ class StorageRepairService {
 	/**
 	 * Action Scheduler group.
 	 *
-	 * @deprecated 2.6.5 Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
+	 * @deprecated 2.6.5 Removed in 4.0.0. Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
 	 */
 	const AS_GROUP = \WPMediaVerse\Core\Jobs::GROUP;
 
@@ -364,9 +364,8 @@ class StorageRepairService {
 	 * @param int $cursor Cursor to resume from.
 	 */
 	private function schedule_next( int $cursor ): void {
-		if ( ! \WPMediaVerse\Core\Jobs::is_queued( self::REPAIR_HOOK, array( $cursor ) ) ) {
-			\WPMediaVerse\Core\Jobs::async( self::REPAIR_HOOK, array( $cursor ) );
-		}
+		// Pending copies only: this runs inside the batch job, whose own running row must not stop the next one.
+		\WPMediaVerse\Core\Jobs::async_once( self::REPAIR_HOOK, array( $cursor ) );
 	}
 
 	/**

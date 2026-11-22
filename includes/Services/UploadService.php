@@ -2445,7 +2445,7 @@ class UploadService {
 
 		// A privacy flipped twice before the job runs needs one trip home, not two.
 		$args = array( 'media_id' => $media_id );
-		if ( ! \WPMediaVerse\Core\Jobs::is_queued( 'mvs_cloud_repatriate_media', $args ) && ! \WPMediaVerse\Core\Jobs::async( 'mvs_cloud_repatriate_media', $args ) ) {
+		if ( ! \WPMediaVerse\Core\Jobs::async_once( 'mvs_cloud_repatriate_media', $args ) ) {
 			self::run_cloud_repatriation( $media_id );
 		}
 	}
