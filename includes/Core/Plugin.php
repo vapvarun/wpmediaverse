@@ -1117,6 +1117,16 @@ class Plugin {
 		// A deleted item cannot be acted on, so its pending reports stop counting in the moderation queue.
 		add_action( 'mvs_media_deleted', array( new \WPMediaVerse\Repository\ReportRepository(), 'on_media_deleted' ) );
 		add_action( \WPMediaVerse\Repository\ReportRepository::SWEEP_HOOK, array( \WPMediaVerse\Repository\ReportRepository::class, 'sweep_orphans' ) );
+		// Registered on every request: the queue runs from WP-Cron and the async runner, where the Tags
+		// screen (built in admin_menu) never exists, so a hook added there left every large merge "no callbacks".
+		add_action(
+			\WPMediaVerse\Admin\TagManagementPage::MERGE_HOOK,
+			static function ( $source_id, $target_id, $offset = 0 ) {
+				self::$container->get( 'admin.tags' )->process_merge_batch( (int) $source_id, (int) $target_id, (int) $offset );
+			},
+			10,
+			3
+		);
 	}
 
 	/**
