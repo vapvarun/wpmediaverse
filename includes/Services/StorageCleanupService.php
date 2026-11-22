@@ -176,16 +176,25 @@ class StorageCleanupService {
 			return;
 		}
 
-		if ( $attempt < self::MAX_ATTEMPTS ) {
-			\WPMediaVerse\Core\Jobs::at(
-				time() + ( self::RETRY_STEP_SECONDS * $attempt ),
-				self::CLEANUP_HOOK,
-				array( $failed, $attempt + 1 )
-			);
+		/**
+		 * Delete attempts for a batch of files whose deletion failed (a cloud outage, a locked file). Each retry
+		 * waits RETRY_STEP_SECONDS times the attempt number longer. After the last one the paths are logged as an
+		 * error in MediaVerse > Logs for manual deletion.
+		 *
+		 * @since 2.6.5
+		 *
+		 * @param int $max At least 1. Default 3.
+		 */
+		$max = max( 1, (int) apply_filters( 'mvs_storage_cleanup_max_attempts', self::MAX_ATTEMPTS ) );
 
+		if ( $attempt < $max && \WPMediaVerse\Core\Jobs::at(
+			time() + ( self::RETRY_STEP_SECONDS * $attempt ),
+			self::CLEANUP_HOOK,
+			array( $failed, $attempt + 1 )
+		) ) {
 			LoggerService::warning(
 				'storage_cleanup',
-				sprintf( 'Failed to delete %d orphaned file(s) (attempt %d/%d) — retry scheduled.', count( $failed ), $attempt, self::MAX_ATTEMPTS ),
+				sprintf( 'Failed to delete %d orphaned file(s) (attempt %d/%d) - retry scheduled.', count( $failed ), $attempt, $max ),
 				array( 'paths' => $failed )
 			);
 
@@ -194,7 +203,7 @@ class StorageCleanupService {
 
 		LoggerService::error(
 			'storage_cleanup',
-			sprintf( 'Giving up on %d orphaned file(s) after %d attempts — manual cleanup needed.', count( $failed ), $attempt ),
+			sprintf( 'Giving up on %d orphaned file(s) after %d attempt(s) - delete these paths by hand.', count( $failed ), $attempt ),
 			array( 'paths' => $failed )
 		);
 	}
