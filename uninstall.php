@@ -23,6 +23,22 @@ global $wpdb;
 
 // The one list of scheduled work (see Deactivator), required directly for the
 // same reason the Migrator is below: uninstall runs outside the bootstrap.
+// The Deactivator's job lists read class constants (PresetActivation::HOOK, ChatFiles::HOOK), and this file runs with
+// the plugin inactive and its autoloader not registered: without one, deleting the plugin fatals here and the
+// "remove data" option never runs. Same PSR-style loader as wpmediaverse.php, rooted at this folder.
+spl_autoload_register(
+	static function ( $class_name ) {
+		$prefix = 'WPMediaVerse\\';
+		if ( strncmp( $prefix, $class_name, strlen( $prefix ) ) !== 0 ) {
+			return;
+		}
+		$file = __DIR__ . '/includes/' . str_replace( '\\', '/', substr( $class_name, strlen( $prefix ) ) ) . '.php';
+		if ( is_readable( $file ) ) {
+			require_once $file;
+		}
+	}
+);
+
 $mvs_deactivator = __DIR__ . '/includes/Core/Deactivator.php';
 if ( is_readable( $mvs_deactivator ) ) {
 	require_once $mvs_deactivator;
