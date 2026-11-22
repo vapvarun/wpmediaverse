@@ -1422,7 +1422,7 @@
       "args_signature": [
         "int $days"
       ],
-      "where": "includes/Core/Jobs.php:432",
+      "where": "includes/Core/Jobs.php:528",
       "consumed_by": []
     },
     {
@@ -3141,6 +3141,16 @@
         "array $tabs"
       ],
       "where": "includes/Admin/StatsPage.php:181",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_storage_cleanup_max_attempts",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $max"
+      ],
+      "where": "includes/Services/StorageCleanupService.php:188",
       "consumed_by": []
     },
     {

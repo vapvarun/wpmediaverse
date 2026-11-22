@@ -424,7 +424,7 @@ add_filter( 'mvs_story_keep_item', function ( bool $kept, int $media_id ) {
 
 ### `mvs_finished_action_retention_days` **(New in 2.6.5)**
 
-Filters how many days a finished MediaVerse background job stays in Tools > Scheduled Actions before MediaVerse deletes it with its log rows, on the daily `mvs_prune_logs` run. Completed and cancelled jobs in the `mvs` group are deleted after these days and failed ones after 90 days; pending and running jobs, and other plugins' jobs, are never touched. Values below 1 count as 1. See [Background Jobs](background-jobs.md).
+Filters how many days a finished MediaVerse background job stays in Tools > Scheduled Actions before MediaVerse deletes it with its log rows, on the daily `mvs_prune_logs` run. Completed jobs in the `mvs` group are deleted these days after they finished, cancelled ones these days after they were due, and failed ones 90 days after their last attempt; pending and running jobs, and other plugins' jobs, are never touched. Values below 1 count as 1. See [Background Jobs](background-jobs.md).
 
 ```php
 add_filter( 'mvs_finished_action_retention_days', function () {
@@ -435,6 +435,20 @@ add_filter( 'mvs_finished_action_retention_days', function () {
 | Parameter | Type | Description |
 |---|---|---|
 | `$days` | `int` | Whole days, at least 1. Default 7. |
+
+### `mvs_storage_cleanup_max_attempts` **(New in 2.6.5)**
+
+Filters how many times MediaVerse tries to delete a batch of files whose deletion failed (a cloud storage outage, a locked file). Each retry waits 5 minutes longer than the last. After the last attempt the paths are logged as an error under MediaVerse > Logs, for deletion by hand. Values below 1 count as 1. See [Background Jobs](background-jobs.md).
+
+```php
+add_filter( 'mvs_storage_cleanup_max_attempts', function () {
+    return 5;
+} );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$max` | `int` | Attempts in all, at least 1. Default 3. |
 
 ---
 

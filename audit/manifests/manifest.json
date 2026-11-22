@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.5.1",
+    "version": "2.6.5",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -5914,7 +5914,7 @@
     {
       "hook": "mvs_prune_logs",
       "interval": "daily (wp_schedule_event)",
-      "handler": "Services\\LoggerService::prune",
+      "handler": "Services\\LoggerService::prune; Core\\Jobs::prune_history (listener in wpmediaverse.php)",
       "file": "includes/Core/Plugin.php:666 (schedule); includes/Core/Plugin.php:668 (handler)"
     },
     {
@@ -5969,6 +5969,12 @@
       "hook": "mvs_close_orphan_reports",
       "interval": "async (Jobs), cursor continuation per 500 reports; queued by migration v46",
       "file": "includes/Repository/ReportRepository.php:158"
+    },
+    {
+      "hook": "mvs_adopt_pending_jobs",
+      "interval": "async (Jobs), continues per 2,000 rows; queued by Jobs::adopt_pending() when an upgrade move hits its cap or runs on a visitor request",
+      "handler": "Core\\Jobs::adopt_pending (listener in wpmediaverse.php)",
+      "file": "includes/Core/Jobs.php (const ADOPT_HOOK)"
     },
     {
       "hook": "mvs_cloud_repatriate_media",
@@ -7534,11 +7540,11 @@
       "mvs-connectors"
     ],
     "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
-    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only, 10 s budget: completed and cancelled rows after mvs_finished_action_retention_days (default 7), failed rows after 90 days (Jobs::FAILED_RETENTION_DAYS)",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only, 10 s budget: completed and cancelled rows after mvs_finished_action_retention_days (default 7), failed rows after 90 days (Jobs::FAILED_RETENTION_DAYS); finished rows aged by last attempt, cancelled by scheduled date",
     "doc": "docs/standards/background-jobs.md",
     "since": "2.6.5",
     "lookups": "is_queued: pending or running (start guards); is_pending: waiting only (continuations); async_once: queue unless a copy is waiting; cancel_pending: set-based cancel of exact hooks (deactivation). Differences from Jetonomy Queue are listed in docs/standards/background-jobs.md section 1",
-    "deactivation": "Deactivator::clear_scheduled(false) on deactivate cancels pending rows of Free's own CRON_HOOKS + JOB_HOOKS minus STATE_JOB_HOOKS (left pending), uninstall clear_scheduled(true) all (Jobs::cancel_pending, 10,000 per UPDATE, exact hooks never group); Pro Lifecycle::clear_scheduled the same for Pro's lists and Lifecycle::STATE_JOB_HOOKS; Pro re-arms its tick and streak check after activation (transient mvs_pro_rearm_jobs); after activation both requeue their STATE_JOB_HOOKS rows a runner failed with 'no callbacks are registered' (Jobs::requeue_after_activation, 200 per scheduling request; Free transient mvs_requeue_unheard_jobs)",
+    "deactivation": "Deactivator::clear_scheduled(false) on deactivate cancels pending rows of Free's own CRON_HOOKS + JOB_HOOKS minus STATE_JOB_HOOKS (left pending), uninstall clear_scheduled(true) all (Jobs::cancel_pending, 10,000 per UPDATE, exact hooks never group); Pro Lifecycle::clear_scheduled the same for Pro's lists and Lifecycle::STATE_JOB_HOOKS; Pro re-arms its tick and streak check after activation (transient mvs_pro_rearm_jobs); after activation, or a migration run (one-click update), both requeue their STATE_JOB_HOOKS rows a runner failed with 'no callbacks are registered' in the last 7 days for hooks with a listener (Jobs::requeue_after_activation, 200 per scheduling request; Free transient mvs_requeue_unheard_jobs, Pro mvs_pro_rearm_jobs, a week each); Pro activation also marks the document text backfill pending",
     "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }

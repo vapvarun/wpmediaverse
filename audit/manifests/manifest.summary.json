@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.5.0",
+    "version": "2.6.5",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -51,7 +51,7 @@
   "generated": {
     "at": "2026-09-01T00:00:00Z",
     "from": "targeted delta 2026-09-01 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.4.0",
+    "branch": "2.6.5",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
