@@ -54,6 +54,9 @@ class Deactivator {
 		'mvs_tag_merge_batch',
 		'mvs_close_orphan_reports',
 		\WPMediaVerse\Messaging\ChatFiles::HOOK,
+		\WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK,
+		\WPMediaVerse\Services\MediaFileRotator::HOOK,
+		\WPMediaVerse\Services\MediaFileRotator::LEGACY_HOOK,
 	);
 
 	/**
@@ -87,11 +90,10 @@ class Deactivator {
 		foreach ( $hooks as $hook ) {
 			wp_clear_scheduled_hook( $hook );
 
-			// ponytail: skipped when no plugin on the site loads Action
-			// Scheduler (uninstall runs with MediaVerse inactive); a pending AS
-			// row for a gone plugin just fails once and is purged by AS itself.
-			if ( $include_jobs && function_exists( 'as_unschedule_all_actions' ) ) {
-				as_unschedule_all_actions( $hook );
+			// Skipped when Action Scheduler is not running (uninstall runs with MediaVerse inactive): uninstall.php
+			// then deletes the rows of every mvs_ hook directly.
+			if ( $include_jobs ) {
+				Jobs::cancel( $hook );
 			}
 		}
 	}

@@ -58,9 +58,7 @@ class MediaTag {
 		foreach ( $batches as $i => $ids ) {
 			// A popular tag must not be walked inside the delete request: the first batch is cheap, the rest
 			// go to the background (the same split Tag merge uses).
-			if ( $i > 0 && function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::FORGET_HOOK, array( $deleted_term->name, $ids ), 'wpmediaverse' );
-			} else {
+			if ( 0 === $i || ! \WPMediaVerse\Core\Jobs::async( self::FORGET_HOOK, array( $deleted_term->name, $ids ) ) ) {
 				self::forget_tag_on_items( $deleted_term->name, $ids );
 			}
 		}

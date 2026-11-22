@@ -34,11 +34,6 @@ class UserDeletionService {
 	public const PURGE_HOOK = 'mvs_user_deletion_purge';
 
 	/**
-	 * Action Scheduler group, matching every other AS job in this plugin.
-	 */
-	private const AS_GROUP = 'wpmediaverse';
-
-	/**
 	 * Media items torn down per batch. Running the whole cascade (file I/O + child-table deletes per
 	 * item) inline on the `deleted_user` request does not scale for a member with thousands of uploads; this bounds each request
 	 * / AS run to a fixed amount of work.
@@ -400,12 +395,11 @@ class UserDeletionService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			// Only the user id: each batch re-reads what is still theirs. The id
-			// list must not travel in the job: Action Scheduler refuses
-			// arguments over 8,000 characters, so deleting a member with ~1,100+
-			// media would throw out of the delete.
-			as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
+		// Only the user id: each batch re-reads what is still theirs. The id
+		// list must not travel in the job: Action Scheduler refuses
+		// arguments over 8,000 characters, so deleting a member with ~1,100+
+		// media would throw out of the delete.
+		if ( \WPMediaVerse\Core\Jobs::async( self::CASCADE_HOOK, array( $user_id ) ) ) {
 			return;
 		}
 
@@ -437,12 +431,11 @@ class UserDeletionService {
 			}
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::PURGE_HOOK, array( $user_id ), self::AS_GROUP );
+		if ( \WPMediaVerse\Core\Jobs::async( self::PURGE_HOOK, array( $user_id ) ) ) {
 			return;
 		}
 
-		// No queue: finish now rather than leave rows behind.
+		// Scheduler not ready: finish now rather than leave rows behind.
 		do {
 			$counts = $purger->purge( $user_id );
 		} while ( $counts['removed'] + $counts['retained'] > 0 );
@@ -457,8 +450,7 @@ class UserDeletionService {
 	 * @return bool
 	 */
 	public static function cascade_pending( int $user_id ): bool {
-		return function_exists( 'as_has_scheduled_action' )
-			&& as_has_scheduled_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
+		return \WPMediaVerse\Core\Jobs::is_queued( self::CASCADE_HOOK, array( $user_id ) );
 	}
 
 	/**
@@ -486,7 +478,7 @@ class UserDeletionService {
 		if ( $media_ids ) {
 			$rest = array_slice( $media_ids, self::CASCADE_BATCH_SIZE );
 			if ( $rest ) {
-				as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id, $rest ), self::AS_GROUP );
+				\WPMediaVerse\Core\Jobs::async( self::CASCADE_HOOK, array( $user_id, $rest ) );
 			}
 			return;
 		}
@@ -499,7 +491,7 @@ class UserDeletionService {
 			\WPMediaVerse\Services\LoggerService::error( 'user_deletion', 'Media cascade stopped: a batch deleted nothing.', array( 'user_id' => $user_id ) );
 			return;
 		}
-		as_enqueue_async_action( self::CASCADE_HOOK, array( $user_id ), self::AS_GROUP );
+		\WPMediaVerse\Core\Jobs::async( self::CASCADE_HOOK, array( $user_id ) );
 	}
 
 	/**

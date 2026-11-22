@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 46;
+	const CURRENT_VERSION = 47;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -237,12 +237,24 @@ class Migrator {
 	 * @since 2.6.5
 	 */
 	private function migrate_to_46(): void {
-		// Migrations run before Action Scheduler's data store is ready, so queue on its init hook (or now, if it has run).
-		if ( did_action( 'action_scheduler_init' ) ) {
-			\WPMediaVerse\Repository\ReportRepository::queue_sweep();
-		} else {
-			add_action( 'action_scheduler_init', array( \WPMediaVerse\Repository\ReportRepository::class, 'queue_sweep' ) );
-		}
+		Jobs::when_ready( array( \WPMediaVerse\Repository\ReportRepository::class, 'queue_sweep' ) );
+	}
+
+	/**
+	 * Migration v47 - move Free's pending background jobs into the one 'mvs' group.
+	 *
+	 * Before 2.6.5 Free queued into 'wpmediaverse'. Only Free's own hooks move (Deactivator::JOB_HOOKS), so an older
+	 * Pro that still looks up its jobs by group keeps finding them. Finished rows stay where they are and age out
+	 * through Action Scheduler's own retention.
+	 *
+	 * @since 2.6.5
+	 */
+	private function migrate_to_47(): void {
+		Jobs::when_ready(
+			static function (): void {
+				Jobs::adopt_pending( Deactivator::JOB_HOOKS );
+			}
+		);
 	}
 
 	/**

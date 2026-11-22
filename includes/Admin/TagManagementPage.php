@@ -613,9 +613,7 @@ class TagManagementPage {
 
 		$large = (int) $source->count > self::MERGE_LARGE_THRESHOLD;
 
-		if ( $large && function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, 0 ), 'wpmediaverse' );
-		} else {
+		if ( ! $large || ! \WPMediaVerse\Core\Jobs::async( self::MERGE_HOOK, array( $source_id, $target_id, 0 ) ) ) {
 			$this->process_merge_batch( $source_id, $target_id, 0 );
 		}
 
@@ -685,9 +683,7 @@ class TagManagementPage {
 			// More rows remain. Each batch detaches the items it moved, so the
 			// next batch starts from the top again (offset 0) rather than
 			// paging, which would skip items as the set shrinks.
-			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, 0 ), 'wpmediaverse' );
-			} else {
+			if ( ! \WPMediaVerse\Core\Jobs::async( self::MERGE_HOOK, array( $source_id, $target_id, 0 ) ) ) {
 				$this->process_merge_batch( $source_id, $target_id, 0 );
 			}
 			return;
@@ -1120,19 +1116,8 @@ class TagManagementPage {
 			'removals' => array(),
 			'merges'   => array(),
 		);
-		if ( ! function_exists( 'as_get_scheduled_actions' ) ) {
-			return $work;
-		}
-
-		$query = array(
-			'status'   => \ActionScheduler_Store::STATUS_PENDING,
-			'group'    => 'wpmediaverse',
-			'per_page' => 100,
-		);
-
-		// ponytail: counts the first 100 queued batches (20,000 items); beyond that the number undercounts.
-		foreach ( as_get_scheduled_actions( $query + array( 'hook' => \WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK ) ) as $action ) {
-			$args = $action->get_args();
+		// ponytail: counts the first PENDING_READ_LIMIT queued batches per hook; beyond that the number undercounts.
+		foreach ( \WPMediaVerse\Core\Jobs::pending_args( \WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK ) as $args ) {
 			$name = (string) ( $args[0] ?? '' );
 			$key  = strtolower( $name );
 			if ( '' === $name ) {
@@ -1142,8 +1127,7 @@ class TagManagementPage {
 			$work['removals'][ $key ]['items'] = ( $work['removals'][ $key ]['items'] ?? 0 ) + count( (array) ( $args[1] ?? array() ) );
 		}
 
-		foreach ( as_get_scheduled_actions( $query + array( 'hook' => self::MERGE_HOOK ) ) as $action ) {
-			$args   = $action->get_args();
+		foreach ( \WPMediaVerse\Core\Jobs::pending_args( self::MERGE_HOOK ) as $args ) {
 			$source = get_term( (int) ( $args[0] ?? 0 ), 'mvs_tag' );
 			$target = get_term( (int) ( $args[1] ?? 0 ), 'mvs_tag' );
 			if ( $source instanceof WP_Term && $target instanceof WP_Term ) {

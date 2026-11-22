@@ -132,11 +132,7 @@ final class MediaFileRotator {
 			return;
 		}
 		foreach ( array_chunk( $ids, 100 ) as $chunk ) {
-			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::HOOK, array( 'ids' => $chunk ), 'wpmediaverse' );
-			} else {
-				wp_schedule_single_event( time(), self::HOOK, array( $chunk ) );
-			}
+			\WPMediaVerse\Core\Jobs::async( self::HOOK, array( 'ids' => $chunk ) );
 		}
 	}
 
@@ -291,9 +287,7 @@ final class MediaFileRotator {
 		if ( ! empty( $state['done'] ) || ! DirectDelivery::is_scheduling_request() ) {
 			return;
 		}
-		$queued = function_exists( 'as_has_scheduled_action' )
-			? as_has_scheduled_action( self::LEGACY_HOOK, null, 'wpmediaverse' )
-			: (bool) wp_next_scheduled( self::LEGACY_HOOK );
+		$queued = \WPMediaVerse\Core\Jobs::is_queued( self::LEGACY_HOOK );
 		if ( ! $queued ) {
 			self::schedule_legacy_batch();
 		}
@@ -334,16 +328,12 @@ final class MediaFileRotator {
 	}
 
 	/**
-	 * Queue one conversion batch (Action Scheduler, else WP-Cron).
+	 * Queue one conversion batch.
 	 *
 	 * @return void
 	 */
 	private static function schedule_legacy_batch(): void {
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::LEGACY_HOOK, array(), 'wpmediaverse' );
-		} else {
-			wp_schedule_single_event( time(), self::LEGACY_HOOK );
-		}
+		\WPMediaVerse\Core\Jobs::async( self::LEGACY_HOOK );
 	}
 
 	/**

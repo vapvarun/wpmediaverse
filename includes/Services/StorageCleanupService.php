@@ -39,9 +39,16 @@ class StorageCleanupService {
 	const CLEANUP_HOOK = 'mvs_cleanup_media_files';
 
 	/**
-	 * Action Scheduler group for queued cleanup actions.
+	 * Action Scheduler group.
+	 *
+	 * @deprecated 2.6.5 Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
 	 */
-	const AS_GROUP = 'wpmediaverse';
+	const AS_GROUP = \WPMediaVerse\Core\Jobs::GROUP;
+
+	/**
+	 * Seconds added per failed attempt before the next retry (5 minutes, then 10).
+	 */
+	const RETRY_STEP_SECONDS = 5 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Maximum delete attempts per path batch (the first try plus two retries) before giving up with an error log.
@@ -103,17 +110,11 @@ class StorageCleanupService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			if ( ! $this->pending ) {
-				// WordPress fires `shutdown` from a registered shutdown function, so the flush runs after a fatal too.
-				add_action( 'shutdown', array( $this, 'flush' ) );
-			}
-			array_push( $this->pending, ...$paths );
-			return;
+		if ( ! $this->pending ) {
+			// WordPress fires `shutdown` from a registered shutdown function, so the flush runs after a fatal too.
+			add_action( 'shutdown', array( $this, 'flush' ) );
 		}
-
-		// No Action Scheduler — delete inline so nothing is left orphaned.
-		$this->process( $paths );
+		array_push( $this->pending, ...$paths );
 	}
 
 	/**
@@ -127,7 +128,7 @@ class StorageCleanupService {
 		foreach ( $paths as $path ) {
 			$len = strlen( (string) wp_json_encode( $path ) ) + 1;
 			if ( $chunk && $size + $len > self::ARGS_BUDGET ) {
-				as_enqueue_async_action( self::CLEANUP_HOOK, array( $chunk, 1 ), self::AS_GROUP );
+				$this->queue_chunk( $chunk );
 				$chunk = array();
 				$size  = 0;
 			}
@@ -135,7 +136,18 @@ class StorageCleanupService {
 			$size   += $len;
 		}
 		if ( $chunk ) {
-			as_enqueue_async_action( self::CLEANUP_HOOK, array( $chunk, 1 ), self::AS_GROUP );
+			$this->queue_chunk( $chunk );
+		}
+	}
+
+	/**
+	 * Queue one chunk of paths, or delete it now when the scheduler refuses it, so no file is left orphaned.
+	 *
+	 * @param string[] $chunk Relative file paths.
+	 */
+	private function queue_chunk( array $chunk ): void {
+		if ( ! \WPMediaVerse\Core\Jobs::async( self::CLEANUP_HOOK, array( $chunk, 1 ) ) ) {
+			$this->process( $chunk );
 		}
 	}
 
@@ -164,12 +176,11 @@ class StorageCleanupService {
 			return;
 		}
 
-		if ( $attempt < self::MAX_ATTEMPTS && function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action(
-				time() + ( 5 * MINUTE_IN_SECONDS * $attempt ),
+		if ( $attempt < self::MAX_ATTEMPTS ) {
+			\WPMediaVerse\Core\Jobs::at(
+				time() + ( self::RETRY_STEP_SECONDS * $attempt ),
 				self::CLEANUP_HOOK,
-				array( $failed, $attempt + 1 ),
-				self::AS_GROUP
+				array( $failed, $attempt + 1 )
 			);
 
 			LoggerService::warning(

@@ -57,8 +57,9 @@ $mvs_as_logs    = $wpdb->prefix . 'actionscheduler_logs';
 if ( $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_actions ) ) ) ) {
 	$mvs_as_has_logs = $mvs_as_logs === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_logs ) ) );
 	// In batches of 1,000, logs first, so a site with years of rows never runs one huge locking DELETE.
+	$mvs_as_batch = 1000;
 	do {
-		$mvs_as_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$mvs_as_actions} WHERE hook LIKE %s AND hook NOT LIKE %s LIMIT 1000", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%' ) ) );
+		$mvs_as_ids = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT action_id FROM {$mvs_as_actions} WHERE hook LIKE %s AND hook NOT LIKE %s LIMIT %d", $wpdb->esc_like( 'mvs_' ) . '%', $wpdb->esc_like( 'mvs_pro_' ) . '%', $mvs_as_batch ) ) );
 		if ( $mvs_as_ids ) {
 			$mvs_as_in = implode( ',', $mvs_as_ids );
 			if ( $mvs_as_has_logs ) {
@@ -66,7 +67,14 @@ if ( $mvs_as_actions === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', 
 			}
 			$wpdb->query( "DELETE FROM {$mvs_as_actions} WHERE action_id IN ( {$mvs_as_in} )" );
 		}
-	} while ( count( $mvs_as_ids ) === 1000 );
+		$mvs_as_found = count( $mvs_as_ids );
+	} while ( $mvs_as_batch === $mvs_as_found );
+	// The group rows MediaVerse created, once no action (another plugin's included) still uses them.
+	$mvs_as_groups = $wpdb->prefix . 'actionscheduler_groups';
+	if ( $mvs_as_groups === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $mvs_as_groups ) ) ) ) {
+		$mvs_as_slugs = array_merge( array( \WPMediaVerse\Core\Jobs::GROUP ), \WPMediaVerse\Core\Jobs::LEGACY_GROUPS );
+		$wpdb->query( $wpdb->prepare( "DELETE g FROM {$mvs_as_groups} g WHERE g.slug IN ( " . implode( ', ', array_fill( 0, count( $mvs_as_slugs ), '%s' ) ) . " ) AND NOT EXISTS ( SELECT 1 FROM {$mvs_as_actions} a WHERE a.group_id = g.group_id )", $mvs_as_slugs ) );
+	}
 }
 // phpcs:enable
 

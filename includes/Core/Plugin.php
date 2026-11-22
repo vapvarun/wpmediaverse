@@ -939,7 +939,7 @@ class Plugin {
 			wp_schedule_event( time(), 'daily', 'mvs_prune_logs' );
 		}
 		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Services\LoggerService::class, 'prune' ) );
-		add_action( 'mvs_prune_logs', array( \WPMediaVerse\Repository\ScheduledActionRepository::class, 'prune_completed' ) );
+		add_action( 'mvs_prune_logs', array( Jobs::class, 'prune_history' ) );
 
 		// View-retention cron (daily). Bounded growth on mvs_media_views —
 		// every page view inserts a row, so without retention the table
@@ -1457,16 +1457,11 @@ class Plugin {
 	 * upload would otherwise queue a second paid call for the same file).
 	 *
 	 * @param int $media_id Media ID.
-	 * @return bool False when Action Scheduler is not loaded, so the caller runs it inline.
+	 * @return bool False when the scheduler is not ready or refused the job, so the caller runs it inline.
 	 */
 	public static function enqueue_ai( int $media_id ): bool {
-		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
-			return false;
-		}
-		if ( ! as_has_scheduled_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' ) ) {
-			as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
-		}
-		return true;
+		return Jobs::is_queued( 'mvs_ai_process_media', array( $media_id ) )
+			|| Jobs::async( 'mvs_ai_process_media', array( $media_id ) );
 	}
 
 	/**

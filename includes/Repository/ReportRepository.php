@@ -147,24 +147,23 @@ class ReportRepository {
 	}
 
 	/**
-	 * Start the sweep: one queued job, or inline batches when Action Scheduler is absent.
+	 * Start the sweep: one queued job, or inline batches when the scheduler is not ready.
 	 *
 	 * @since 2.6.5
 	 */
 	public static function queue_sweep(): void {
-		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
-			self::sweep_orphans( 0 );
+		if ( \WPMediaVerse\Core\Jobs::is_queued( self::SWEEP_HOOK ) ) {
 			return;
 		}
-		if ( ! as_has_scheduled_action( self::SWEEP_HOOK, null, 'wpmediaverse' ) ) {
-			as_enqueue_async_action( self::SWEEP_HOOK, array( 0 ), 'wpmediaverse' );
+		if ( ! \WPMediaVerse\Core\Jobs::async( self::SWEEP_HOOK, array( 0 ) ) ) {
+			self::sweep_orphans( 0 );
 		}
 	}
 
 	/**
 	 * Action Scheduler job: close one batch, then queue the next while batches come back full.
 	 *
-	 * Without Action Scheduler the batches run inline, one after another.
+	 * When the scheduler is not ready the batches run inline, one after another.
 	 *
 	 * @since 2.6.5
 	 *
@@ -175,8 +174,7 @@ class ReportRepository {
 		$batch = $repo->close_orphan_media_reports( (int) $after_id );
 
 		while ( 500 === $batch['scanned'] ) {
-			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::SWEEP_HOOK, array( $batch['last_id'] ), 'wpmediaverse' );
+			if ( \WPMediaVerse\Core\Jobs::async( self::SWEEP_HOOK, array( $batch['last_id'] ) ) ) {
 				return;
 			}
 			$batch = $repo->close_orphan_media_reports( $batch['last_id'] );

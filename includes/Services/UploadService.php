@@ -2420,16 +2420,9 @@ class UploadService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action(
-				'mvs_cloud_sync_media',
-				array( 'media_id' => $media_id ),
-				'wpmediaverse'
-			);
-			return;
+		if ( ! \WPMediaVerse\Core\Jobs::async( 'mvs_cloud_sync_media', array( 'media_id' => $media_id ) ) ) {
+			self::run_cloud_sync( $media_id );
 		}
-
-		self::run_cloud_sync( $media_id );
 	}
 
 	/**
@@ -2450,15 +2443,11 @@ class UploadService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			// A privacy flipped twice before the job runs needs one trip home, not two.
-			if ( ! as_has_scheduled_action( 'mvs_cloud_repatriate_media', array( 'media_id' => $media_id ), 'wpmediaverse' ) ) {
-				as_enqueue_async_action( 'mvs_cloud_repatriate_media', array( 'media_id' => $media_id ), 'wpmediaverse' );
-			}
-			return;
+		// A privacy flipped twice before the job runs needs one trip home, not two.
+		$args = array( 'media_id' => $media_id );
+		if ( ! \WPMediaVerse\Core\Jobs::is_queued( 'mvs_cloud_repatriate_media', $args ) && ! \WPMediaVerse\Core\Jobs::async( 'mvs_cloud_repatriate_media', $args ) ) {
+			self::run_cloud_repatriation( $media_id );
 		}
-
-		self::run_cloud_repatriation( $media_id );
 	}
 
 	/**
