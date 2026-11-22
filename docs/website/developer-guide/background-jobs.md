@@ -44,6 +44,8 @@ The full job list (hook, trigger, how many jobs one event creates, arguments) is
 | `StorageCleanupService::AS_GROUP`, `StorageRepairService::AS_GROUP` | `wpmediaverse` | Deprecated; now equal `mvs` |
 | `ExtractionService::AS_GROUP`, `CompetitionsScheduler::AS_GROUP` **(Pro)** | `wpmediaverse-pro` | Deprecated; now equal `mvs` |
 | `FolderService::enqueue()`, `FolderService::dequeue()` **(Pro)** | Public helpers | Deprecated (they still work and log a deprecation notice) |
+| `WPMediaVersePro\Core\Jobs` **(Pro)** | Pro's scheduling helpers | Deprecated; use `WPMediaVerse\Core\Jobs` (Free), which now also has `ensure_recurring()`, `is_scheduling_request()` and `next()` |
+| Free version Pro needs **(Pro)** | 2.6.4 | 2.6.5 (Pro shows the "requires the free plugin" notice and stays off with an older Free) |
 | Competition tick **(Pro)** | `mvs_competitions_tick` every 5 minutes | One job at the next deadline; the recurring row is cancelled on upgrade |
 | Captions reaper **(Pro)** | `mvs_pro_captions_reap_stale` every 5 minutes | Armed only while a transcription is running; the recurring row is cancelled on upgrade |
 | Streak check **(Pro)** | Queued whether or not streaks were on | Queued only while streaks are on |

@@ -4,16 +4,15 @@ The portfolio rule set is the Wbcom background-jobs standard (`~/.claude/workflo
 for maintainers). This page is MediaVerse's copy: the rules as we apply them, and the real job list. Update
 the job list in the same commit as any change to a job.
 
-## 1. One entry point per plugin
+## 1. One entry point for the family
 
-| Plugin | Class | What goes through it |
-|---|---|---|
-| Free | `WPMediaVerse\Core\Jobs` | every queue, lookup, cancel, progress read, the finished-row prune and the 2.6.5 group move |
-| Pro | `WPMediaVersePro\Core\Jobs` | the same contract, plus `ensure_recurring()` for Pro's recurring rows |
+Every MediaVerse job, Free and Pro, is queued, found and cancelled through Free's `WPMediaVerse\Core\Jobs`.
+Pro requires Free 2.6.5 (`MVS_PRO_MIN_FREE`) and calls it directly, as it calls Free's other static helpers.
 
 Methods: `has_as()`, `when_ready( $cb )`, `async( $hook, $args )`, `at( $time, $hook, $args )`,
-`is_queued( $hook, $args|null )`, `cancel( $hook, $args )`, `adopt_pending( $hooks )`. Free adds
-`pending_args( $hook )` and `prune_history()`; Pro adds `next( $hook )` and `ensure_recurring()`.
+`is_queued( $hook, $args|null )`, `next( $hook )`, `cancel( $hook, $args )`, `pending_args( $hook )`,
+`ensure_recurring( $hook, $first, $schedule, $cron )`, `is_scheduling_request()`, `prune_history()`,
+`adopt_pending( $hooks )`.
 
 - `async()` / `at()` use Action Scheduler (Free's bundled copy, `libs/action-scheduler`) once its store is
   ready, and WP-Cron before that (for example an upgrade routine running early in a request). They return
@@ -21,13 +20,15 @@ Methods: `has_as()`, `when_ready( $cb )`, `async( $hook, $args )`, `at( $time, $
   on `false`, and that is the only fallback code a caller carries.
 - Lookups and cancels match by hook and arguments in **any** group. Every MediaVerse hook starts with `mvs_`
   and belongs to us alone, and a row queued before 2.6.5 may still sit in an old group.
-- Why Pro has its own copy: Pro never imports a Free concrete class (Pro CLAUDE.md, rule 3) and Pro 2.6.5
-  still runs on Free 2.6.4, which has no `Jobs`. The two classes keep one contract; if Pro's floor moves to
-  Free 2.6.5, Pro's copy can delegate to Free's through the container.
-- Direct `as_*()` calls outside the two classes are limited to three, each commented in place:
+- `ensure_recurring()` keeps exactly one argument-less recurring row (a continuation of the same hook carries a
+  cursor and does not count) and runs only on scheduling requests.
+- Pro's `WPMediaVersePro\Core\Jobs` keeps only its two 2.6.4 methods (`ensure_recurring()` with its old
+  five-argument signature, `is_scheduling_request()`), deprecated, handing off to Free's.
+- Direct Action Scheduler calls outside `Jobs` are limited to these, each commented in place:
   `CompetitionsScheduler::arm()` reads `as_next_scheduled_action()` because it answers `true` while a tick
   runs; `TranscriptionService::retire_recurring_reaper()` cancels only the argument-less row in the legacy
-  `mvs-pro` group (one-time retirement); `Jobs` itself.
+  `mvs-pro` group (one-time retirement); Pro `Lifecycle::clear_scheduled()` and both `uninstall.php` files,
+  which run when the plugins may not be loaded.
 
 ## 2. One group: `mvs`
 
@@ -60,13 +61,13 @@ lookups are group-agnostic.
    space-drive trash, storage repair). Fan-out is at most one job per batch of 100 or more rows.
 4. **No `unique` with arguments.** Action Scheduler's `$unique` flag ignores arguments, so a unique job with
    arguments would block every other job of the hook. Duplicate guards use `Jobs::is_queued( $hook, $args )`.
-   `$unique` is used only for argument-less recurring rows (`Pro Jobs::ensure_recurring()`).
+   `$unique` is used only for argument-less recurring rows (`Jobs::ensure_recurring()`).
 5. **Never skip.** A job is never dropped because the queue is busy or stalled; at most an identical pending
    copy is reused.
 6. **Retries are capped at 3** (`StorageCleanupService::MAX_ATTEMPTS`, `WebhookService::MAX_ATTEMPTS`), with a
    5-minute step (`RETRY_STEP_SECONDS`).
 7. **Recurring rows are armed only on scheduling requests**: cron, WP-CLI, or an admin page load, never a
-   visitor's request (`Pro Jobs::is_scheduling_request()`), and re-armed on
+   visitor's request (`Jobs::is_scheduling_request()`), and re-armed on
    `action_scheduler_ensure_recurring_actions`.
 8. **Own rows only.** The daily `mvs_prune_logs` event calls `Jobs::prune_history()`: completed actions in
    group `mvs` older than `mvs_finished_action_retention_days` (default 7) are deleted with their log rows,
@@ -131,7 +132,7 @@ WP-Cron (light hourly or daily): `mvs_expire_boosts`, `mvs_pro_flush_boost_impre
 ## 5. Adding a job
 
 1. Look in this list and the manifest (`audit/manifests/manifest.json`, `cron`) for a job that already does it.
-2. Queue it through `Jobs`; never call `as_*()` or `wp_schedule_*()` directly.
+2. Queue it through Free's `\WPMediaVerse\Core\Jobs`; never call `as_*()` or `wp_schedule_*()` directly.
 3. Add the hook to `Deactivator::JOB_HOOKS` (Free) or `Lifecycle::JOB_HOOKS` / `RECURRING_HOOKS` (Pro), so
    deactivation and uninstall clear it.
 4. Add a row to section 4.

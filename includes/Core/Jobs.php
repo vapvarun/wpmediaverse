@@ -1,11 +1,11 @@
 <?php
 /**
- * The one place MediaVerse Free queues background work.
+ * The one place MediaVerse (Free and Pro) queues background work.
  *
  * Action Scheduler (bundled in libs/action-scheduler) when its store is ready, WP-Cron before that, for example
- * when an upgrade routine queues work early in a request. Every Free class that queues, checks or cancels a job goes
- * through here, so the group, the "is the store ready" rule and the clean-up of our own finished rows live once.
- * Rules and the job list: docs/standards/background-jobs.md.
+ * when an upgrade routine queues work early in a request. Every Free and Pro class that queues, checks or cancels a
+ * job goes through here, so the group, the "is the store ready" rule and the clean-up of our own finished rows live
+ * once. Rules and the job list: docs/standards/background-jobs.md.
  *
  * Lookups (is_queued, cancel) match by hook and arguments in any group: every MediaVerse hook name starts
  * with mvs_ and is ours alone, and a pending row queued by a version before 2.6.5 sits in an older group.
@@ -123,6 +123,74 @@ final class Jobs {
 			return true;
 		}
 		return null === $args ? self::cron_has( $hook ) : false !== wp_next_scheduled( $hook, $args );
+	}
+
+	/**
+	 * Next run time of a pending Action Scheduler copy with any arguments.
+	 *
+	 * @param string $hook Action hook.
+	 * @return int Unix time; 0 when none is pending, or one is running now.
+	 */
+	public static function next( string $hook ): int {
+		if ( ! self::has_as() ) {
+			return (int) wp_next_scheduled( $hook );
+		}
+		$next = as_next_scheduled_action( $hook );
+		return is_int( $next ) ? $next : 0;
+	}
+
+	/**
+	 * Make sure exactly one pending recurring row exists for an argument-less hook.
+	 *
+	 * "Is it scheduled? If not, schedule it" is not atomic, so requests arriving together each scheduled one; Action
+	 * Scheduler's $unique flag inserts only when no pending copy exists, and copies an older version left behind are
+	 * cancelled here. Only the argument-less row counts: a continuation of the same hook carries a cursor. Runs only
+	 * on a scheduling request; the cron runner re-arms a lost row on action_scheduler_ensure_recurring_actions.
+	 *
+	 * @param string     $hook     Action hook.
+	 * @param int        $first    Unix time of the first run.
+	 * @param int|string $schedule Interval in seconds, or a cron expression when $cron is true.
+	 * @param bool       $cron     Whether $schedule is a cron expression.
+	 */
+	public static function ensure_recurring( string $hook, int $first, $schedule, bool $cron = false ): void {
+		if ( ! self::is_scheduling_request() || ! self::has_as() ) {
+			return;
+		}
+
+		$pending = count(
+			(array) as_get_scheduled_actions(
+				array(
+					'hook'     => $hook,
+					'args'     => array(),
+					'status'   => \ActionScheduler_Store::STATUS_PENDING,
+					'per_page' => -1,
+				),
+				'ids'
+			)
+		);
+
+		if ( $pending ) {
+			for ( $i = 1; $i < $pending; $i++ ) {
+				as_unschedule_action( $hook, array() );
+			}
+			return;
+		}
+
+		if ( $cron ) {
+			as_schedule_cron_action( $first, (string) $schedule, $hook, array(), self::GROUP, true );
+			return;
+		}
+		as_schedule_recurring_action( $first, (int) $schedule, $hook, array(), self::GROUP, true );
+	}
+
+	/**
+	 * Whether this request may arm recurring jobs: cron, WP-CLI, or an admin page load (not an admin-ajax call,
+	 * which visitors' pages make too). Each check is a query, so a visitor's request never pays for it.
+	 *
+	 * @return bool
+	 */
+	public static function is_scheduling_request(): bool {
+		return wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) || ( is_admin() && ! wp_doing_ajax() );
 	}
 
 	/**

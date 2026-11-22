@@ -7525,7 +7525,7 @@
     "unchanged": "tables, capabilities, shortcodes, blocks registered, post types"
   },
   "jobs_entry_point": {
-    "class": "Core\\Jobs (one per plugin; Pro mirrors Free because Pro never imports Free concrete classes and supports Free 2.6.4)",
+    "class": "WPMediaVerse\\Core\\Jobs (Free) for Free and Pro; Pro requires Free 2.6.5 and calls it directly. WPMediaVersePro\\Core\\Jobs is a deprecated shim for its two 2.6.4 methods.",
     "group": "mvs",
     "legacy_groups": [
       "wpmediaverse",
