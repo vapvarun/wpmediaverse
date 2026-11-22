@@ -4179,7 +4179,7 @@
       ],
       "note": "transition hooks are now actions fired by the single mvs_competitions_tick; old rows cancelled by CompetitionsScheduler legacy retirement and Pro migrations v24-v26"
     },
-    "lookups": "is_queued: pending or running; is_pending: waiting only; async_once: queue unless waiting (names match Jetonomy Queue)",
+    "lookups": "is_queued: pending or running (start guards); is_pending: waiting only (continuations); async_once: queue unless a copy is waiting; cancel_pending: set-based cancel of exact hooks (deactivation). Differences from Jetonomy Queue are listed in docs/standards/background-jobs.md section 1",
     "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }

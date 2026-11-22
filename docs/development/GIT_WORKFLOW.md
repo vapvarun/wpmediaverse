@@ -96,6 +96,8 @@ WPMediaVerse follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PA
 3. `readme.txt` - `Stable tag:` line and changelog entry (WooCommerce action-prefix format). This is the only changelog either plugin keeps; there is no `CHANGELOG.md`, and release history deliberately does not go in `CLAUDE.md`.
 4. `package.json` - `version` field.
 
+While a release branch is in development, the version header, `MVS_VERSION` and `Stable tag:` may still name the last release; they move together in the release commit. Code on the branch already carries the new version in `@since` and in constants such as `MVS_PRO_MIN_FREE`. Do not flag that difference before the release commit.
+
 **Tagging**
 
 ```bash

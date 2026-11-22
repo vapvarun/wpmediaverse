@@ -424,7 +424,7 @@ add_filter( 'mvs_story_keep_item', function ( bool $kept, int $media_id ) {
 
 ### `mvs_finished_action_retention_days` **(New in 2.6.5)**
 
-Filters how many days a finished MediaVerse background job stays in Tools > Scheduled Actions before MediaVerse deletes it with its log rows, on the daily `mvs_prune_logs` run. Only completed jobs in the `mvs` group are deleted; failed and pending jobs, and other plugins' jobs, are never touched. Values below 1 count as 1. See [Background Jobs](background-jobs.md).
+Filters how many days a finished MediaVerse background job stays in Tools > Scheduled Actions before MediaVerse deletes it with its log rows, on the daily `mvs_prune_logs` run. Completed and cancelled jobs in the `mvs` group are deleted after these days and failed ones after 90 days; pending and running jobs, and other plugins' jobs, are never touched. Values below 1 count as 1. See [Background Jobs](background-jobs.md).
 
 ```php
 add_filter( 'mvs_finished_action_retention_days', function () {

@@ -8,7 +8,8 @@ MediaVerse runs slow work (file clean-up, member deletion, webhooks, document ex
 
 - **One group.** Every MediaVerse job, Free and Pro, is in the Action Scheduler group `mvs`.
 - **No polling.** Jobs are queued by the event that needs them (an upload, a deletion, a competition deadline). Nothing runs every few minutes waiting for work.
-- **Finished jobs are trimmed.** Completed MediaVerse jobs are deleted after 7 days, with their log rows, on the daily `mvs_prune_logs` run. Failed jobs are kept so you can see what went wrong. Other plugins' jobs are never touched, and the site-wide Action Scheduler retention is left as it is.
+- **Finished jobs are trimmed.** Completed and cancelled MediaVerse jobs are deleted after 7 days, with their log rows, on the daily `mvs_prune_logs` run. Failed jobs are kept for 90 days so you can see what went wrong. Pending and running jobs and other plugins' jobs are never touched, and the site-wide Action Scheduler retention is left as it is.
+- **Deactivation cancels queued background jobs.** Switching MediaVerse (or Pro) off cancels its pending jobs: with the plugin off nothing would run them, and Action Scheduler would mark them complete unrun. Work that was pending does not carry across a deactivation: storage repair (`wp mvs repair-storage`), the AI backfill and a repeated folder or tag action recover some of it, and the plugin repository's `docs/standards/background-jobs.md` lists what each job leaves behind. Let queued work finish (Tools > Scheduled Actions, search `mvs_`) before you switch MediaVerse off. Only the plugin's own hooks are cancelled, never another plugin's jobs, and running, complete and failed jobs stay. Switching Pro back on re-arms the competitions tick and the daily streak check on the next admin page load.
 - **Works without a server cron.** Action Scheduler runs on normal site traffic through WP-Cron. A real server cron is an optional speed-up, never a requirement.
 
 ## Keep finished jobs longer or shorter
@@ -21,7 +22,7 @@ add_filter( 'mvs_finished_action_retention_days', function () {
 } );
 ```
 
-With this filter, a finished job from 10 days ago stays and one from 20 days ago is deleted on the next daily run.
+With this filter, a finished job from 10 days ago stays and one from 20 days ago is deleted on the next daily run. Failed jobs follow their own 90-day rule.
 
 ## Look up a MediaVerse job from your own code
 
@@ -40,11 +41,13 @@ The full job list (hook, trigger, how many jobs one event creates, arguments) is
 | Change | Before | From 2.6.5 |
 |---|---|---|
 | Action Scheduler group | `wpmediaverse`, `wpmediaverse-pro`, `mvs-pro`, `mvs-connectors` | `mvs` for every job. Pending jobs are moved on upgrade with the same hook, arguments and run time. |
-| Finished-job retention | Action Scheduler's site-wide 31 days | 7 days for MediaVerse's own completed jobs (filter `mvs_finished_action_retention_days`, new) and 90 days for its failed jobs |
+| Finished-job retention | Action Scheduler's site-wide 31 days | 7 days for MediaVerse's own completed and cancelled jobs (filter `mvs_finished_action_retention_days`, new) and 90 days for its failed jobs |
+| Deactivation | Cancelled only recurring jobs; one-off jobs stayed queued with no listener | Cancels every pending job of the plugin's own hooks (`WPMediaVerse\Core\Jobs::cancel_pending()`, new); Pro re-arms its competitions tick and streak check after reactivation |
 | `StorageCleanupService::AS_GROUP`, `StorageRepairService::AS_GROUP` | `wpmediaverse` | Deprecated; now equal `mvs` |
 | `ExtractionService::AS_GROUP`, `CompetitionsScheduler::AS_GROUP` **(Pro)** | `wpmediaverse-pro` | Deprecated; now equal `mvs` |
-| `FolderService::enqueue()`, `FolderService::dequeue()` **(Pro)** | Public helpers | Deprecated (they still work and log a deprecation notice) |
-| `WPMediaVersePro\Core\Jobs` **(Pro)** | Pro's scheduling helpers | Deprecated; use `WPMediaVerse\Core\Jobs` (Free), which now also has `ensure_recurring()`, `is_scheduling_request()` and `next()` |
+| `FolderService::enqueue()`, `FolderService::dequeue()` **(Pro)** | Public helpers | Deprecated (they still work and log a deprecation notice; removed in 4.0.0, like every deprecation in this table) |
+| `WPMediaVersePro\Core\Jobs` **(Pro)** | Pro's scheduling helpers | Deprecated; use `WPMediaVerse\Core\Jobs` (Free, new in 2.6.5), the one entry point for both plugins: its methods are listed in the plugin repository at `docs/standards/background-jobs.md` |
+| `Deactivator::clear_scheduled( $include_jobs )`, `Lifecycle::clear_scheduled( $include_jobs )` **(Pro)** | `false` cleared recurring jobs only | The argument is ignored; both cancel every pending job of the plugin |
 | `DirectDelivery::is_scheduling_request()` | Admin page loads and cron | Deprecated; use `WPMediaVerse\Core\Jobs::is_scheduling_request()`, which also allows WP-CLI and Action Scheduler's daily housekeeping run |
 | `StorageCleanupService::MAX_ATTEMPTS` | 5 | 3, the same cap as webhooks |
 | `mvs_ai_process_media` arguments | `{ media_id }` | `[ media_id ]` (the listener accepts both, so jobs queued before the update still run) |
