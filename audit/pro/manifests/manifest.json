@@ -1904,42 +1904,6 @@
   ],
   "cron": [
     {
-      "hook": "mvs_resolve_expired_battles",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Battles\\BattleService::resolve_expired",
-      "file": "wpmediaverse-pro.php:166 (schedule); includes/Core/Plugin.php:449 (handler)"
-    },
-    {
-      "hook": "mvs_activate_scheduled_challenges",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Challenges\\ChallengeService::activate_scheduled",
-      "file": "wpmediaverse-pro.php:167; includes/Core/Plugin.php:470"
-    },
-    {
-      "hook": "mvs_close_challenge_entries",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Challenges\\ChallengeService::close_entries",
-      "file": "wpmediaverse-pro.php:168; includes/Core/Plugin.php:471"
-    },
-    {
-      "hook": "mvs_finalize_expired_challenges",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Challenges\\ChallengeService::finalize_expired",
-      "file": "wpmediaverse-pro.php:169; includes/Core/Plugin.php:472"
-    },
-    {
-      "hook": "mvs_start_registered_tournaments",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Tournaments\\TournamentService::start_registered",
-      "file": "wpmediaverse-pro.php:170; includes/Core/Plugin.php:491"
-    },
-    {
-      "hook": "mvs_resolve_expired_matches",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Tournaments\\TournamentService::resolve_expired_matches",
-      "file": "wpmediaverse-pro.php:171; includes/Core/Plugin.php:492"
-    },
-    {
       "hook": "mvs_expire_boosts",
       "interval": "HOUR (AS recurring + wp_schedule_event fallback)",
       "handler": "Boosts\\BoostService::expire_boosts",
@@ -1995,7 +1959,7 @@
     },
     {
       "hook": "mvs_pro_push_send",
-      "interval": "async (Action Scheduler, group mvs-pro)",
+      "interval": "async (Action Scheduler, group mvs)",
       "handler": "Push\\PushService::deliver",
       "file": "includes/Push/PushService.php:159 (schedule); :41 (handler)"
     },
@@ -2034,6 +1998,31 @@
       "interval": "scheduled export run",
       "handler": "Connectors\\ConnectorManager::auto_export",
       "file": "includes/Connectors/ConnectorManager.php:186 (schedule); includes/Core/Plugin.php:275 (handler)"
+    },
+    {
+      "hook": "mvs_document_folder_purge",
+      "interval": "single (Jobs::at) at trash expiry, 1 per folder",
+      "file": "includes/Documents/FolderService.php:1796"
+    },
+    {
+      "hook": "mvs_document_folder_trash_contents",
+      "interval": "async (Jobs), 1 per folder, deduped",
+      "file": "includes/Core/Migrator.php:415"
+    },
+    {
+      "hook": "mvs_document_folder_restore_contents",
+      "interval": "async (Jobs), 1 per folder, deduped",
+      "file": "includes/Documents/FolderService.php:1735"
+    },
+    {
+      "hook": "mvs_document_space_drive_trash",
+      "interval": "async (Jobs), 1 continuation per run of 200",
+      "file": "includes/Documents/SpaceDriveCleanup.php:155"
+    },
+    {
+      "hook": "mvs_pro_flush_boost_impressions",
+      "interval": "hourly (wp_schedule_event)",
+      "file": "includes/Core/Plugin.php:822"
     }
   ],
   "wp_cli": [
@@ -4163,5 +4152,32 @@
       "mvs_battle_resolved": "fires only with a winner"
     },
     "unchanged": "REST routes, tables, settings, cron"
+  },
+  "jobs_entry_point": {
+    "class": "Core\\Jobs (one per plugin; Pro mirrors Free because Pro never imports Free concrete classes and supports Free 2.6.4)",
+    "group": "mvs",
+    "legacy_groups": [
+      "wpmediaverse",
+      "wpmediaverse-pro",
+      "mvs-pro",
+      "mvs-connectors"
+    ],
+    "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs; filter mvs_finished_action_retention_days (default 7 days); completed rows in group mvs only",
+    "doc": "docs/standards/background-jobs.md",
+    "since": "2.6.5",
+    "retired_jobs": {
+      "hooks": [
+        "mvs_resolve_expired_battles",
+        "mvs_activate_scheduled_challenges",
+        "mvs_close_challenge_entries",
+        "mvs_finalize_expired_challenges",
+        "mvs_start_registered_tournaments",
+        "mvs_resolve_expired_matches",
+        "five-minute mvs_competitions_tick recurring row",
+        "recurring mvs_pro_captions_reap_stale row"
+      ],
+      "note": "transition hooks are now actions fired by the single mvs_competitions_tick; old rows cancelled by CompetitionsScheduler legacy retirement and Pro migrations v24-v26"
+    }
   }
 }

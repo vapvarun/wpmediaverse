@@ -342,6 +342,7 @@ All docs (Free + Pro) live in this plugin. Pro carries only its own `docs/standa
 | `docs/development/` | `ls docs/development/` (coding standards, contributing, extension guide, integration event hooks, local testing for each plugin, git workflow, storage-driver verification, and others) |
 | `docs/security/SECURITY_CHECKLIST.md` | Security checklist |
 | `docs/standards/` | `ls docs/standards/`: synced standards (QA catalog, frontend interactivity, i18n, integration, preset licence activation) and verification guides |
+| `docs/standards/background-jobs.md` | Background jobs (Free + Pro): queue, look up and cancel only through `Core\Jobs`, one Action Scheduler group `mvs`, ids in arguments, cursor jobs, own finished rows pruned. Holds the job list; update it in the same commit as any job change. |
 | `docs/standards/authorization-guards.md` | What the four `audit/*-authority.json` manifests are (route, capability, render surface, admin action) and why each is an assertion rather than documentation. Their tests run inside the unit suite; a route that loses its permission check fails the build. |
 | `docs/verification/` | Ad-hoc verification reports (e.g. `cloud-storage-verification.md`) |
 | `docs/website/` | Public docs source. **Lives in this repo only** - do not publish or sync it anywhere. |

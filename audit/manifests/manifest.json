@@ -5943,7 +5943,7 @@
     },
     {
       "hook": "mvs_ai_process_media",
-      "interval": "async (Action Scheduler, group wpmediaverse)",
+      "interval": "async (Action Scheduler, group mvs)",
       "handler": "Services\\AiService::process",
       "file": "includes/Core/Plugin.php:1154; includes/Admin/MediaListPage.php:1292; includes/CLI/Commands.php:2064"
     },
@@ -5955,7 +5955,7 @@
     },
     {
       "hook": "mvs_repair_storage_paths",
-      "interval": "async/single (Action Scheduler, group wpmediaverse)",
+      "interval": "async/single (Action Scheduler, group mvs)",
       "handler": "Services\\StorageRepairService::run_batch",
       "file": "includes/Services/StorageRepairService.php:372 (schedule); const at :64"
     },
@@ -5964,6 +5964,56 @@
       "interval": "single event (wp_schedule_single_event, 2.4.0 migration)",
       "handler": "Core\\Migrator::backfill_drive_columns",
       "file": "includes/Core/Migrator.php:2126 and :2239 (schedule); const at :38"
+    },
+    {
+      "hook": "mvs_close_orphan_reports",
+      "interval": "async (Jobs), cursor continuation per 500 reports; queued by migration v46",
+      "file": "includes/Repository/ReportRepository.php:158"
+    },
+    {
+      "hook": "mvs_cloud_repatriate_media",
+      "interval": "async (Jobs), 1 per media, deduped",
+      "file": "includes/Services/UploadService.php:2448"
+    },
+    {
+      "hook": "mvs_convert_legacy_media_names",
+      "interval": "async (Jobs), self-continuing",
+      "file": "includes/Services/MediaFileRotator.php:336"
+    },
+    {
+      "hook": "mvs_move_chat_attachments",
+      "interval": "async (Jobs), continues per 25",
+      "file": "includes/Messaging/ChatFiles.php:504"
+    },
+    {
+      "hook": "mvs_rotate_media_files",
+      "interval": "async (Jobs), 1 per 100 ids",
+      "file": "includes/Services/MediaFileRotator.php:135"
+    },
+    {
+      "hook": "mvs_tag_forget_batch",
+      "interval": "async (Jobs), 1 per 200 items, first batch inline",
+      "file": "includes/Taxonomies/MediaTag.php:61"
+    },
+    {
+      "hook": "mvs_tag_merge_batch",
+      "interval": "async (Jobs), continues per batch",
+      "file": "includes/Admin/TagManagementPage.php:616"
+    },
+    {
+      "hook": "mvs_user_deletion_cascade",
+      "interval": "async (Jobs), continues per 100 media",
+      "file": "includes/Services/UserDeletionService.php:402"
+    },
+    {
+      "hook": "mvs_user_deletion_purge",
+      "interval": "async (Jobs)",
+      "file": "includes/Services/UserDeletionService.php:434"
+    },
+    {
+      "hook": "wpmediaverse_activate_preset_key",
+      "interval": "single (WP-Cron), licence preset",
+      "file": "includes/Core/PresetActivation.php:150"
     }
   ],
   "wp_cli": [
@@ -7473,5 +7523,19 @@
       ]
     },
     "unchanged": "tables, capabilities, shortcodes, blocks registered, post types"
+  },
+  "jobs_entry_point": {
+    "class": "Core\\Jobs (one per plugin; Pro mirrors Free because Pro never imports Free concrete classes and supports Free 2.6.4)",
+    "group": "mvs",
+    "legacy_groups": [
+      "wpmediaverse",
+      "wpmediaverse-pro",
+      "mvs-pro",
+      "mvs-connectors"
+    ],
+    "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs; filter mvs_finished_action_retention_days (default 7 days); completed rows in group mvs only",
+    "doc": "docs/standards/background-jobs.md",
+    "since": "2.6.5"
   }
 }

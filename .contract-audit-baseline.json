@@ -128,15 +128,15 @@
     },
     {
       "id": "hook-consumed-never-fired:mvs_document_folder_trash_contents",
-      "reason": "False positive. Pro fires it through Action Scheduler with the class constant: FolderService::enqueue( self::TRASH_CONTENTS_HOOK, ... ) (FolderService.php:1678). The scanner cannot resolve constant hook names. Verified 2026-09-30."
+      "reason": "False positive. Pro fires it through Action Scheduler with the class constant: FolderService::queue( self::TRASH_CONTENTS_HOOK, ... ) (FolderService.php). The scanner cannot resolve constant hook names. Verified 2026-09-30."
     },
     {
       "id": "hook-consumed-never-fired:mvs_document_folder_restore_contents",
-      "reason": "False positive. Fired via FolderService::enqueue( self::RESTORE_CONTENTS_HOOK, ... ) (FolderService.php:1744), an Action Scheduler job keyed by the class constant. Verified 2026-09-30."
+      "reason": "False positive. Fired via FolderService::queue( self::RESTORE_CONTENTS_HOOK, ... ) (FolderService.php), an Action Scheduler job keyed by the class constant. Verified 2026-09-30."
     },
     {
       "id": "hook-consumed-never-fired:mvs_document_folder_purge",
-      "reason": "False positive. Fired via FolderService::enqueue( self::PURGE_HOOK, ... ) (FolderService.php:1805, :1926), an Action Scheduler job keyed by the class constant. Verified 2026-09-30."
+      "reason": "False positive. Fired via FolderService::queue( self::PURGE_HOOK, ... ) (FolderService.php), an Action Scheduler job keyed by the class constant. Verified 2026-09-30."
     },
     {
       "id": "hook-consumed-never-fired:mvs_community_notification_visible",

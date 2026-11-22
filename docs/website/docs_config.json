@@ -406,6 +406,10 @@
           "title": "WP-CLI Commands"
         },
         {
+          "slug": "background-jobs",
+          "title": "Background Jobs"
+        },
+        {
           "slug": "migration-tools",
           "title": "Migration Tools"
         }
