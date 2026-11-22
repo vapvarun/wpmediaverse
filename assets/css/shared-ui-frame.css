@@ -70,7 +70,7 @@
 .mvs-fab-container {
 	position: fixed;
 	bottom: var(--mvs-fab-bottom);
-	right: 24px;
+	inset-inline-end: 24px;
 	z-index: 99999;
 }
 
@@ -376,7 +376,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-preview-remove {
 	position: absolute;
 	top: -6px;
-	right: -6px;
+	inset-inline-end: -6px;
 	width: 22px;
 	height: 22px;
 	border-radius: 50%;
@@ -665,7 +665,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	position: fixed;
 	/* Above the + button, never on it - see the FAB tokens at the top. */
 	bottom: calc(var(--mvs-fab-bottom) + var(--mvs-fab-diameter) + 12px + env(safe-area-inset-bottom, 0px));
-	right: 24px;
+	inset-inline-end: 24px;
 	padding: 12px 20px;
 	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
@@ -690,8 +690,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
    and the toast sat 16px from one edge and 24px from the other. */
 @media (max-width: 767px) {
 	.mvs-toast {
-		right: 16px;
-		left: 16px;
+		inset-inline-end: 16px;
+		inset-inline-start: 16px;
 		justify-content: center;
 		text-align: center;
 	}
@@ -912,7 +912,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	margin: 0;
 	font-size: 12px;
 	color: var( --mvs-text-muted, #757575 );
-	padding-left: 24px;
+	padding-inline-start: 24px;
 }
 
 /* Access rules panel — repeatable role / group-membership / capability
@@ -1033,6 +1033,48 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	margin: 0;
 }
 
+.mvs-modal-error p:focus {
+	outline: none;
+}
+
+.mvs-modal-error p:focus-visible {
+	outline: 2px solid var( --mvs-primary, #2271b1 );
+	outline-offset: 2px;
+}
+
+/* Retry after a failed save: a link-style button with a full tap target. */
+.mvs-modal-error__retry {
+	min-height: 44px;
+	padding: 0 4px;
+	margin-inline-start: 4px;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	font-weight: 600;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.mvs-modal-error__retry[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-error__retry:focus-visible {
+	outline: 2px solid var( --mvs-primary, #2271b1 );
+	outline-offset: 2px;
+}
+
+.mvs-lightbox-comment-edit-error {
+	margin: 6px 0 0;
+	color: var( --mvs-danger, #d63638 );
+	font-size: 13px;
+}
+
+.mvs-lightbox-comment-edit-error[hidden] {
+	display: none !important;
+}
+
 /* Footer matches existing modal footer */
 .mvs-edit-modal .mvs-modal-footer {
 	display: flex;
@@ -1091,7 +1133,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-tag-pills__label {
 	font-size: 12px;
 	color: var( --mvs-text-muted, #757575 );
-	margin-right: 4px;
+	margin-inline-end: 4px;
 }
 
 .mvs-tag-pill {
@@ -1120,7 +1162,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 .mvs-tag-pill::before {
 	content: '#';
-	margin-right: 2px;
+	margin-inline-end: 2px;
 	opacity: 0.6;
 }
 

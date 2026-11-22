@@ -76,7 +76,7 @@ wp_interactivity_state(
 			/* translators: %s: number of downloads (2 or more). */
 			'downloadMany'         => _n( '%s download', '%s downloads', 2, 'wpmediaverse' ),
 			'loadMediaFailed'      => __( 'Could not load this media. Try again.', 'wpmediaverse' ),
-			'saveFailedRetry'      => __( 'Could not save. Try again.', 'wpmediaverse' ),
+			'saveFailedKept'       => __( 'Could not save. Your changes are still here.', 'wpmediaverse' ),
 			'uploadFailed'         => __( 'Upload failed.', 'wpmediaverse' ),
 			'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
 			/* translators: used when the comment has exactly one reply. */
@@ -526,14 +526,7 @@ wp_interactivity_state(
 					// visitor's click asks them to log in (lightboxToggleReaction)
 					// instead of the row silently doing nothing. Icons are the
 					// vendored Fluent emoji (TemplateHelpers::emoji_url()).
-					$mvs_reaction_labels = array(
-						'like'  => __( 'Like', 'wpmediaverse' ),
-						'love'  => __( 'Love', 'wpmediaverse' ),
-						'haha'  => __( 'Haha', 'wpmediaverse' ),
-						'wow'   => __( 'Wow', 'wpmediaverse' ),
-						'sad'   => __( 'Sad', 'wpmediaverse' ),
-						'angry' => __( 'Angry', 'wpmediaverse' ),
-					);
+					$mvs_reaction_labels = \WPMediaVerse\Core\TemplateHelpers::reaction_labels();
 					foreach ( \WPMediaVerse\Social\ReactionService::TYPES as $mvs_reaction ) :
 						$mvs_state_key = ucfirst( $mvs_reaction );
 						?>
@@ -687,6 +680,7 @@ wp_interactivity_state(
 											aria-label="<?php esc_attr_e( 'Edit comment', 'wpmediaverse' ); ?>"
 											data-wp-bind--value="context.item.editText"
 											data-wp-on--input="actions.updateLightboxEditText"></textarea>
+										<p class="mvs-lightbox-comment-edit-error" role="alert" tabindex="-1" hidden data-wp-bind--hidden="state.hideLightboxCommentEditError" data-wp-text="context.item.editError"></p>
 										<div class="mvs-lightbox-comment-edit-actions">
 											<button class="mvs-btn mvs-btn--small" type="button"
 												data-wp-on--click="actions.saveEditLightboxComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>

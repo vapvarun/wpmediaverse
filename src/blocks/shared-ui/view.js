@@ -238,7 +238,7 @@ function mapLightboxComment( c ) {
 		author_avatar: c.author_avatar || '',
 		author_url: c.author_url || '',
 		date: c.date,
-		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
+		date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined ),
 		content: c.content,
 		// Kept so the delete confirm can say how many replies go with it.
 		replies: Array.isArray( c.replies ) ? c.replies : [],
@@ -248,6 +248,7 @@ function mapLightboxComment( c ) {
 		reported: false,
 		editing: false,
 		editText: '',
+		editError: '',
 	};
 }
 
@@ -568,6 +569,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// branch applies.
 		editModalRegenerateSlug: false,
 		editModalError: '',
+		// A failed save that sending again may fix (network, server error): shows Retry. A refusal does not.
+		editModalCanRetry: false,
 
 
 		// --- Popular tag pills (cached for the session, lazily loaded the
@@ -831,6 +834,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// The inline edit form shows only while editing this comment.
 		get hideLightboxCommentEditForm() {
 			return ! getContext().item?.editing;
+		},
+		get hideLightboxCommentEditError() {
+			return ! getContext().item?.editError;
+		},
+		get hideEditModalRetry() {
+			return ! state.editModalCanRetry;
 		},
 		get hideLightboxCommentContent() {
 			return !! getContext().item?.editing;
@@ -1179,6 +1188,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalReplaceProgress = '';
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
+			state.editModalCanRetry = false;
 			state.editModalSaving = false;
 			state.editModalMode = 'modal';
 			if ( wasModal ) {
@@ -1292,6 +1302,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			state.editModalSaving = true;
 			state.editModalError = '';
+			state.editModalCanRetry = false;
 
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -1316,8 +1327,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					body,
 				} );
 				if ( ! res.ok ) {
-					const err = res.data || {};
-					throw new Error( err.message || 'save_failed' );
+					const failure = new Error( ( res.data && res.data.message ) || '' );
+					// A 4xx with a reason is a refusal (expired session, no permission, item gone): sending it
+					// again changes nothing, so show the reason and no Retry. Anything else may be passing.
+					failure.refused = res.status >= 400 && res.status < 500 && ! [ 408, 429 ].includes( res.status ) && '' !== failure.message;
+					throw failure;
 				}
 				const updated = res.data || {};
 				const id = state.editModalMediaId;
@@ -1342,10 +1356,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				actions.closeEditModal();
 				announceMediaUpdated( id, updated, false );
 			} catch ( err ) {
-				// Same on every surface: the message shows in the form, which stays
-				// open with what the member typed.
-				state.editModalError = err.message || state.i18n?.saveFailedRetry || 'Could not save. Try again.';
+				// The form stays open with what the member typed, and focus moves to the message so it is heard.
+				// Save (or Retry) sends the same values again; Escape closes as before.
 				state.editModalSaving = false;
+				state.editModalCanRetry = ! err.refused;
+				state.editModalError = err.refused
+					? err.message
+					: ( state.i18n?.saveFailedKept || 'Could not save. Your changes are still here.' );
+				focusWhenShown( '.mvs-modal-error:not([hidden]) [role="alert"]' );
 			}
 		},
 		// A blank player told a member nothing; show why and offer the file.
@@ -2085,12 +2103,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( item ) {
 				item.editing = false;
 				item.editText = '';
+				item.editError = '';
 			}
 		},
 		async saveEditLightboxComment() {
 			const ctx = getContext();
 			const item = ctx.item;
 			if ( ! item || ! item.editText || ! item.editText.trim() ) return;
+			const { ref } = getElement();
+			const form = ref ? ref.closest( '.mvs-lightbox-comment-edit' ) : null;
+			const kept = state.i18n?.saveFailedKept || 'Could not save. Your changes are still here.';
+			item.editError = '';
 			try {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + item.id, {
 					method: 'PUT',
@@ -2101,12 +2124,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					item.editing = false;
 					item.editText = '';
 					actions.showToast( ( state.i18n?.commentUpdated || 'Comment updated.' ), 'success' );
-				} else {
-					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+					return;
 				}
+				// Inline, next to the text the member typed (kept); Save sends it again.
+				item.editError = ( res.data && res.data.message ) || kept;
 			} catch {
-				actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+				item.editError = kept;
 			}
+			window.requestAnimationFrame( () => form?.querySelector( '[role="alert"]' )?.focus() );
 		},
 		// Deleting a comment deletes its replies, so the confirm says how many.
 		commentDeleteConfirm( item ) {

@@ -119,7 +119,10 @@ $mvs_edit_prefix = isset( $mvs_edit_prefix ) ? sanitize_html_class( (string) $mv
 			<span class="mvs-replace-file-hint"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
 		</div>
 		<div class="mvs-modal-error" hidden data-wp-bind--hidden="!state.editModalError">
-			<p role="alert" data-wp-text="state.editModalError"></p>
+			<p role="alert" tabindex="-1">
+				<span data-wp-text="state.editModalError"></span>
+				<button type="button" class="mvs-modal-error__retry" hidden data-wp-bind--hidden="state.hideEditModalRetry" data-wp-on--click="actions.saveEditModal"><?php esc_html_e( 'Retry', 'wpmediaverse' ); ?></button>
+			</p>
 		</div>
 	</div>
 </div>
