@@ -40,14 +40,21 @@ The full job list (hook, trigger, how many jobs one event creates, arguments) is
 | Change | Before | From 2.6.5 |
 |---|---|---|
 | Action Scheduler group | `wpmediaverse`, `wpmediaverse-pro`, `mvs-pro`, `mvs-connectors` | `mvs` for every job. Pending jobs are moved on upgrade with the same hook, arguments and run time. |
-| Finished-job retention | Action Scheduler's site-wide 30 days | 7 days for MediaVerse's own completed jobs, filter `mvs_finished_action_retention_days` (new) |
+| Finished-job retention | Action Scheduler's site-wide 31 days | 7 days for MediaVerse's own completed jobs (filter `mvs_finished_action_retention_days`, new) and 90 days for its failed jobs |
 | `StorageCleanupService::AS_GROUP`, `StorageRepairService::AS_GROUP` | `wpmediaverse` | Deprecated; now equal `mvs` |
 | `ExtractionService::AS_GROUP`, `CompetitionsScheduler::AS_GROUP` **(Pro)** | `wpmediaverse-pro` | Deprecated; now equal `mvs` |
 | `FolderService::enqueue()`, `FolderService::dequeue()` **(Pro)** | Public helpers | Deprecated (they still work and log a deprecation notice) |
 | `WPMediaVersePro\Core\Jobs` **(Pro)** | Pro's scheduling helpers | Deprecated; use `WPMediaVerse\Core\Jobs` (Free), which now also has `ensure_recurring()`, `is_scheduling_request()` and `next()` |
+| `DirectDelivery::is_scheduling_request()` | Admin page loads and cron | Deprecated; use `WPMediaVerse\Core\Jobs::is_scheduling_request()`, which also allows WP-CLI and Action Scheduler's daily housekeeping run |
+| `StorageCleanupService::MAX_ATTEMPTS` | 5 | 3, the same cap as webhooks |
+| `mvs_ai_process_media` arguments | `{ media_id }` | `[ media_id ]` (the listener accepts both, so jobs queued before the update still run) |
+| `TranscriptionService::maybe_schedule_reaper()`, `REAPER_INTERVAL_SECONDS` **(Pro)** | Scheduled the 5-minute reaper | Deprecated; the reaper arms itself when a transcription starts |
+| `CompetitionsScheduler::maybe_schedule_tick()` **(Pro)** | Scheduled the 5-minute tick | Deprecated; calls `CompetitionsScheduler::arm()` |
+| `StreakService::maybe_schedule_daily_cron()` **(Pro)** | Scheduled the daily check | Deprecated; calls `StreakService::sync_daily_cron()` |
+| `CompetitionsScheduler::unschedule_tick()`, `PushService::deactivate()`, `StoryService::deactivate()`, `ReplacedFileSweep::unschedule()` **(Pro)** | Deactivation helpers | Deprecated; nothing calls them, deactivation and uninstall clear every job through `Lifecycle::clear_scheduled()` |
 | Free version Pro needs **(Pro)** | 2.6.4 | 2.6.5 (Pro shows the "requires the free plugin" notice and stays off with an older Free) |
 | Competition tick **(Pro)** | `mvs_competitions_tick` every 5 minutes | One job at the next deadline; the recurring row is cancelled on upgrade |
 | Captions reaper **(Pro)** | `mvs_pro_captions_reap_stale` every 5 minutes | Armed only while a transcription is running; the recurring row is cancelled on upgrade |
 | Streak check **(Pro)** | Queued whether or not streaks were on | Queued only while streaks are on |
 
-If your code looked up a MediaVerse job with a group argument, drop the group (see the example above). Hook names and their arguments did not change.
+If your code looked up a MediaVerse job with a group argument, drop the group (see the example above). Hook names did not change; the only argument change is `mvs_ai_process_media` above.

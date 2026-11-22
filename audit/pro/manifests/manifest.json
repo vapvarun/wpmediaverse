@@ -1911,9 +1911,9 @@
     },
     {
       "hook": "mvs_competitions_tick",
-      "interval": "300s (AS recurring)",
+      "interval": "single AS action at the next competition deadline (at most one pending, at least 300s apart)",
       "handler": "Competitions\\CompetitionsScheduler::tick",
-      "file": "includes/Competitions/CompetitionsScheduler.php:64 (schedule); :39 (handler)"
+      "file": "includes/Competitions/CompetitionsScheduler.php:120 (arm); :210 (handler)"
     },
     {
       "hook": "mvs_autopilot_create_weekly_challenge",
@@ -1947,9 +1947,9 @@
     },
     {
       "hook": "mvs_pro_captions_reap_stale",
-      "interval": "recurring (Action Scheduler)",
+      "interval": "single AS action armed when a transcription starts (PROCESSING_TIMEOUT + 60s)",
       "handler": "TranscriptionService::reap_stale_jobs",
-      "where": "includes/Captions/TranscriptionService.php:325"
+      "where": "includes/Captions/TranscriptionService.php:148 (arm); :389 (handler)"
     },
     {
       "hook": "mvs_pro_transcribe_media",
@@ -4163,7 +4163,7 @@
       "mvs-connectors"
     ],
     "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
-    "finished_retention": "Jobs::prune_history on mvs_prune_logs; filter mvs_finished_action_retention_days (default 7 days); completed rows in group mvs only",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only: completed rows after mvs_finished_action_retention_days (default 7), failed rows after 90 days (Jobs::FAILED_RETENTION_DAYS)",
     "doc": "docs/standards/background-jobs.md",
     "since": "2.6.5",
     "retired_jobs": {
@@ -4178,6 +4178,8 @@
         "recurring mvs_pro_captions_reap_stale row"
       ],
       "note": "transition hooks are now actions fired by the single mvs_competitions_tick; old rows cancelled by CompetitionsScheduler legacy retirement and Pro migrations v24-v26"
-    }
+    },
+    "lookups": "is_queued: pending or running; is_pending: waiting only; async_once: queue unless waiting (names match Jetonomy Queue)",
+    "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }

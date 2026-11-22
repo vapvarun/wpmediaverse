@@ -7534,8 +7534,10 @@
       "mvs-connectors"
     ],
     "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
-    "finished_retention": "Jobs::prune_history on mvs_prune_logs; filter mvs_finished_action_retention_days (default 7 days); completed rows in group mvs only",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only: completed rows after mvs_finished_action_retention_days (default 7), failed rows after 90 days (Jobs::FAILED_RETENTION_DAYS)",
     "doc": "docs/standards/background-jobs.md",
-    "since": "2.6.5"
+    "since": "2.6.5",
+    "lookups": "is_queued: pending or running; is_pending: waiting only; async_once: queue unless waiting (names match Jetonomy Queue)",
+    "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }
