@@ -313,6 +313,15 @@ add_action(
 	}
 );
 
+// After an activation: queue again the state jobs a runner failed while MediaVerse was off.
+add_action(
+	'init',
+	static function (): void {
+		\WPMediaVerse\Core\Jobs::requeue_after_activation( \WPMediaVerse\Core\Activator::REQUEUE_TRANSIENT, \WPMediaVerse\Core\Deactivator::STATE_JOB_HOOKS );
+	},
+	20
+);
+
 // The follow-up run Core\Jobs::adopt_pending() queues when one run reaches its cap.
 add_action(
 	'mvs_adopt_pending_jobs',

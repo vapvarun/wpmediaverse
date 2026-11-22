@@ -30,9 +30,19 @@ class Activator {
 	const VERSION_OPTION = 'mvs_installed_version';
 
 	/**
+	 * Set on activation; Jobs::requeue_after_activation() reads it.
+	 *
+	 * @since 2.6.5
+	 */
+	public const REQUEUE_TRANSIENT = 'mvs_requeue_unheard_jobs';
+
+	/**
 	 * Run activation routines.
 	 */
 	public static function activate(): void {
+		// Jobs a runner failed while MediaVerse was off are queued again on the next scheduling request.
+		set_transient( self::REQUEUE_TRANSIENT, 1, DAY_IN_SECONDS );
+
 		// Run database migrations.
 		$migrator = new Migrator();
 		$migrator->run();

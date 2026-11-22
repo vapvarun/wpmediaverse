@@ -51,4 +51,29 @@ final class JobRepository {
 
 		return $total;
 	}
+
+	/**
+	 * Failed rows of exactly these hooks whose log holds one of the needles, oldest first.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string[] $hooks   Exact hook names.
+	 * @param string[] $needles Log message fragments.
+	 * @param int      $limit   Rows at most.
+	 * @return int[] Action ids.
+	 */
+	public static function unheard_failed( array $hooks, array $needles, int $limit ): array {
+		global $wpdb;
+		$hooks   = array_values( array_filter( array_map( 'strval', $hooks ) ) );
+		$needles = array_values( array_filter( array_map( 'strval', $needles ) ) );
+		if ( ! $hooks || ! $needles ) {
+			return array();
+		}
+		$in    = implode( ',', array_fill( 0, count( $hooks ), '%s' ) );
+		$likes = implode( ' OR ', array_fill( 0, count( $needles ), 'l.message LIKE %s' ) );
+		$args  = array_merge( $hooks, array_map( static fn( string $n ): string => '%' . $wpdb->esc_like( $n ) . '%', $needles ), array( $limit ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- table names and placeholder lists built above.
+		return array_map( 'intval', $wpdb->get_col( $wpdb->prepare( "SELECT a.action_id FROM {$wpdb->prefix}actionscheduler_actions a WHERE a.status = 'failed' AND a.hook IN ( {$in} ) AND EXISTS ( SELECT 1 FROM {$wpdb->prefix}actionscheduler_logs l WHERE l.action_id = a.action_id AND ( {$likes} ) ) ORDER BY a.action_id LIMIT %d", $args ) ) );
+	}
 }

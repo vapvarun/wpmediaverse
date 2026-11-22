@@ -105,6 +105,13 @@ final class Jobs {
 	public const ADOPT_HOOK = 'mvs_adopt_pending_jobs';
 
 	/**
+	 * Failed rows requeue_unheard() moves per call.
+	 *
+	 * @since 2.6.5
+	 */
+	public const REQUEUE_BATCH = 200;
+
+	/**
 	 * Whether Action Scheduler may be called: its functions exist from plugins_loaded, its store only from
 	 * action_scheduler_init.
 	 *
@@ -353,8 +360,8 @@ final class Jobs {
 	/**
 	 * Cancel every pending Action Scheduler row of exactly these hooks, in any group, set-based (10,000 per UPDATE).
 	 * For deactivation: once a plugin is off its listeners are gone, and Action Scheduler (often loaded by another
-	 * plugin) would run its rows with no listener and mark them complete, so the work is lost either way; cancelling
-	 * says so. Callers pass their own hook list, never a group: 'mvs' is shared by Free and Pro. Unlike cancel() it
+	 * plugin) would run its rows with no listener and mark them failed ("no callbacks are registered"); cancelling
+	 * says so for the jobs whose work comes back by itself. Callers pass their own hook list, never a group: 'mvs' is shared by Free and Pro. Unlike cancel() it
 	 * needs no Action Scheduler store and costs a few queries for any number of rows; it does not touch WP-Cron.
 	 *
 	 * @since 2.6.5
@@ -364,6 +371,65 @@ final class Jobs {
 	 */
 	public static function cancel_pending( array $hooks ): int {
 		return \WPMediaVerse\Repository\JobRepository::cancel_pending( $hooks );
+	}
+
+	/**
+	 * After an activation, give back the jobs a runner failed while the plugin was off. On scheduling requests while
+	 * the transient is set; each request moves up to REQUEUE_BATCH rows, and the transient goes once fewer remain.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string   $transient Set on activation by the caller.
+	 * @param string[] $hooks     The caller's state hooks (jobs that finish an action already committed).
+	 */
+	public static function requeue_after_activation( string $transient, array $hooks ): void {
+		if ( ! self::is_scheduling_request() || ! get_transient( $transient ) ) {
+			return;
+		}
+		self::when_ready(
+			static function () use ( $transient, $hooks ): void {
+				if ( self::requeue_unheard( $hooks ) < self::REQUEUE_BATCH ) {
+					delete_transient( $transient );
+				}
+			}
+		);
+	}
+
+	/**
+	 * Queue again, with the same arguments, the failed rows of these hooks that failed only because no listener was
+	 * registered (the plugin was off), and delete each failed row with its logs. A row that ran and errored is left
+	 * failed. One pending copy per hook and arguments (async_once). Rows older than FAILED_RETENTION_DAYS are gone.
+	 *
+	 * @since 2.6.5
+	 *
+	 * @param string[] $hooks Exact hook names.
+	 * @return int Rows re-queued, at most REQUEUE_BATCH.
+	 */
+	public static function requeue_unheard( array $hooks ): int {
+		if ( ! self::has_as() ) {
+			return 0;
+		}
+		// Action Scheduler logs the reason in the site's language at failure time: match the English text and the
+		// longest fixed part of the current translation. ponytail: a locale changed while the plugin was off misses
+		// its rows; they stay failed, as before.
+		$needles = array( 'no callbacks are registered' );
+		// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Action Scheduler's own string, to match its log.
+		foreach ( explode( '%1$s', __( 'Scheduled action for %1$s will not be executed as no callbacks are registered.', 'action-scheduler' ) ) as $part ) {
+			if ( strlen( trim( $part ) ) > strlen( $needles[1] ?? '' ) ) {
+				$needles[1] = trim( $part );
+			}
+		}
+
+		$store = \ActionScheduler::store();
+		$moved = 0;
+		foreach ( \WPMediaVerse\Repository\JobRepository::unheard_failed( $hooks, $needles, self::REQUEUE_BATCH ) as $id ) {
+			$action = $store->fetch_action( (string) $id );
+			if ( self::async_once( $action->get_hook(), $action->get_args() ) ) {
+				$store->delete_action( (string) $id );
+				++$moved;
+			}
+		}
+		return $moved;
 	}
 
 	/**
