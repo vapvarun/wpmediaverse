@@ -5246,6 +5246,9 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Find a media id by its stored file hash.
 	 *
+	 * A composer draft (status draft, not held for moderation) is not a finished upload, so it never counts: a file
+	 * that uploaded while the composer failed to show it must be selectable again. Held uploads still count.
+	 *
 	 * @since 2.4.0
 	 *
 	 * @param string $hash      sha256 of the stored file.
@@ -5262,7 +5265,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			return null;
 		}
 
-		$sql  = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s";
+		$sql  = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s AND NOT ( status = 'draft' AND moderation_status <> 'pending' )";
 		$args = array( $hash );
 		if ( $author_id > 0 ) {
 			$sql   .= ' AND post_author = %d';

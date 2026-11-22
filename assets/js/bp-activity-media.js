@@ -373,12 +373,22 @@
 			uploadingText.textContent = sprintf( __( 'Uploading %d files...', 'wpmediaverse' ), files.length ) + ' ' + pct + '%';
 		}
 
+		// One file failing (a duplicate, a refused type) must not cost the others: each upload settles on its own,
+		// the files that made it are attached, and every refusal is named below the previews.
+		var failures = [];
 		function runNext() {
 			if ( nextIndex >= files.length ) {
 				return Promise.resolve();
 			}
 			var index = nextIndex++;
-			return uploadFile( files[ index ], btn, slots, index, onProgress ).then( runNext );
+			return uploadFile( files[ index ], btn, slots, index, onProgress ).catch( function( err ) {
+				failures.push( sprintf(
+					/* translators: 1: file name, 2: why the upload was refused. */
+					__( '%1$s: %2$s', 'wpmediaverse' ),
+					files[ index ].name,
+					( err && err.message ) ? err.message : __( 'Upload failed. Please try again.', 'wpmediaverse' )
+				) );
+			} ).then( runNext );
 		}
 
 		var workers = [];
@@ -404,24 +414,22 @@
 				btn.style.opacity = '0.5';
 				btn.disabled = true;
 			}
-		} ).catch( function( err ) {
-			// Redraw what is still attached, then add the reason below it. The
-			// reason stays until the member's next upload, removal or post, so a
-			// long message is never cleared before it is read.
-			renderPreview();
+			if ( ! failures.length ) {
+				return;
+			}
+			// Under the previews, one line per refused file with the server's reason ("This file has already been
+			// uploaded."). It stays until the member's next upload, removal or post, so it is never cleared unread.
 			preview.style.display = '';
 			var errText = document.createElement( 'span' );
 			errText.setAttribute( 'role', 'alert' );
-			// Show the specific server message (e.g. "PDF uploads are not
-			// supported.") instead of a generic line, so an unsupported-type
-			// upload tells the user WHY.
-			errText.textContent = ( err && err.message )
-				? err.message
-				: __( 'Upload failed. Please try again.', 'wpmediaverse' );
 			errText.className = 'mvs-activity-media-error';
+			failures.forEach( function( line, i ) {
+				if ( i ) {
+					errText.appendChild( document.createElement( 'br' ) );
+				}
+				errText.appendChild( document.createTextNode( line ) );
+			} );
 			preview.appendChild( errText );
-			btn.disabled = false;
-			btn.style.opacity = '1';
 		} );
 
 		fileInput.value = '';
