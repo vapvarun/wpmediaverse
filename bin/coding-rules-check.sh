@@ -379,19 +379,26 @@ check_code_standard() {
 
 # ------------------------------------------------------------------------------
 # Rule 12: every call into an optional PHP extension (mbstring beyond WordPress's
-# polyfills, ctype, fileinfo, SimpleXML/libxml/dom, iconv, zip) has a
-# function_exists()/class_exists() guard in the lines before it. Hosts ship
-# without these often enough that one bare call is a fatal on someone's site.
-# The checker is bin/lib/extension-guard-check.php (one copy, Pro runs it too).
+# polyfills, ctype, fileinfo, SimpleXML/libxml/dom, iconv, zip) has a guard for
+# THAT extension in code (not a comment or string) in the 12 lines before it, and
+# every finfo_* call on a handle checks the handle for false first. The gate and
+# its self-test are bin/lib/extension-guard-check{,.test}.php, identical copies of
+# the family's canonical gate in ~/.claude/skills/wp-plugin-development/scripts/.
+# The header of the checker lists what it scans, what it skips and why, and its
+# blind spot (calls through a variable).
 check_extension_guards() {
     local out
+    if ! out="$(php "$SCRIPT_DIR/lib/extension-guard-check.test.php" 2>&1)"; then
+        violation "Rule 12 — the extension guard gate's own self-test failed: $out"
+        return
+    fi
     out="$(php "$SCRIPT_DIR/lib/extension-guard-check.php" "$PLUGIN_DIR" 2>&1)"
     if [ -n "$out" ]; then
         while IFS= read -r line; do
             [ -n "$line" ] && violation "Rule 12 — $line"
         done <<< "$out"
     else
-        ok "Rule 12 — every optional-extension call is guarded"
+        ok "Rule 12 — every optional-extension call is guarded (gate self-test passes)"
     fi
 }
 
