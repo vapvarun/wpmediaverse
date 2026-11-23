@@ -109,7 +109,7 @@ class Deactivator {
 		if ( ! $include_state_jobs ) {
 			$hooks = array_diff( $hooks, self::STATE_JOB_HOOKS );
 			if ( ! doing_action( 'deactivate_' . MVS_PLUGIN_BASENAME ) ) {
-				_deprecated_argument( __METHOD__, '2.7.0', esc_html__( 'Before 2.7.0 false cleared only the recurring events; it now also cancels every one-off job except STATE_JOB_HOOKS.', 'wpmediaverse' ) );
+				_deprecated_argument( __METHOD__, '2.7.0', 'Before 2.7.0 false cleared only the recurring events; it now also cancels every one-off job except STATE_JOB_HOOKS.' );
 			}
 		}
 		foreach ( $hooks as $hook ) {

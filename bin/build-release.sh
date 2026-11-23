@@ -23,7 +23,7 @@
 #   10  one of the trees is dirty and --allow-dirty not set
 #   11  version mismatch within a plugin or across Free <-> Pro
 #   12  Pro plugin not found at ../wpmediaverse-pro
-#   13  coding rules failed in Free or Pro (including Pro's Rule 10 not run)
+#   13  coding rules failed in Free or Pro, including a rule that could not run
 #   20  composer install in a staged tree failed
 #   21  grunt build / npm install failed
 #   30  boot smoke or browser smoke gate failed
@@ -126,12 +126,13 @@ PRO_HEAD="(skipped)"
 ok "Free HEAD: $FREE_HEAD    Pro HEAD: $PRO_HEAD"
 
 # --- 1b. coding rules ------------------------------------------------------
-# MVS_RELEASE_BUILD=1 turns Pro's skipped Rule 10 (extension guard gate not
-# found) into a failure: a dev run may skip it, a release may not.
+# MVS_RELEASE_BUILD=1 turns a rule that could not run (python3 or php missing,
+# Pro's Rule 10 without Free's checker) into a failure: a dev run may skip one,
+# a release may not.
 step "1b. coding rules (Free + Pro)"
-( cd "$FREE_ROOT" && bash bin/coding-rules-check.sh ) || { fail "Free coding rules failed."; exit 13; }
+( cd "$FREE_ROOT" && MVS_RELEASE_BUILD=1 bash bin/coding-rules-check.sh ) || { fail "Free coding rules failed (a rule that could not run fails a release build)."; exit 13; }
 if [ "$FREE_ONLY" -eq 0 ]; then
-	( cd "$PRO_ROOT" && MVS_RELEASE_BUILD=1 bash bin/coding-rules-check.sh ) || { fail "Pro coding rules failed (a skipped Rule 10 fails a release build)."; exit 13; }
+	( cd "$PRO_ROOT" && MVS_RELEASE_BUILD=1 bash bin/coding-rules-check.sh ) || { fail "Pro coding rules failed (a rule that could not run fails a release build)."; exit 13; }
 fi
 ok "coding rules pass"
 
