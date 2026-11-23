@@ -136,6 +136,10 @@
      */
     --mvs-contrast-flip-l: 0.5624;
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
+    /* Hover text gets the same flip, read from the hover colour itself. The
+       theme's hover is often a LIGHTER step (Reign: #3c8ce6), where white text
+       measured 3.45:1; the fill is left as the theme set it. */
+    --mvs-on-primary-hover-auto: oklch(from var(--mvs-primary-hover) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
     /*
      * Text on --mvs-accent, same mechanism and the same ordering requirement.
      * It MUST be declared here, before the @supports block below, not with the
@@ -187,6 +191,7 @@
 @supports (color: contrast-color(red)) {
     :root {
         --mvs-on-primary-auto: contrast-color(var(--mvs-primary-fill));
+        --mvs-on-primary-hover-auto: contrast-color(var(--mvs-primary-hover));
         /* Same treatment for the accent fill. --mvs-accent is NOT redefined in
            the dark block (verified: 0 occurrences in the dark :root), so this
            one declaration serves both modes. */
@@ -239,7 +244,7 @@
     --mvs-btn-primary-bg: var(--mvs-primary-fill, var(--mvs-primary));
     --mvs-btn-primary-fg: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
     --mvs-btn-primary-bg-hover: var(--mvs-primary-hover);
-    --mvs-btn-primary-fg-hover: var(--mvs-on-primary, #ffffff);
+    --mvs-btn-primary-fg-hover: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #ffffff));
 
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
@@ -339,9 +344,18 @@
          --mvs-border-light   STRUCTURE — cards, panels, sections, rows,
                               dividers. Neutral and quiet; it separates, it does
                               not ask to be looked at.
-         --mvs-border         CONTROLS  — input, select, textarea, button, chip,
-                              dropzone. Theme-tinted: a visible edge here means
-                              "you can interact with me".
+         --mvs-border         FRAMES    — popover and list panels that need more
+                              presence than a card. Theme-tinted.
+         --mvs-border-control CONTROLS  — input, select, textarea, outlined
+                              button, chip, pill, toggle, dropzone, search
+                              wrapper. A visible edge here means "you can
+                              interact with me", so it must reach 3:1 (WCAG
+                              1.4.11) against the surface. The theme's own
+                              border colour does not (1.36:1 on Reign light,
+                              1.1:1 dark), so this tier mixes from the TEXT
+                              colour instead and follows light and dark with
+                              it. 65%, not 50%: Reign's body text is a mid
+                              grey, and half of it measured 2.5:1.
          --mvs-border-strong  EMPHASIS  — active/selected state, table head rule.
 
        Two hard rules that keep this from drifting back:
@@ -352,6 +366,7 @@
           ladder — never swap one for a neutral tier, it destroys the meaning. */
     --mvs-border: var(--reign-site-border-color, var(--global-border-color, var(--border, #dcdcde)));
     --mvs-border-light: var(--border-soft, #e9e9ea);
+    --mvs-border-control: color-mix(in oklab, var(--mvs-text) 65%, transparent);
     /* Elevation — BuddyNext-first (soft, layered --bn-shadow-*), with a matching
        standalone fallback. Shared Wbcom Community-OS standard: components pick a
        token, never a literal box-shadow, so elevation is uniform across the suite. */
@@ -501,6 +516,9 @@ body.dark-mode {
     --mvs-text-muted: var(--reign-site-alternate-text-color, #888888);
     --mvs-border: var(--reign-site-border-color, #363636);
     --mvs-border-light: #2e2e2e;
+    /* Re-declared, not inherited: a dark wrapper below <html> re-defines
+       --mvs-text, and a mix computed on :root would keep the light value. */
+    --mvs-border-control: color-mix(in oklab, var(--mvs-text) 65%, transparent);
     /* Dark mode clamps the OTHER WAY - it does not skip the clamp.
        This used to be `var(--mvs-primary)` on the reasoning that "a theme
        already lightens its brand here (measured 7.98:1)". That was true of the
@@ -525,6 +543,22 @@ body.dark-mode {
     --mvs-success-bg: rgba(var(--mvs-success-rgb), 0.18);
     --mvs-warning-bg: rgba(240, 183, 58, 0.15);
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
+}
+
+/* Browsers without color-mix() get the control tier as a fixed grey that
+   clears 3:1 on the plugin's light and dark fallbacks. */
+@supports not (color: color-mix(in oklab, red, blue)) {
+    :root {
+        --mvs-border-control: #8c8f94;
+    }
+
+    [data-theme="dark"],
+    [data-bn-theme="dark"],
+    [data-bx-mode="dark"],
+    html.dark-mode,
+    body.dark-mode {
+        --mvs-border-control: #8a8a8a;
+    }
 }
 
 [data-theme="dark"] .mvs-album-badge,
@@ -1111,7 +1145,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-follow-toggle--following {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
 }
 
 .mvs-follow-toggle--following:hover {
@@ -1404,7 +1438,7 @@ body.dark-mode .mvs-skeleton::after {
 /* Follow steps back on a document page so Download is the only primary. */
 .mvs-btn.mvs-follow-btn--quiet {
     background: transparent;
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
     color: var(--mvs-text-secondary);
     font-weight: 500;
 }
@@ -2337,7 +2371,7 @@ body.dark-mode .mvs-skeleton::after {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9em;
@@ -2402,7 +2436,7 @@ body.dark-mode .mvs-skeleton::after {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9em;
@@ -2456,7 +2490,7 @@ body.dark-mode .mvs-skeleton::after {
     flex: 1;
     padding: 10px 12px;
     background-color: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     resize: none;
     min-height: 40px;
@@ -2613,15 +2647,10 @@ body.dark-mode .mvs-skeleton::after {
     cursor: pointer;
     font-size: 0.95em;
     font-weight: 600;
-    color: var(--mvs-text);
-    opacity: 0.75;
+    /* Dimmed by colour, not opacity: 0.75 opacity on the secondary text
+       colour measured 3.35:1, under AA. */
+    color: var(--mvs-text-secondary);
     transition: all 0.2s;
-}
-
-.mvs-dashboard-tab:hover,
-.mvs-dashboard-tab:focus,
-.mvs-dashboard-tab.active {
-    opacity: 1;
 }
 
 .mvs-dashboard-tab:hover,
@@ -3197,7 +3226,7 @@ a.mvs-dashboard-card-title:hover {
     min-width: 0;
     min-height: var(--mvs-touch-min);
     padding: 0 var(--mvs-space-3);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     /* !important fights BuddyX's bx-tokens-applied.css, whose form rule is
        `input:not([type="submit"]):not([type="button"]):not([type="checkbox"])
@@ -3222,7 +3251,7 @@ a.mvs-dashboard-card-title:hover {
     min-width: 9rem;
     max-width: 100%;
     padding: 0 var(--mvs-space-3);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface);
     color: var(--mvs-text);
@@ -3448,7 +3477,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     padding: 8px 12px;
     background-color: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
@@ -3480,7 +3509,7 @@ a.mvs-dashboard-card-title:hover {
     flex-wrap: wrap;
     gap: 4px;
     padding: 6px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     min-height: 38px;
     align-items: center;
@@ -3628,7 +3657,7 @@ a.mvs-dashboard-card-title:hover {
     box-sizing: border-box;
     margin: 12px 0;
     font-size: 14px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     background-color: var(--mvs-surface-2);
     color: var(--mvs-text);
@@ -4011,7 +4040,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
@@ -4042,7 +4071,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin: 0 0 1rem;
     padding: 28px 20px;
-    border: 2px dashed var(--mvs-border);
+    border: 2px dashed var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
@@ -4085,7 +4114,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-upload-fields select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
@@ -4286,7 +4315,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     gap: 12px;
     padding: 20px 24px;
-    border: 2px dashed var(--mvs-border);
+    border: 2px dashed var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface-2);
     text-align: center;
@@ -4994,7 +5023,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-search-input {
     flex: 1;
     padding: 10px 16px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 8px 0 0 8px;
     font-size: 0.95em;
     background: var(--mvs-bg);
@@ -5080,7 +5109,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-type-toggle {
     display: flex;
     gap: 0;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     overflow: hidden;
     width: fit-content;
@@ -5097,7 +5126,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-toggle-btn:not(:last-child) {
-    border-inline-end: 1px solid var(--mvs-border);
+    border-inline-end: 1px solid var(--mvs-border-control);
 }
 
 .mvs-toggle-btn.active {
@@ -5165,7 +5194,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-row select,
 .mvs-rule-row input {
     padding: 8px 10px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-xs);
     font-size: 0.9em;
 }
@@ -5185,10 +5214,10 @@ a.mvs-dashboard-card-title:hover {
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-xs);
     background: var(--mvs-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text);
     font-size: 1.2em;
     cursor: pointer;
     display: flex;
@@ -5200,7 +5229,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-remove:hover,
 .mvs-rule-remove:focus {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text);
     border-color: var(--mvs-danger);
 }
 
@@ -5453,7 +5482,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-comment-edit-textarea {
     width: 100%;
     padding: 8px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-xs);
     font-size: 0.9em;
     resize: vertical;
@@ -5498,12 +5527,12 @@ a.mvs-dashboard-card-title:hover {
 .mvs-follow-btn.active {
     background: var(--mvs-bg);
     color: var(--mvs-text);
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-follow-btn.active:hover {
     background: var(--mvs-surface-2);
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
 }
 
 /* ==========================================================================
@@ -5648,7 +5677,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-grid-pagination-links span {
     display: inline-block;
     padding: 8px 14px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-xs);
     text-decoration: none;
     font-size: 13px;
@@ -5684,7 +5713,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-upload-dropzone {
-    border: 2px dashed var(--mvs-border);
+    border: 2px dashed var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     padding: 40px 20px;
     text-align: center;
@@ -5717,7 +5746,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-privacy {
     margin-top: 12px;
     padding: 6px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-xs);
     font-size: 13px;
 }
@@ -5738,7 +5767,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-xs);
     font-size: 13px;
     box-sizing: border-box;
@@ -5783,7 +5812,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 3px;
     padding: 5px 10px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -5808,7 +5837,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-favorite-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -5825,7 +5854,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-share-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -6048,13 +6077,18 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-field input[type="text"],
 .mvs-profile-field textarea {
     padding: 0.625rem 0.75rem;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-sm);
     font-size: 0.9375rem;
     font-family: inherit;
     transition: border-color 0.2s;
     width: 100%;
     box-sizing: border-box;
+}
+
+/* The select keeps the theme's box and takes only the control edge. */
+.mvs-profile-field select {
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-profile-field input[type="text"]:focus,
@@ -6165,14 +6199,14 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn.mvs-btn--secondary {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
 }
 
 .mvs-btn.mvs-btn--secondary:hover,
 .mvs-btn.mvs-btn--secondary:focus {
     background: var(--mvs-border-light);
     color: var(--mvs-text);
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
 }
 
 /* Secondary button icons keep a neutral, theme-agnostic color — some themes
@@ -6249,7 +6283,7 @@ a.mvs-dashboard-card-title:hover {
        the text inherited the ambient theme colour and went unreadable in dark
        mode (measured 1.07-1.38:1). */
     color: var(--mvs-text);
-    border: 1.5px solid var(--mvs-border);
+    border: 1.5px solid var(--mvs-border-control);
     border-radius: 100px;
     padding: 5px 5px 5px 6px;
     gap: 0;
@@ -6484,7 +6518,9 @@ a.mvs-dashboard-card-title:hover {
        near-black in dark — dark text on purple. The primary button was fixed
        for exactly this and the secondary was left behind. */
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    /* Solid white: at 60% the edge measured 2.8:1 where the banner stacks at
+       390px and the button sits on the gradient's lighter middle. */
+    border: 1px solid #fff;
 }
 
 .mvs-logged-out-banner__close {
@@ -7474,7 +7510,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-reaction:hover {
     background: var(--mvs-surface-2);
-    border-color: var(--mvs-border-light);
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-lightbox-reaction.active {
@@ -7579,7 +7615,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-reaction:hover {
     background: var(--mvs-surface-2) !important;
-    border-color: var(--mvs-border-light) !important;
+    border-color: var(--mvs-border-control) !important;
 }
 
 .mvs-lightbox-reaction.active {
@@ -7770,7 +7806,7 @@ a.mvs-dashboard-card-title:hover {
     line-height: 1.4;
     background-color: var(--mvs-surface);
     color: var(--mvs-text, inherit);
-    border-color: var(--mvs-border-light, var(--mvs-border));
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-lightbox-sidebar .mvs-comment-form textarea::placeholder,
@@ -7956,7 +7992,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     font: inherit;
     padding: var(--mvs-space-2, 0.5rem);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md, 8px);
     background: var(--mvs-bg);
     color: var(--mvs-text);
@@ -8037,7 +8073,7 @@ a.mvs-dashboard-card-title:hover {
     flex: 1;
     /* Explicit surface + text tokens (not the theme's input styling) so the
        field is a defined rounded control that stays readable in dark mode. */
-    border: 1px solid var(--mvs-border, #d1d5db);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 999px;
     padding: 9px 14px;
     font-size: 14px;
@@ -9426,7 +9462,7 @@ a.mvs-dashboard-tab:focus-visible {
     min-inline-size: var(--mvs-touch-min, 44px);
     justify-content: center;
     background: transparent;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     color: var(--mvs-text-secondary);
 }
 

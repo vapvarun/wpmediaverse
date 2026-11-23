@@ -32,6 +32,9 @@
 	--mvs-border:        #dcdcde;
 	--mvs-border-light:  #e5e5e7;
 	--mvs-border-strong: #a7aaad;
+	/* Control edges (input, select, outlined button, segmented toggle): 3:1
+	   against the admin surfaces, WCAG 1.4.11. Same formula as the front. */
+	--mvs-border-control: color-mix(in oklab, var(--mvs-text) 65%, transparent);
 	/*
 	 * WordPress admin blue, NOT the danger red these four used to be.
 	 *
@@ -1037,7 +1040,7 @@ a.mvs-stat-card:focus {
 .mvs-date-range-selector {
 	display: flex;
 	gap: 0;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: var(--mvs-radius-sm);
 	overflow: hidden;
 }
@@ -1048,7 +1051,7 @@ a.mvs-stat-card:focus {
 	text-decoration: none;
 	color: var(--mvs-text-muted);
 	background: var(--mvs-surface);
-	border-inline-end: 1px solid var(--mvs-border);
+	border-inline-end: 1px solid var(--mvs-border-control);
 	transition: background 0.15s, color 0.15s;
 }
 
@@ -1946,7 +1949,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -2022,7 +2025,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -2235,6 +2238,13 @@ a.mvs-stat-card:focus {
 .mvs-toast--info { background: var(--mvs-accent); }
 .mvs-toast--warning { background: var(--mvs-warn); color: var(--mvs-text); }
 
+/* WordPress core draws form fields with a #949494 edge, 2.66:1 against the grey
+   admin page. On MediaVerse screens every field takes the control edge; focus
+   keeps core's blue ring. */
+:is(.toplevel_page_wpmediaverse, [class*="mediaverse_page_"]) #wpbody-content :is(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="hidden"], [type="range"], [type="color"], [type="file"]), select, textarea):not(:focus) {
+	border-color: var(--mvs-border-control);
+}
+
 /* ==========================================================================
    Admin Page Horizontal Tabs
    ========================================================================== */
@@ -2302,7 +2312,8 @@ a.mvs-stat-card:focus {
 
 .mvs-tab-count--zero {
 	background: var(--mvs-border);
-	color: var(--mvs-text-muted);
+	/* Full text colour: the muted grey measured 4.04:1 on the grey pill. */
+	color: var(--mvs-text);
 }
 
 .mvs-tab-content {

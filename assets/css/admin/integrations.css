@@ -147,14 +147,14 @@
 /* ── Connected state ghost button ──────────────────────────────────────── */
 .mvs-btn--ghost {
 	background: transparent;
-	border: 1px solid var(--mvs-border, #dcdcde);
+	border: 1px solid var(--mvs-border-control);
 	color: var(--mvs-text-muted, #646970);
 	box-shadow: none;
 	cursor: default;
 }
 .mvs-btn--ghost:hover {
 	background: transparent;
-	border-color: var(--mvs-border, #dcdcde);
+	border-color: var(--mvs-border-control);
 	color: var(--mvs-text-muted, #646970);
 	box-shadow: none;
 }

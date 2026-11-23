@@ -32,7 +32,7 @@
    but not its buttons. */
 .mvs-grid-pagination button {
 	padding: 8px 16px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: 4px;
 	background: var(--mvs-surface);
 	cursor: pointer;

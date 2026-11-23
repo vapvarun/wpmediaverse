@@ -8,7 +8,7 @@
 
 .mvs-explore-filter-btn {
 	padding: 6px 16px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: 20px;
 	background: var(--mvs-surface);
 	cursor: pointer;
@@ -34,7 +34,7 @@ input.mvs-explore-search {
 	flex: 1;
 	min-width: 200px;
 	padding: 8px 16px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: 20px;
 	font-size: 14px;
 }

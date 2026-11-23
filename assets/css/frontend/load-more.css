@@ -18,7 +18,7 @@
 	font-size: 14px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-sm, 6px);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -29,7 +29,7 @@
 .mvs-load-more-btn:hover {
 	background: var(--mvs-surface-2);
 	color: var(--mvs-text);
-	border-color: var(--mvs-border);
+	border-color: var(--mvs-border-control);
 }
 
 .mvs-load-more-btn.is-loading {
