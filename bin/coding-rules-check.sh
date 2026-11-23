@@ -377,6 +377,24 @@ check_code_standard() {
     fi
 }
 
+# ------------------------------------------------------------------------------
+# Rule 12: every call into an optional PHP extension (mbstring beyond WordPress's
+# polyfills, ctype, fileinfo, SimpleXML/libxml/dom, iconv, zip) has a
+# function_exists()/class_exists() guard in the lines before it. Hosts ship
+# without these often enough that one bare call is a fatal on someone's site.
+# The checker is bin/lib/extension-guard-check.php (one copy, Pro runs it too).
+check_extension_guards() {
+    local out
+    out="$(php "$SCRIPT_DIR/lib/extension-guard-check.php" "$PLUGIN_DIR" 2>&1)"
+    if [ -n "$out" ]; then
+        while IFS= read -r line; do
+            [ -n "$line" ] && violation "Rule 12 — $line"
+        done <<< "$out"
+    else
+        ok "Rule 12 — every optional-extension call is guarded"
+    fi
+}
+
 echo "=== WPMediaVerse coding-rules check ==="
 echo "Plugin: $PLUGIN_DIR"
 echo ""
@@ -390,6 +408,7 @@ check_no_refusal_reported_as_success
 check_no_direct_media_index_query_outside_repository
 check_no_exec_family_calls
 check_code_standard
+check_extension_guards
 
 echo ""
 COUNT=$(violations_count)

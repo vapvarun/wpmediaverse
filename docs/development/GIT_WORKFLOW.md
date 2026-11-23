@@ -100,6 +100,8 @@ While a release branch is in development, the version header, `MVS_VERSION` and 
 
 Release checklist for 2.7.0, open items for the release commit: Pro's `Version:` header and `MVS_PRO_VERSION` move from 2.6.4 to 2.7.0, and Free's `MVS_MIN_PRO` (still 2.6.4, so the branch Pro keeps loading) moves to 2.7.0 in the same commit; both `readme.txt` changelogs get the 2.7.0 entry and `Stable tag:`.
 
+The 2.7.0 release note (readme changelog and GitHub release body) must tell sites on 2.6.1 to 2.6.4 to update to 2.7.0 BEFORE deleting MediaVerse: their shipped `uninstall.php` fatals, so the Delete link on the Plugins screen fails until the update replaces it. Before tagging, run `bin/uninstall-smoke.sh` against the final trees and regenerate both `.pot` files.
+
 **Tagging**
 
 ```bash
