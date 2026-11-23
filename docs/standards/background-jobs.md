@@ -284,7 +284,8 @@ scheduling requests, `Jobs::requeue_after_activation()` queues again every faile
 whose log carries that message, with the same arguments, 200 per request until none are left. It keeps one pending
 copy per hook and arguments and deletes the failed row with its logs. A row that ran and errored keeps its own
 message and stays failed. Pro's activation also marks the document text backfill pending, so a document uploaded
-just before deactivation is indexed. Still lost:
+just before deactivation is indexed. If the backfill was touched less than 15 minutes before Pro was deactivated,
+the restart waits until that 15-minute lease (`ExtractionService::LEASE`) runs out. Still lost:
 
 - rows that failed more than 7 days before the reactivation (`Jobs::REQUEUE_DAYS`): the plugin was off long
   enough that the work may no longer be wanted; they stay failed until `prune_history()` deletes them;
