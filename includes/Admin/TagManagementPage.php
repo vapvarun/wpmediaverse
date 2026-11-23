@@ -1107,7 +1107,7 @@ class TagManagementPage {
 	/**
 	 * Tag deletes and merges still queued in Action Scheduler, read from the queue itself (nothing is stored).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return array{removals: array<string, array{name:string, items:int}>, merges: array<int, array{source:string, target:string, items:int}>}
 	 */

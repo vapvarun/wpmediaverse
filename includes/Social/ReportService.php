@@ -415,8 +415,8 @@ class ReportService {
 			 * @param int    $report_id   Report id.
 			 * @param int    $reporter_id Who reported it.
 			 * @param string $status      resolved | dismissed.
-			 * @param string $target_type What was reported (media, user, comment, message). Since 2.6.5.
-			 * @param int    $target_id   Id of what was reported. Since 2.6.5.
+			 * @param string $target_type What was reported (media, user, comment, message). Since 2.7.0.
+			 * @param int    $target_id   Id of what was reported. Since 2.7.0.
 			 */
 			do_action( 'mvs_report_resolved', $report_id, (int) $before->reporter_id, $status, (string) $before->target_type, (int) $before->target_id );
 		}
@@ -431,7 +431,7 @@ class ReportService {
 	 * report is not left open here. Each row goes through update_status(), so the
 	 * menu badge and the resolved hook behave exactly as for a click in this plugin.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $target_type Target type.
 	 * @param int    $target_id   Target id.
@@ -650,7 +650,7 @@ class ReportService {
 		 * Every list, count and feed reads this one answer, so a community plugin
 		 * with its own block list adds its ids here and the whole plugin follows.
 		 *
-		 * @since 2.6.5
+		 * @since 2.7.0
 		 *
 		 * @param int[] $ids     Member ids in a block relationship with the viewer.
 		 * @param int   $user_id The viewer.

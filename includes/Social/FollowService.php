@@ -62,7 +62,7 @@ class FollowService {
 		 * no follow row is written here, and the caller is told the request is waiting instead of
 		 * being refused.
 		 *
-		 * @since 2.6.5
+		 * @since 2.7.0
 		 *
 		 * @param bool|string $can          True to record the follow, false to refuse it, 'pending' for a request.
 		 * @param int         $follower_id  The user doing the following.
@@ -145,7 +145,7 @@ class FollowService {
 			 * A community plugin that turned the follow into a request (see mvs_can_follow) holds
 			 * that request, not MediaVerse; it withdraws it here so cancelling works from every client.
 			 *
-			 * @since 2.6.5
+			 * @since 2.7.0
 			 *
 			 * @param int $follower_id  The user unfollowing.
 			 * @param int $following_id The user being unfollowed.

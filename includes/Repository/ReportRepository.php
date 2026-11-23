@@ -7,7 +7,7 @@
  * against this table is reviewable in one directory.
  *
  * @package WPMediaVerse
- * @since   2.6.5
+ * @since   2.7.0
  */
 
 namespace WPMediaVerse\Repository;
@@ -22,14 +22,14 @@ class ReportRepository {
 	/**
 	 * Action Scheduler hook of the orphan-report sweep.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const SWEEP_HOOK = 'mvs_close_orphan_reports';
 
 	/**
 	 * Reports one orphan-sweep batch looks at.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const SWEEP_BATCH = 500;
 
@@ -98,7 +98,7 @@ class ReportRepository {
 	 *
 	 * Stored in the site language at the time of closing (it is a record, not interface text).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $target_type Target type.
 	 * @return string
@@ -117,7 +117,7 @@ class ReportRepository {
 	 * For sites that deleted media before reports were closed on delete. Same silent close as
 	 * close_pending_silently(): rows kept for the audit trail, reporters not notified.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param int $after_id Report id to continue after (keyset cursor).
 	 * @param int $limit    Batch size.
@@ -165,7 +165,7 @@ class ReportRepository {
 	 * Any copy, pending or running, means a chain is already under way (its continuations queue unguarded with the
 	 * next cursor), so this checks is_queued() for any arguments rather than async_once() for the first cursor.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public static function queue_sweep(): void {
 		if ( \WPMediaVerse\Core\Jobs::is_queued( self::SWEEP_HOOK ) ) {
@@ -182,7 +182,7 @@ class ReportRepository {
 	 * When no scheduler takes the next batch, up to SWEEP_INLINE_MAX_BATCHES run inline and the rest stay open
 	 * for a moderator; a later queue_sweep() closes nothing twice.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param int $after_id Report id to continue after.
 	 */

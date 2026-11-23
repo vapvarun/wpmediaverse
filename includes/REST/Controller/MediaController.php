@@ -2573,7 +2573,7 @@ class MediaController extends WP_REST_Controller {
 	/**
 	 * The stats block of a media item, with a ready-made plural views label for JS-built cards (Load More).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param array $row views, reactions, comments.
 	 * @return array{views:int, reactions:int, comments:int, views_label:string}

@@ -63,7 +63,7 @@ class OverviewPage {
 	 * Where plugin-housekeeping notices (licence activation, Pro too old) may show: the Plugins and Updates screens
 	 * and MediaVerse's own screens, never the dashboard or another plugin's pages.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return bool
 	 */

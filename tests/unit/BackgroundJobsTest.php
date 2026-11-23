@@ -1,6 +1,6 @@
 <?php
 /**
- * Background jobs: one group, our own finished rows trimmed, old pending rows moved on upgrade (2.6.5).
+ * Background jobs: one group, our own finished rows trimmed, old pending rows moved on upgrade (2.7.0).
  *
  * @package WPMediaVerse\Tests\Unit
  */

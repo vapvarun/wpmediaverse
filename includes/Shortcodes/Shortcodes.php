@@ -21,7 +21,7 @@ class Shortcodes {
 	 * Shortcodes MediaVerse Pro registers. With Pro off (or a Pro feature switched off) nothing registers them, and
 	 * WordPress would print the raw tag on the page; Free registers a quiet stand-in for each instead.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const PRO_SHORTCODES = array(
 		'mvs_document',
@@ -66,7 +66,7 @@ class Shortcodes {
 	/**
 	 * Register a stand-in for every Pro shortcode nothing registered.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public function register_pro_stand_ins(): void {
 		foreach ( self::PRO_SHORTCODES as $tag ) {
@@ -82,7 +82,7 @@ class Shortcodes {
 	 * With Pro running, the tag is unregistered because its feature is switched off, which is the owner's own
 	 * choice, so the admin sees nothing too.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return string
 	 */

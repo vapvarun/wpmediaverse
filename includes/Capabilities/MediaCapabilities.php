@@ -474,7 +474,7 @@ class MediaCapabilities {
 	 * Caps a plain WordPress Editor must not hold: moderating, other members' content
 	 * and private media.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	const EDITOR_MODERATION_CAPS = array(
 		'moderate_mvs_media',
@@ -499,7 +499,7 @@ class MediaCapabilities {
 	 * next re-apply. An owner who wants Editors to moderate grants it again in
 	 * Settings > Permissions.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public static function strip_editor_moderation(): void {
 		$role = get_role( 'editor' );

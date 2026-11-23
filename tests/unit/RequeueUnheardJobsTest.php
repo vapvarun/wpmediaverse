@@ -1,6 +1,6 @@
 <?php
 /**
- * A state job a runner failed while MediaVerse was off is queued again after activation (2.6.5).
+ * A state job a runner failed while MediaVerse was off is queued again after activation (2.7.0).
  *
  * Deactivation leaves state jobs pending. If another plugin keeps Action Scheduler running, the runner takes those
  * rows, finds no listener and marks them failed ("no callbacks are registered"): a file cleanup never deleted its

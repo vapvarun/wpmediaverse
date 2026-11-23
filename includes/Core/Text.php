@@ -7,7 +7,7 @@
  * upload, a media page). Code that needs case folding or a digits check goes through here.
  *
  * @package WPMediaVerse
- * @since   2.6.5
+ * @since   2.7.0
  */
 
 namespace WPMediaVerse\Core;

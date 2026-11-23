@@ -22,7 +22,7 @@
  * @var int    $mvs_doc_folder   Folder being viewed, 0 for a drive root.
  *
  * @package WPMediaVerse
- * @version 2.6.5
+ * @version 2.7.0
  * @since   2.4.0
  */
 

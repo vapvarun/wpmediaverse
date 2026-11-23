@@ -8,7 +8,7 @@
  * once. Rules and the job list: docs/standards/background-jobs.md.
  *
  * Lookups (is_queued, is_pending, cancel) match by hook and arguments in any group: every MediaVerse hook name
- * starts with mvs_ and is ours alone, and a pending row queued by a version before 2.6.5 sits in an older group.
+ * starts with mvs_ and is ours alone, and a pending row queued by a version before 2.7.0 sits in an older group.
  *
  * Arguments are passed to the listener positionally on both schedulers. Action Scheduler does that itself; for
  * WP-Cron they are stored as a list (array_values), because core calls the listener with the stored array as is and
@@ -19,7 +19,7 @@
  *   an interval. Both clamp an interval to at least 60 seconds.
  * - No recurring() registry: each MediaVerse recurring job arms itself on action_scheduler_ensure_recurring_actions.
  * - No delete_rows(): uninstall deletes rows by hook list directly, since Jobs is not loaded there.
- * - adopt_pending() moves pre-2.6.5 rows into GROUP; Jetonomy never used another group.
+ * - adopt_pending() moves pre-2.7.0 rows into GROUP; Jetonomy never used another group.
  *
  * Same job, Jetonomy's name: requeue_after_activation() = flag_recovery(), requeue_unheard() = recover_kept_jobs(),
  * REQUEUE_BATCH = RECOVER_BATCH, STATE_JOB_HOOKS (Free Deactivator, Pro Lifecycle) = KEEP_ON_DEACTIVATE,
@@ -31,7 +31,7 @@
  * to retry at all. The job list in docs/standards/background-jobs.md names each one.
  *
  * @package WPMediaVerse
- * @since   2.6.5
+ * @since   2.7.0
  */
 
 namespace WPMediaVerse\Core;
@@ -49,14 +49,14 @@ final class Jobs {
 	public const GROUP = 'mvs';
 
 	/**
-	 * Groups MediaVerse used before 2.6.5, moved to GROUP on upgrade.
+	 * Groups MediaVerse used before 2.7.0, moved to GROUP on upgrade.
 	 */
 	public const LEGACY_GROUPS = array( 'wpmediaverse', 'wpmediaverse-pro', 'mvs-pro', 'mvs-connectors' );
 
 	/**
 	 * Days a completed or cancelled job is kept by prune_history() (filter: mvs_finished_action_retention_days).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const FINISHED_RETENTION_DAYS = 7;
 
@@ -64,7 +64,7 @@ final class Jobs {
 	 * Days a failed job is kept by prune_history(), long enough to read why it failed. The same rule holds for every
 	 * plugin in the family.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const FAILED_RETENTION_DAYS = 90;
 
@@ -86,7 +86,7 @@ final class Jobs {
 	/**
 	 * Pending actions pending_args() reads per hook.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const PENDING_READ_LIMIT = 100;
 
@@ -103,14 +103,14 @@ final class Jobs {
 	/**
 	 * Follow-up job that carries on moving pending rows into GROUP (argument: the hook list).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const ADOPT_HOOK = 'mvs_adopt_pending_jobs';
 
 	/**
 	 * Failed rows requeue_unheard() moves per call.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const REQUEUE_BATCH = 200;
 
@@ -118,7 +118,7 @@ final class Jobs {
 	 * Failed rows last attempted longer ago than this are not re-queued: the plugin was off for a long time and the
 	 * work may no longer be wanted.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const REQUEUE_DAYS = 7;
 
@@ -126,7 +126,7 @@ final class Jobs {
 	 * Whether Action Scheduler may be called: its functions exist from plugins_loaded, its store only from
 	 * action_scheduler_init.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return bool
 	 */
@@ -139,7 +139,7 @@ final class Jobs {
 	 * then queues through WP-Cron), else on action_scheduler_init. Upgrade routines run before the store loads, and
 	 * queuing before then fails.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param callable $callback Callback (no arguments).
 	 */
@@ -154,7 +154,7 @@ final class Jobs {
 	/**
 	 * Queue a job to run as soon as possible.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string                   $hook          Action hook.
 	 * @param array<int|string, mixed> $args          Hook arguments.
@@ -185,7 +185,7 @@ final class Jobs {
 	 * Once Action Scheduler is ready only its own pending copies count: a WP-Cron copy left by an early request is not
 	 * a reason to skip the Action Scheduler job.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string                   $hook Action hook.
 	 * @param array<int|string, mixed> $args Hook arguments.
@@ -206,7 +206,7 @@ final class Jobs {
 	/**
 	 * Run a job once at a given time.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param int                      $timestamp Unix time.
 	 * @param string                   $hook      Action hook.
@@ -226,7 +226,7 @@ final class Jobs {
 	 * Whether a pending or running copy exists, in either scheduler. Use it to avoid starting the same work twice;
 	 * use is_pending() when the question is whether a later run is still coming.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string                        $hook Action hook.
 	 * @param array<int|string, mixed>|null $args Exact arguments, or null for any.
@@ -243,7 +243,7 @@ final class Jobs {
 	 * Whether a copy is waiting to start, in either scheduler. A running copy does not count, so a job armed to run
 	 * after the current one (a reaper, a follow-up pass) is armed even while one runs.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string                        $hook Action hook.
 	 * @param array<int|string, mixed>|null $args Exact arguments, or null for any.
@@ -278,7 +278,7 @@ final class Jobs {
 	/**
 	 * Next run time of a pending copy with any arguments.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $hook Action hook.
 	 * @return int Unix time; 0 when none is pending, one is running now, or the soonest is an async copy (use
@@ -302,7 +302,7 @@ final class Jobs {
 	 * cancelled here. Only the argument-less row counts: a continuation of the same hook carries a cursor. Runs only
 	 * on a scheduling request; the cron runner re-arms a lost row on action_scheduler_ensure_recurring_actions.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string     $hook     Action hook.
 	 * @param int        $first    Unix time of the first run.
@@ -346,7 +346,7 @@ final class Jobs {
 	 * run, which its async runner may execute inside an admin-ajax request. Each check costs a query, so a visitor's
 	 * request never pays for it. The one rule for the family; DirectDelivery and the migrations use it too.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return bool
 	 */
@@ -358,7 +358,7 @@ final class Jobs {
 	/**
 	 * Cancel pending copies of a job in both schedulers.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * Note the asymmetry with is_queued() and is_pending(): there "any arguments" is null, here it is an empty array,
 	 * because cancelling only the argument-less copy is never what a caller wants. Jetonomy's Queue reads the same.
@@ -385,7 +385,7 @@ final class Jobs {
 	 * is shared by Free and Pro. Unlike cancel() it needs no Action Scheduler store and costs a few queries for any
 	 * number of rows; it does not touch WP-Cron.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string[] $hooks Exact hook names.
 	 * @return int Rows cancelled.
@@ -399,7 +399,7 @@ final class Jobs {
 	 * requests while the transient is set; each request moves up to REQUEUE_BATCH rows (a few queries each, one
 	 * SELECT for the batch), and the transient goes once fewer remain.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string   $transient Set on activation by the caller.
 	 * @param string[] $hooks     The caller's state hooks (jobs that finish an action already committed).
@@ -426,7 +426,7 @@ final class Jobs {
 	 * Safe when two requests read the same rows: the second one's copy is refused as a duplicate, and a row the first
 	 * already deleted is skipped.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string[] $hooks Exact hook names.
 	 * @return int Rows re-queued, at most REQUEUE_BATCH.
@@ -465,7 +465,7 @@ final class Jobs {
 	/**
 	 * Arguments of the pending Action Scheduler copies of a job, oldest first, for progress read-outs.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $hook Action hook.
 	 * @return array<int, array<int|string, mixed>> Up to PENDING_READ_LIMIT argument lists.
@@ -508,7 +508,7 @@ final class Jobs {
 	 * only our own rows. Pending and running rows are never touched. Runs on the existing daily mvs_prune_logs event,
 	 * for at most TIME_BUDGET seconds and PRUNE_MAX_BATCHES batches per status; the rest goes on the next run.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return int Rows deleted.
 	 */
@@ -521,7 +521,7 @@ final class Jobs {
 		 * Days a completed or cancelled MediaVerse job is kept before MediaVerse deletes it with its log rows. Only
 		 * the 'mvs' group is touched; pending and running jobs are never deleted, failed ones after 90 days.
 		 *
-		 * @since 2.6.5
+		 * @since 2.7.0
 		 *
 		 * @param int $days Whole days, at least 1. Default 7.
 		 */
@@ -578,7 +578,7 @@ final class Jobs {
 	}
 
 	/**
-	 * Move the pending actions of the given hooks out of the pre-2.6.5 groups into GROUP, keeping each one's
+	 * Move the pending actions of the given hooks out of the pre-2.7.0 groups into GROUP, keeping each one's
 	 * schedule, arguments and priority. Run from the upgrade routine. Each plugin passes only its own hooks, so a
 	 * newer Free never moves rows an older Pro still looks up by group.
 	 *
@@ -586,7 +586,7 @@ final class Jobs {
 	 * with the same hook list to carry on. Only rows no runner has claimed are moved, and the old row is cancelled
 	 * before its copy is saved, so a runner that claims it in between finds it cancelled and skips it.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string[] $hooks Action hooks.
 	 * @return int Actions moved.

@@ -98,6 +98,8 @@ WPMediaVerse follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PA
 
 While a release branch is in development, the version header, `MVS_VERSION` and `Stable tag:` may still name the last release; they move together in the release commit. Code on the branch already carries the new version in `@since` and in constants such as `MVS_PRO_MIN_FREE`. Do not flag that difference before the release commit.
 
+Release checklist for 2.7.0, open items for the release commit: Pro's `Version:` header and `MVS_PRO_VERSION` move from 2.6.4 to 2.7.0, and Free's `MVS_MIN_PRO` (still 2.6.4, so the branch Pro keeps loading) moves to 2.7.0 in the same commit; both `readme.txt` changelogs get the 2.7.0 entry and `Stable tag:`.
+
 **Tagging**
 
 ```bash

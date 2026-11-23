@@ -19,7 +19,7 @@ class EditRightsRuleTest extends WP_UnitTestCase {
 	public function test_owner_needs_the_edit_right_and_others_need_edit_others(): void {
 		$owner = self::factory()->user->create( array( 'role' => 'author' ) );
 		$other = self::factory()->user->create( array( 'role' => 'author' ) );
-		// A role that holds "edit others' media". A plain Editor no longer does (2.6.5).
+		// A role that holds "edit others' media". A plain Editor no longer does (2.7.0).
 		$editor = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		MediaCapabilities::add_caps();
 		$media = Plugin::container()->get( 'media_repository' )->insert(

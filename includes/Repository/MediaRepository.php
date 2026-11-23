@@ -3440,7 +3440,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Which of these media ids exist in mvs_media_index, in one query.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param int[] $media_ids Media ids.
 	 * @return int[] The ids that exist.
@@ -7004,7 +7004,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * document engine's own to clear, so only the media types are returned. Rides
 	 * KEY drive_listing, so a space with thousands of items costs one indexed read.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * Pass the last id of the previous page as $after_id to walk the drive: a caller
 	 * that leaves some items in place still reaches the ones after them.

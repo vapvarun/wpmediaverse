@@ -1,6 +1,6 @@
 <?php
 /**
- * A space-delete walk passes items it cannot trash and still reaches the rest (2.6.5).
+ * A space-delete walk passes items it cannot trash and still reaches the rest (2.7.0).
  *
  * @package WPMediaVerse\Tests\Unit
  */

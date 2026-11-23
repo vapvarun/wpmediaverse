@@ -1621,7 +1621,7 @@ class MediaListPage {
 	/**
 	 * Translatable label for a media type slug (a raw ucfirst() slug was not translatable).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $type Media type slug.
 	 * @return string
@@ -1639,7 +1639,7 @@ class MediaListPage {
 	/**
 	 * Translatable label for a media status slug.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $status Media status slug.
 	 * @return string

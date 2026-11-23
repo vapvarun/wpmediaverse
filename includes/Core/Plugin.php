@@ -547,7 +547,7 @@ class Plugin {
 	 * A Throwable from a listener is logged and reported once to admins; Free has finished booting by then, so the
 	 * site keeps working without that extension.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	private static function fire_loaded(): void {
 		try {

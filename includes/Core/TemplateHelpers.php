@@ -2481,7 +2481,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * The site timezone by default; a site can return a member's own zone through the filter.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return string IANA name, or a "+05:30" style offset on sites set to a UTC offset.
 	 */
@@ -2489,7 +2489,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		/**
 		 * Filters the timezone JavaScript formats dates and times in.
 		 *
-		 * @since 2.6.5
+		 * @since 2.7.0
 		 *
 		 * @param string $timezone IANA name or UTC offset; defaults to the site timezone.
 		 */
@@ -2499,7 +2499,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	/**
 	 * "N views" / "N downloads" with the plural form for the real count, for REST payloads JS prints as-is.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $kind  'views' or 'downloads'.
 	 * @param int    $count Count.
@@ -2520,7 +2520,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 * date_i18n() and mysql2date() print a UTC value as if it were local time, so a media item uploaded at
 	 * 10:30 UTC showed the previous day on a UTC+14 site while the JS-built cards showed the right one.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param int|string $when   Unix time, or a UTC MySQL datetime as stored in our tables.
 	 * @param string     $format PHP date format; defaults to the site date format.
@@ -2548,7 +2548,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	 *
 	 * One list for the lightbox row and the media page's social bar (the page bound the raw slug before).
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return array<string,string>
 	 */

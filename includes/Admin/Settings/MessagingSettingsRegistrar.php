@@ -182,7 +182,7 @@ class MessagingSettingsRegistrar {
 			)
 		);
 
-		// Chat button corner (owner decision 2026-11-21, the one new option approved for 2.6.5): a site
+		// Chat button corner (owner decision 2026-11-21, the one new option approved for 2.7.0): a site
 		// whose theme or another plugin keeps a floating button in the bottom-right corner (a course
 		// notification bell, a cookie badge) moves the chat to the other corner instead of one hiding the
 		// other. 'right' is where it has always been, so nothing changes on update.

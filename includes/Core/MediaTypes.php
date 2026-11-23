@@ -210,7 +210,7 @@ final class MediaTypes {
 	 * The MIME type of a file's bytes: finfo when the fileinfo extension is loaded, otherwise WordPress's own check
 	 * (real image bytes, the original file name for the rest), so a host without fileinfo still accepts uploads.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $path File on disk (an upload's tmp_name).
 	 * @param string $name The file's original name.

@@ -5,7 +5,7 @@
  * Called through Core\Jobs only.
  *
  * @package WPMediaVerse
- * @since   2.6.5
+ * @since   2.7.0
  */
 
 namespace WPMediaVerse\Repository;
@@ -28,7 +28,7 @@ final class JobRepository {
 	 * Running, complete, failed and other hooks' rows are never touched. No "action cancelled" log row is written;
 	 * Jobs::prune_history() deletes cancelled rows after FINISHED_RETENTION_DAYS.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string[] $hooks Exact hook names.
 	 * @return int Rows cancelled.
@@ -56,7 +56,7 @@ final class JobRepository {
 	 * Failed rows of exactly these hooks, last attempted within $days, whose log holds one of the needles, oldest
 	 * first, with the hook and arguments so the caller needs no query per row.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string[] $hooks   Exact hook names.
 	 * @param string[] $needles Log message fragments.

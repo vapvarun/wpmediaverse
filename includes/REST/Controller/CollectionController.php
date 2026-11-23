@@ -72,7 +72,7 @@ class CollectionController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_item' ),
-					// Collections are open to any signed-in member on purpose (owner decision, 2.6.5): they curate
+					// Collections are open to any signed-in member on purpose (owner decision, 2.7.0): they curate
 					// other people's public media and hold no uploads, unlike an album, which needs upload rights.
 					'permission_callback' => function () {
 						return is_user_logged_in();

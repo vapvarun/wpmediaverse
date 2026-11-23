@@ -7,7 +7,7 @@ the job list in the same commit as any change to a job.
 ## 1. One entry point for the family
 
 Every MediaVerse job, Free and Pro, is queued, found and cancelled through Free's `WPMediaVerse\Core\Jobs`.
-Pro requires Free 2.6.5 (`MVS_PRO_MIN_FREE`) and calls it directly, as it calls Free's other static helpers.
+Pro requires Free 2.7.0 (`MVS_PRO_MIN_FREE`) and calls it directly, as it calls Free's other static helpers.
 
 Methods:
 
@@ -82,7 +82,7 @@ Other differences from Jetonomy's `\Jetonomy\Queue` (shared names behave the sam
 - `adopt_pending()` exists only here: Jetonomy never used another group. It runs only on scheduling requests;
   on any other request it queues `mvs_adopt_pending_jobs` and returns.
 - Lookups and cancels match by hook and arguments in **any** group. Every MediaVerse hook starts with `mvs_`
-  and belongs to us alone, and a row queued before 2.6.5 may still sit in an old group.
+  and belongs to us alone, and a row queued before 2.7.0 may still sit in an old group.
 - `ensure_recurring()` keeps exactly one argument-less recurring row (a continuation of the same hook carries a
   cursor and does not count) and runs only on scheduling requests.
 - Pro's `WPMediaVersePro\Core\Jobs` keeps only its two 2.6.4 methods (`ensure_recurring()` with its old
@@ -103,7 +103,7 @@ Other differences from Jetonomy's `\Jetonomy\Queue` (shared names behave the sam
 ## 2. One group: `mvs`
 
 Every MediaVerse job, Free and Pro, is queued in the Action Scheduler group `mvs`
-(`Jobs::GROUP`). Before 2.6.5 jobs were spread over `wpmediaverse`, `wpmediaverse-pro`, `mvs-pro` and
+(`Jobs::GROUP`). Before 2.7.0 jobs were spread over `wpmediaverse`, `wpmediaverse-pro`, `mvs-pro` and
 `mvs-connectors` (`Jobs::LEGACY_GROUPS`).
 
 Upgrade: Free migration v47 and Pro migration v26 call `Jobs::adopt_pending()` with their own hook lists
@@ -118,8 +118,8 @@ lookups are group-agnostic.
 ## 3. Rules we follow
 
 1. **Lightest mechanism first.** Event-driven jobs are single actions armed by the event. No sub-hourly poll
-   exists: 2.6.5 retired the five-minute competitions poll and the recurring captions reaper. Pro's upgrade
-   (migration v24-v26, `Migrator::upgrade_jobs_265()`) cancels both and arms the single run that replaces each,
+   exists: 2.7.0 retired the five-minute competitions poll and the recurring captions reaper. Pro's upgrade
+   (migration v24-v26, `Migrator::upgrade_jobs_270()`) cancels both and arms the single run that replaces each,
    on the upgrade request itself.
 2. **Arguments are ids, under 191 characters.** Action Scheduler stores longer arguments in `extended_args`,
    which its lookups do not index. Exceptions, all deliberate:
@@ -166,7 +166,7 @@ lookups are group-agnostic.
    `mvs_finished_action_retention_days` ago (default 7), cancelled actions scheduled that long ago, and failed
    actions last attempted more than 90 days ago (`Jobs::FAILED_RETENTION_DAYS`, the same rule Jetonomy applies)
    are deleted with their log rows, 200 per batch, at most 50 batches of each and 10 seconds a run, checked
-   before each row; a row another request deleted first is skipped. Rows in the pre-2.6.5 groups are not
+   before each row; a row another request deleted first is skipped. Rows in the pre-2.7.0 groups are not
    touched, so a year-old failed row there stays until uninstall. Pending and
    running rows, and every other plugin's rows, are never touched. We never change Action Scheduler's
    site-wide retention filters.

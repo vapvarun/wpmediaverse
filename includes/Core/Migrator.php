@@ -137,7 +137,7 @@ class Migrator {
 	/**
 	 * Run pending migrations on this request, and check for missing tables once a day on an admin request.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public static function boot(): void {
 		( new self() )->run();
@@ -150,7 +150,7 @@ class Migrator {
 	 * The version option alone cannot see a table dropped after it was written (a partial restore, a host
 	 * clean-up, a data wipe that kept the options): the migrator then skips, and every upload fails.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public static function maybe_repair(): void {
 		if ( get_transient( self::SCHEMA_RECHECK_TRANSIENT ) ) {
@@ -167,7 +167,7 @@ class Migrator {
 	 * running them again rebuilds a dropped table with every later column and index, and leaves the rest as they
 	 * are. One query when nothing is missing.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @return string[] The tables that were missing (unprefixed).
 	 */
@@ -240,7 +240,7 @@ class Migrator {
 	/**
 	 * Migration v45 - a plain WordPress Editor stops being a media moderator.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	private function migrate_to_45(): void {
 		\WPMediaVerse\Capabilities\MediaCapabilities::strip_editor_moderation();
@@ -251,7 +251,7 @@ class Migrator {
 	 *
 	 * Data only, batched in the background (ReportRepository::sweep_orphans); a re-run finds nothing to close.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	private function migrate_to_46(): void {
 		Jobs::when_ready( array( \WPMediaVerse\Repository\ReportRepository::class, 'queue_sweep' ) );
@@ -260,11 +260,11 @@ class Migrator {
 	/**
 	 * Migration v47 - move Free's pending background jobs into the one 'mvs' group.
 	 *
-	 * Before 2.6.5 Free queued into 'wpmediaverse'. Only Free's own hooks move (Deactivator::JOB_HOOKS), so an older
+	 * Before 2.7.0 Free queued into 'wpmediaverse'. Only Free's own hooks move (Deactivator::JOB_HOOKS), so an older
 	 * Pro that still looks up its jobs by group keeps finding them. Finished rows stay where they are and age out
 	 * through Action Scheduler's own retention.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	private function migrate_to_47(): void {
 		Jobs::when_ready(

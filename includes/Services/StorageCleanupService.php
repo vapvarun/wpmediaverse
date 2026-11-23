@@ -41,7 +41,7 @@ class StorageCleanupService {
 	/**
 	 * Action Scheduler group.
 	 *
-	 * @deprecated 2.6.5 Removed in 4.0.0. Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
+	 * @deprecated 2.7.0 Removed in 4.0.0. Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
 	 */
 	const AS_GROUP = \WPMediaVerse\Core\Jobs::GROUP;
 
@@ -181,7 +181,7 @@ class StorageCleanupService {
 		 * waits RETRY_STEP_SECONDS times the attempt number longer. After the last one the paths are logged as an
 		 * error in MediaVerse > Logs for manual deletion.
 		 *
-		 * @since 2.6.5
+		 * @since 2.7.0
 		 *
 		 * @param int $max At least 1. Default 3.
 		 */

@@ -9,8 +9,8 @@
  * the footer buttons and the container differ between the two looks.
  *
  * @package WPMediaVerse
- * @since   2.6.5
- * @version 2.6.5
+ * @since   2.7.0
+ * @version 2.7.0
  *
  * @var string $mvs_edit_prefix Prefix that keeps element ids unique when the form is on the page twice.
  */

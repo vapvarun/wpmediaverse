@@ -1,6 +1,6 @@
 <?php
 /**
- * Deactivating Free cancels Free's recomputable pending jobs, fast, and nobody else's (2.6.5).
+ * Deactivating Free cancels Free's recomputable pending jobs, fast, and nobody else's (2.7.0).
  *
  * Jobs that finish an action already committed (Deactivator::STATE_JOB_HOOKS) stay pending, so the routine update
  * (deactivate, replace, activate) resumes them. Free's list used to name Pro's mvs_story_cleanup, so switching Free

@@ -1326,7 +1326,7 @@ class TemplateLoader {
 	 * the way back, instead of the theme's 404 page. The status stays 404: the term does not exist, and a 200 would
 	 * let any made-up slug become an indexable page.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 *
 	 * @param string $template Current template path.
 	 * @return string

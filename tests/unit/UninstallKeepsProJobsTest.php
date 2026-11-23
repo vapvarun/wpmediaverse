@@ -1,6 +1,6 @@
 <?php
 /**
- * Deleting Free removes only Free's job rows: Pro's pending jobs share the mvs group and the mvs_ prefix (2.6.5).
+ * Deleting Free removes only Free's job rows: Pro's pending jobs share the mvs group and the mvs_ prefix (2.7.0).
  *
  * @package WPMediaVerse\Tests\Unit
  */

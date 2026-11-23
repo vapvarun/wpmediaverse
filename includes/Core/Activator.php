@@ -32,7 +32,7 @@ class Activator {
 	/**
 	 * Set on activation; Jobs::requeue_after_activation() reads it.
 	 *
-	 * @since 2.6.5
+	 * @since 2.7.0
 	 */
 	public const REQUEUE_TRANSIENT = 'mvs_requeue_unheard_jobs';
 
