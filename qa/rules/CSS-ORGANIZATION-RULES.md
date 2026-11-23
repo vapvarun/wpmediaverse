@@ -341,7 +341,14 @@ and the crawler lists it as an exemption.
 Text on a brand fill reads the paired token (`--mvs-btn-primary-fg`,
 `--mvs-btn-primary-fg-hover`, `--mvs-on-accent`), never a literal `#fff`: on a
 light brand colour, white fails 4.5:1. Hover has its own fill, so it has its own
-text token.
+text token. Visible consequence on Reign: the primary button's hover colour
+(#3c8ce6) is lighter than its resting fill, white measured 3.45:1 on it, so the
+hover label flips to dark (6.09:1). The fill stays the theme's own colour.
+
+Text over a photo sits on `--mvs-overlay` (0.72 black) and reads
+`--mvs-on-overlay`. The grid tile's hover stats used a 0.4 scrim: over a white
+photo that measured 2.85:1 in light and 1.7:1 in dark (where the text took the
+light `--mvs-text`); on the overlay pair it is 9.29:1 in both.
 
 Check with `bin/control-contrast-crawler.js` (run instructions in CLAUDE.md,
 Local CI section); `tests/unit/ControlBorderTokenTest.php` pins the token and the
