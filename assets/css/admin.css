@@ -1989,6 +1989,31 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-surface);
 }
 
+/* Core colours a:hover, a:focus and a:active at (0,1,1), above a one-class
+   button colour, so a pressed or focused link button lost its label (1.55:1
+   on the primary fill). Each link button keeps its own pair in every state. */
+a.mvs-btn:focus,
+a.mvs-btn:active,
+a.mvs-btn:visited {
+	color: var(--mvs-text);
+}
+
+a.mvs-btn--primary:focus,
+a.mvs-btn--primary:active,
+a.mvs-btn--primary:visited {
+	color: var(--mvs-surface);
+}
+
+a.mvs-btn--danger:focus,
+a.mvs-btn--danger:visited {
+	color: var(--mvs-danger);
+}
+
+a.mvs-btn--danger:active {
+	background: var(--mvs-danger);
+	color: var(--mvs-surface);
+}
+
 .mvs-btn--sm {
 	height: 28px;
 	font-size: 12px;
@@ -2241,7 +2266,7 @@ a.mvs-stat-card:focus {
 /* WordPress core draws form fields with a #949494 edge, 2.66:1 against the grey
    admin page. On MediaVerse screens every field takes the control edge; focus
    keeps core's blue ring. */
-:is(.toplevel_page_wpmediaverse, [class*="mediaverse_page_"]) #wpbody-content :is(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="hidden"], [type="range"], [type="color"], [type="file"]), select, textarea):not(:focus) {
+:is(.toplevel_page_wpmediaverse, [class*="_page_mvs-"]) #wpbody-content :is(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="hidden"], [type="range"], [type="color"], [type="file"]), select, textarea):not(:focus) {
 	border-color: var(--mvs-border-control);
 }
 

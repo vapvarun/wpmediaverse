@@ -267,7 +267,7 @@
     /* Always --mvs-on-primary on the red primary — never --mvs-bg, which
      * flips to near-black in dark mode and made the label unreadable
      * (card 10127407439). */
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -275,7 +275,7 @@
 
 #buddypress .mvs-btn-primary:hover {
     background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn-primary:disabled {
@@ -308,7 +308,7 @@
 #buddypress #mvs-bp-upload-btn,
 #buddypress #mvs-bp-create-album-btn {
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     border: 1px solid var(--mvs-primary);
     border-radius: 6px;
     cursor: pointer;
@@ -320,7 +320,7 @@
 #buddypress #mvs-bp-create-album-btn:focus {
     background: var(--mvs-primary-hover);
     border-color: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 /* BEM (double-dash) button variants rendered inside #buddypress (album.php

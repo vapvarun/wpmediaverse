@@ -748,6 +748,14 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	flex-shrink: 0;
 }
 
+/* The ring takes the toast's own label colour, picked against its fill; the
+   theme's blue ring measured 1.27:1 on the success green. */
+.mvs-toast-close:focus-visible {
+	opacity: 1;
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}
+
 .mvs-toast-close:hover {
 	opacity: 1;
 }

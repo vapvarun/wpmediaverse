@@ -52,4 +52,26 @@ class ControlBorderTokenTest extends WP_UnitTestCase {
 			$this->assertStringContainsString( 'var(--mvs-border-control)', $this->rule( $css, $selector ), $selector );
 		}
 	}
+
+	/**
+	 * A label on a plain primary fill is picked by the fill's luminance, not
+	 * taken from the theme: white on Twenty Twenty-Five's #1d7cd5 is 4.29:1.
+	 */
+	public function test_labels_on_a_plain_primary_fill_follow_its_luminance(): void {
+		$css = $this->css( 'frontend.css' );
+
+		$this->assertMatchesRegularExpression( '/--mvs-on-primary-solid:\s*color\(from var\(--mvs-primary\) xyz-d65 /', $css );
+		foreach ( array( '.mvs-dashboard-tabs .mvs-dashboard-tab.active .mvs-dashboard-tab__count', '.mvs-tag-cloud-item.active', '.mvs-follow-btn' ) as $selector ) {
+			$this->assertStringContainsString( 'var(--mvs-on-primary-solid', $this->rule( $css, $selector ), $selector );
+		}
+	}
+
+	/**
+	 * A pressed or focused link button keeps its label: core's a:active
+	 * (0,1,1) outranks a one-class colour (#183ad6 on #2271b1, 1.55:1).
+	 */
+	public function test_admin_link_buttons_pin_their_label_in_every_state(): void {
+		$rule = $this->rule( $this->css( 'admin.css' ), "a.mvs-btn--primary:focus,\na.mvs-btn--primary:active,\na.mvs-btn--primary:visited" );
+		$this->assertStringContainsString( 'var(--mvs-surface)', $rule );
+	}
 }

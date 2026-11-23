@@ -165,6 +165,14 @@
      *   #0b0b0b white          - 5 of 5 agree.
      */
     --mvs-on-accent: oklch(from var(--mvs-accent) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
+    /*
+     * Text on a plain --mvs-primary fill (count badges, active chips, follow
+     * and download buttons): white while white still reaches 4.5:1, else
+     * black. y in xyz-d65 is the WCAG luminance, and white passes up to 0.183.
+     * This keeps a passing white label, which contrast-color() does not: on
+     * Reign's #1d76da it picks black (4.65) over a passing white (4.51).
+     */
+    --mvs-on-primary-solid: color(from var(--mvs-primary) xyz-d65 calc(0.9505 * clamp(0, (0.183 - y) * 100000, 1)) clamp(0, (0.183 - y) * 100000, 1) calc(1.089 * clamp(0, (0.183 - y) * 100000, 1)));
 }
 
 /*
@@ -1146,7 +1154,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-follow-toggle--following:hover {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
     border-color: var(--mvs-danger);
 }
 
@@ -1440,7 +1448,8 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-btn.mvs-follow-btn--quiet:hover,
-.mvs-btn.mvs-follow-btn--quiet:focus-visible {
+.mvs-btn.mvs-follow-btn--quiet:focus,
+.mvs-btn.mvs-follow-btn--quiet:active {
     border-color: var(--mvs-primary);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
@@ -2383,6 +2392,13 @@ body.dark-mode .mvs-skeleton::after {
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
+/* Focused or pressed, a bar button keeps the hover label: the delete button's
+   .mvs-btn--danger state colour is white for a red fill this bar never paints. */
+.mvs-social-bar button:focus,
+.mvs-social-bar button:active {
+    color: var(--mvs-primary-text, var(--mvs-primary));
+}
+
 .mvs-social-bar__actions {
     display: inline-flex;
     align-items: center;
@@ -2499,7 +2515,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-comment-form button {
     padding: 10px 16px;
     background: var(--mvs-primary);
-    color: var(--mvs-btn-primary-fg, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-btn-primary-fg, #fff));
     border: none;
     border-radius: var(--mvs-radius-sm);
     cursor: pointer;
@@ -2510,6 +2526,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-comment-form button:hover {
     background: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-btn-primary-fg, #fff));
 }
 
 .mvs-comment-list {
@@ -2904,6 +2921,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-btn--danger:hover,
 .mvs-btn--danger:focus,
+.mvs-btn--danger:active,
 .mvs-btn--danger:visited {
     background: var(--mvs-danger);
     color: var(--mvs-on-danger, #ffffff);
@@ -3193,7 +3211,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-privacy-badge--private {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
 }
 
 /* Load More */
@@ -4020,7 +4038,7 @@ a.mvs-dashboard-card-title:hover {
  */
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
 }
 
 /* ==========================================================================
@@ -5512,14 +5530,14 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-primary);
     /* Always use --mvs-on-primary (#fff) here; never --mvs-bg which flips
        to dark in dark-mode themes and becomes unreadable on the red bg. */
-    color: var(--mvs-on-primary, #ffffff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     border: 1px solid var(--mvs-primary);
 }
 
 .mvs-follow-btn:hover {
     background: var(--mvs-primary-hover);
     border-color: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #ffffff);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 .mvs-follow-btn.active {
@@ -5847,7 +5865,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-favorite-btn.active {
     background: var(--mvs-danger-bg);
     border-color: var(--mvs-danger);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
 }
 
 .mvs-share-btn {
@@ -5990,7 +6008,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-profile-message--error {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
     border: 1px solid #f5c6cb;
 }
 
@@ -6177,8 +6195,11 @@ a.mvs-dashboard-card-title:hover {
     border-color: var(--mvs-btn-primary-bg);
 }
 
+/* :active too: a theme's a:active (0,1,1) outranks the one-class base, which
+   recoloured a pressed link button's label. */
 .mvs-btn--primary:hover,
 .mvs-btn--primary:focus,
+.mvs-btn--primary:active,
 .mvs-btn--primary:visited {
     background: var(--mvs-btn-primary-bg-hover);
     color: var(--mvs-btn-primary-fg-hover);
@@ -6201,7 +6222,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-btn.mvs-btn--secondary:hover,
-.mvs-btn.mvs-btn--secondary:focus {
+.mvs-btn.mvs-btn--secondary:focus,
+.mvs-btn.mvs-btn--secondary:active {
     background: var(--mvs-border-light);
     color: var(--mvs-text);
     border-color: var(--mvs-border-control);
@@ -6217,8 +6239,10 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-btn.mvs-btn--secondary:hover svg,
 .mvs-btn.mvs-btn--secondary:focus svg,
+.mvs-btn.mvs-btn--secondary:active svg,
 .mvs-btn.mvs-btn--secondary:hover [data-lucide],
-.mvs-btn.mvs-btn--secondary:focus [data-lucide] {
+.mvs-btn.mvs-btn--secondary:focus [data-lucide],
+.mvs-btn.mvs-btn--secondary:active [data-lucide] {
     color: var(--mvs-text);
 }
 
@@ -6231,7 +6255,9 @@ a.mvs-dashboard-card-title:hover {
     transition: background 0.15s, color 0.15s;
 }
 
-.mvs-btn--text:hover {
+.mvs-btn--text:hover,
+.mvs-btn--text:focus,
+.mvs-btn--text:active {
     background: rgba(214, 54, 56, 0.08);
     color: var(--mvs-danger);
     border: none;
@@ -6437,8 +6463,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* Login prompt links styled like buttons */
+/* Not dimmed: it is a working control (it opens the login), and at 0.7 its
+   edge measured 2.26:1 and its label 3.95:1. */
 .mvs-login-prompt {
-    opacity: 0.7;
     cursor: pointer;
     text-decoration: none;
 }
@@ -6507,6 +6534,17 @@ a.mvs-dashboard-card-title:hover {
        gradient that does not follow the theme, so its text must not either. */
     color: #4c51bf;
     border: none;
+}
+
+/* Its own pair in every state: the generic primary hover (frontend.css and
+   shared-ui-frame.css) repainted the fill to the theme's hover blue under the
+   indigo label (1.07:1). The fill stays white; the label deepens. */
+.mvs-logged-out-banner__actions .mvs-btn--primary:hover,
+.mvs-logged-out-banner__actions .mvs-btn--primary:focus,
+.mvs-logged-out-banner__actions .mvs-btn--primary:active,
+.mvs-logged-out-banner__actions .mvs-btn--primary:visited {
+    background: #fff;
+    color: #3730a3;
 }
 
 .mvs-logged-out-banner__actions .mvs-btn--secondary {
@@ -6894,6 +6932,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-notification-bell-toggle:focus-visible,
 .mvs-modal-close:focus-visible,
 .mvs-dashboard-dropzone:focus-visible,
+.mvs-search-mode-btn:focus-visible,
+.mvs-bulk-check:focus-visible,
 .mvs-load-more-btn:focus-visible {
     outline: 2px solid var(--mvs-primary);
     outline-offset: 2px;
@@ -7148,6 +7188,24 @@ a.mvs-dashboard-card-title:hover {
 
     .mvs-search-mode-btn {
         flex: 1;
+    }
+
+    /* Wrapped, the bar's edge frames the switch and the field together, so
+       the field row has no edge of its own. The edge moves to the field. */
+    .mvs-search-bar,
+    .mvs-search-bar:focus-within {
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    .mvs-search-field {
+        margin-top: 4px;
+        border: 1.5px solid var(--mvs-border-control);
+        border-radius: var(--mvs-radius-lg);
+    }
+
+    .mvs-search-field:focus-within {
+        border-color: var(--mvs-primary);
     }
 }
 
@@ -7688,7 +7746,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-action--report:hover {
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
     background: var(--mvs-danger-bg);
 }
 
@@ -8243,7 +8301,7 @@ a.mvs-dashboard-card-title:hover {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--mvs-surface, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     background: var(--mvs-primary, #2271b1);
     border-radius: 999px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
@@ -8828,7 +8886,7 @@ button.mvs-follows-open,
     padding: var(--mvs-space-2) var(--mvs-space-4);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     font-size: var(--mvs-font-md);
     font-weight: 600;
     text-decoration: none;
@@ -8838,7 +8896,7 @@ button.mvs-follows-open,
 .mvs-doc-download:hover,
 .mvs-doc-download:focus-visible {
     background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
     text-decoration: none;
 }
 
@@ -9185,7 +9243,7 @@ a.mvs-dashboard-tab:focus-visible {
 
 .mvs-dashboard-tabs .mvs-dashboard-tab.active .mvs-dashboard-tab__count {
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
 }
 
 /* ---------------------------------------------------------------------------
