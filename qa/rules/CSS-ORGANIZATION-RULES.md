@@ -341,9 +341,22 @@ and the crawler lists it as an exemption.
 Text on a brand fill reads the paired token (`--mvs-btn-primary-fg`,
 `--mvs-btn-primary-fg-hover`, `--mvs-on-accent`), never a literal `#fff`: on a
 light brand colour, white fails 4.5:1. Hover has its own fill, so it has its own
-text token. Visible consequence on Reign: the primary button's hover colour
-(#3c8ce6) is lighter than its resting fill, white measured 3.45:1 on it, so the
-hover label flips to dark (6.09:1). The fill stays the theme's own colour.
+text token. The label flips only where white fails on that fill. On stock Reign
+the hover fill is #1662b8 and white stays (6.05:1), so nothing changes there; a
+site whose hover is a lighter step (#3c8ce6, white 3.45:1) gets a dark hover
+label (6.09:1). The fill stays the theme's own colour.
+
+A label on a plain `--mvs-primary` fill (count badges, active chips, Follow,
+Download, the drive's current page) reads `--mvs-on-primary-solid`: white while
+white still reaches 4.5:1 on that fill, else black, from the fill's real
+luminance. It keeps a passing white label, which `contrast-color()` would not
+(on Reign's #1d76da it prefers black 4.65 over a passing white 4.51). On Twenty
+Twenty-Five's #1d7cd5 white is 4.29:1, so the label is black (4.90).
+
+A link button pins its label in every state (`:focus`, `:active`, `:visited`),
+in wp-admin and on the front: core's and themes' `a:active` / `a:focus` (0,1,1)
+outrank a one-class button colour, and wp-admin's `a:active` painted #183ad6 on
+the primary fill (1.55:1).
 
 Text over a photo sits on `--mvs-overlay` (0.72 black) and reads
 `--mvs-on-overlay`. The grid tile's hover stats used a 0.4 scrim: over a white

@@ -5,7 +5,7 @@
 // Scope: every input, select, textarea, button, summary, [role=button|tab|switch|menuitem|checkbox|radio|option]
 // and every <a> whose class names a control (btn, button, link, cta, chip, tab, toggle, pill), inside any
 // element with an mvs- class (blocks, shortcodes, templates, dialogs, popovers) and, on the wp-admin
-// MediaVerse and Pro pages, inside #wpbody-content. States: default, hover, focus-visible, active.
+// MediaVerse and Pro pages, inside #wpbody-content. States: default, hover, focus-visible (forced with :focus, as a real keyboard focus is), active.
 // Front: light + dark, set through the real switches MediaVerse follows (bn_theme for BuddyNext's
 // data-bn-theme, bx-color-mode for Reign's data-bx-mode), 1280 + 390. Admin: light (MediaVerse admin
 // has no dark mode), 1280 + 390.
@@ -36,7 +36,7 @@ const FRONT = [
   '/explore-media/#lbreport', '/explore-media/#single', '/my-media/', '/my-media/#upload', '/my-media/media/',
   '/my-media/media/#edit', '/my-media/albums/', '/my-media/albums/#newalbum',
   '/my-media/collections/', '/my-media/collections/#newcollection', '/my-media/documents/',
-  '/my-media/documents/#docshare', '/upload-media/', '/spaces/founders-lounge/media/',
+  '/my-media/documents/#docshare', '/my-media/documents/#docdialog', '/upload-media/', '/spaces/founders-lounge/media/',
   '/spaces/founders-lounge/files/', '/zz-contrast-blocks/', '/zz-contrast-codes/',
 ];
 
@@ -44,6 +44,7 @@ const ADMIN = [
   'wpmediaverse', 'mvs-media', 'mvs-documents', 'mvs-tags', 'mvs-moderation&tab=pending', 'mvs-moderation&tab=resolved',
   'mvs-moderation&tab=user-reports', 'mvs-stats&tab=overview', 'mvs-stats&tab=video-analytics', 'mvs-competitions',
   'mvs-challenges', 'mvs-tournaments', 'mvs-battles', 'mvs-theme-library', 'mvs-settings', 'mvs-settings#sections', 'mvs-setup',
+  'mvs-stories', 'mvs-analytics', 'mvs-reports', 'mvs-integrations', 'mvs-logs', 'mvs-migration',
 ].map((p) => '/wp-admin/admin.php?page=' + p);
 
 const click = (s) => `[data-wp-on--click="actions.${s}"]`;
@@ -52,14 +53,18 @@ const ACTIONS = {
   lightbox: ['.mvs-grid-item-link'],
   lbshare: ['.mvs-grid-item-link', click('lightboxShare')],
   lbcollect: ['.mvs-grid-item-link', click('lightboxOpenCollections')],
-  lbreport: ['.mvs-grid-item-link', click('lightboxReport')],
+  // Report shows only on someone else's media: step through the lightbox until it does.
+  lbreport: ['.mvs-grid-item-link', { until: '.mvs-lightbox-action--report', next: click('lightboxNext') }, click('lightboxReport')],
   // The single media page the tile links to.
   single: [{ follow: '.mvs-grid-item-link' }],
   upload: [click('openUploadModal')],
   edit: [click('openEditModal')],
   newalbum: [`${click('openCreateAlbum')}, ${click('openAlbumModal')}`],
   newcollection: [click('openCreateCollection')],
-  docshare: ['summary.mvs-drive__actions-toggle', 'button.mvs-drive__action-go:has-text("Share")'],
+  // The row's actions panel (rename, move, access, share with a person).
+  docshare: ['summary.mvs-drive__actions-toggle'],
+  // The document page's Share dialog (Pro document-share.js), opened from its Share button.
+  docdialog: [{ follow: 'a.mvs-drive__name' }, 'button.mvs-doc-share-button'],
   // Settings: every section is on one page, shown one at a time; reveal them all.
   sections: [{ eval: () => document.querySelectorAll('.mvs-settings-card[data-section]').forEach((c) => { c.hidden = false; c.style.display = 'block'; }) }],
 };
@@ -330,6 +335,8 @@ const mvcCrawl = async (shared, opts = {}) => {
   const as = opts.as || 'admin';
   // Own context: the shared MCP tab may be driven by another session.
   const ctx = await shared.context().browser().newContext();
+  // QA environment switches (bin/qa-env-mu-plugin.php): { mvs_qa_theme: 'twentytwentyfive', mvs_qa_stock: '1', ... }.
+  if (opts.cookies) await ctx.addCookies(Object.entries(opts.cookies).map(([name, value]) => ({ name, value: String(value), url: BASE })));
   const page = await ctx.newPage();
   if (as !== 'guest') await page.goto(BASE + '/?autologin=' + encodeURIComponent(as === 'admin' ? '1' : as), { waitUntil: 'load' });
   const darkMissing = [];
@@ -366,7 +373,14 @@ const mvcCrawl = async (shared, opts = {}) => {
             try {
               if (step.eval) { await page.evaluate(step.eval); continue; }
               if (step.follow) { await page.goto(await page.locator(step.follow).first().getAttribute('href'), { waitUntil: 'load' }); continue; }
+              if (step.until) {
+                for (let n = 0; n < (step.max || 30) && !(await page.locator(step.until).filter({ visible: true }).count()); n++) { await page.locator(step.next).filter({ visible: true }).first().click({ timeout: 5000 }); await page.waitForTimeout(400); }
+                if (!(await page.locator(step.until).filter({ visible: true }).count())) throw new Error('until');
+                continue;
+              }
               const loc = page.locator(typeof step === 'string' ? step : step.check).filter({ visible: true }).first();
+              // Site chrome fixed to the viewport (a cookie notice) can cover the opener at 390: centre it first.
+              await loc.evaluate((el) => el.scrollIntoView({ block: 'center' })).catch(() => {});
               if (typeof step === 'string') await loc.click({ timeout: 5000 }); else await loc.check({ timeout: 5000 });
               await page.waitForTimeout(250);
             } catch (e) { ok = false; break; }
@@ -397,7 +411,7 @@ const mvcCrawl = async (shared, opts = {}) => {
         // getDocument re-sends styleSheetAdded only on CSS.enable; give it a tick.
         await page.waitForTimeout(50);
         for (const state of states) {
-          if (state !== 'default') await Promise.all(nodeIds.map((nodeId) => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] }).catch(() => {})));
+          if (state !== 'default') await Promise.all(nodeIds.map((nodeId) => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: state === 'focus-visible' ? ['focus', 'focus-visible'] : [state] }).catch(() => {})));
           let recs = [];
           try { recs = await page.evaluate(IN_PAGE, { scope: set, tag: false, exempt: EXEMPT }); } catch (e) { pages.push({ path, mode, width, state, error: String(e).slice(0, 80) }); }
           for (const r of recs) {
