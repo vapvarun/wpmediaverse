@@ -3,9 +3,9 @@
 /**
  * Extension guard gate: every call into an optional PHP extension in shipped code is guarded just before it.
  *
- * CANONICAL COPY: ~/.claude/skills/wp-plugin-development/scripts/extension-guard-check.php (with its
- * extension-guard-check.test.php). Plugins keep an identical copy (MediaVerse: bin/lib/); change the canonical
- * file, then copy it, never edit a plugin copy alone. `diff` the two to check.
+ * Family gate, kept with its extension-guard-check.test.php (copy both together). Another copy lives in
+ * ~/.claude/skills/wp-plugin-development/scripts/; `diff` the two before assuming they match. The self-test needs
+ * only this folder.
  *
  * Usage: php extension-guard-check.php <plugin-dir> [dir ...]
  *   Scans <plugin-dir>/*.php plus the listed sub-directories (default: includes templates src).
@@ -19,15 +19,29 @@
  * What counts as a guard, read from PHP tokens, so comments and string literals never count:
  *   - function_exists( 'f' ) / class_exists( 'C' ) where f or C belongs to the SAME extension, or
  *     extension_loaded( 'name' ) naming that extension. Either quote style.
- *   - it sits before the use and no more than WINDOW lines above it.
+ *   - it sits before the use and no more than WINDOW lines above it, and
+ *   - it is in the SAME function body as the use (file top level counts as one body). A guard in an enclosing body
+ *     also covers a use inside a closure or arrow function defined there, because that code is created after the
+ *     guard ran. It never crosses a named function or method boundary: those run whenever they are called, so a
+ *     guard in a sibling function, an outer function, or at file level does not cover them. A guard inside a closure
+ *     covers only that closure.
+ *   - WINDOW stays as an extra limit inside the body: function scope alone would accept a guard at the top of a long
+ *     method whose `if` block closed long before the use, and a guard a reviewer cannot see beside the call is one
+ *     nobody keeps in step when the code moves.
+ *   - `->function_exists(`, `::function_exists(` and declarations named like a guard never count; neither does a
+ *     guard whose argument is not a literal (`extension_loaded( $ext )`) or defined().
  *   - an extension that needs another proves it: simplexml, dom, xmlreader and xmlwriter guards cover libxml_*.
  * finfo handles: every finfo_* call other than finfo_open() must have its first argument, a variable, checked for
- * false in the window first: `$h ?`, `$h &&`, `! $h`, `false === $h` / `!== $h`, `$h instanceof`, or `if ( $h`.
+ * false in the window and the same body first: `$h ?`, `$h &&`, `! $h`, `false === $h` / `!== $h`, `$h instanceof`, or `if ( $h`.
  * finfo_open() can return false even with fileinfo loaded, and finfo_file( false ) is a TypeError on PHP 8. The
  * handle check also proves the extension, so no function_exists() is needed there (finfo_open() itself needs one).
  *
+ * Aliases are followed: `use function mb_strtolower as lower;` makes `lower()` a use, `use ZipArchive as Zip;` makes
+ * `new Zip` one.
+ *
  * Not caught (a token gate cannot know the name): calls through a variable or a string (`$f( ... )`,
- * call_user_func( 'mb_strtolower', ... )), and methods on an object whose class came from elsewhere.
+ * call_user_func( 'mb_strtolower', ... )), group-use aliases (`use X\{ A as B }`), methods on an object whose class
+ * came from elsewhere, and a guard inside a nested `if` block that closed before the use in the same body.
  *
  * Not scanned, on purpose: libs/ and vendor/ (third-party code, fixed upstream and re-bundled, never edited here),
  * bin/, tools/ and tests/ (developer tooling run on a full PHP build, never shipped or never run on a customer
@@ -120,13 +134,150 @@ function step( array $t, int $i, int $dir ): ?int {
 }
 
 /**
+ * Whether the name just after token $prev is a method, a static member, a declaration or a class name after `new`.
+ */
+function not_a_call( array $t, ?int $prev ): bool {
+	$types = array( T_FUNCTION, T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW, T_CONST );
+	if ( defined( 'T_NULLSAFE_OBJECT_OPERATOR' ) ) {
+		$types[] = T_NULLSAFE_OBJECT_OPERATOR;
+	}
+	return null !== $prev && is_array( $t[ $prev ] ) && in_array( $t[ $prev ][0], $types, true );
+}
+
+/**
+ * Token id: the type constant of an array token, the character of a plain one.
+ */
+function id_of( $token ) {
+	return is_array( $token ) ? $token[0] : $token;
+}
+
+/**
+ * The body of the arrow function whose `fn` is token $fn: [ index of `=>`, last token of its expression ].
+ */
+function arrow_body( array $t, int $fn ): array {
+	$n = count( $t );
+	for ( $j = $fn + 1, $depth = 0; $j < $n; $j++ ) {
+		$id = id_of( $t[ $j ] );
+		$depth += '(' === $id ? 1 : ( ')' === $id ? -1 : 0 );
+		if ( T_DOUBLE_ARROW === $id && 0 === $depth ) {
+			break;
+		}
+	}
+	$start = $j;
+	for ( $j++, $depth = 0; $j < $n; $j++ ) {
+		$id = id_of( $t[ $j ] );
+		if ( in_array( $id, array( '(', '[', '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) ) {
+			++$depth;
+		} elseif ( in_array( $id, array( ')', ']', '}' ), true ) ) {
+			if ( 0 === $depth-- ) {
+				break;
+			}
+		} elseif ( 0 === $depth && in_array( $id, array( ';', ',', T_CLOSE_TAG ), true ) ) {
+			break;
+		}
+	}
+	return array( $start, $j - 1 );
+}
+
+/**
+ * Every function body: [ first token, last token, true for a closure or arrow function / false for a named one ].
+ */
+function bodies( array $t ): array {
+	$out     = array();
+	$braces  = array(); // One entry per open brace: [ start, closure? ] for a function body, null for any other brace.
+	$pending = null;    // closure? of a `function` whose body brace is still to come.
+	$depth   = 0;       // Paren depth since that `function`, so `use ( ... )` and defaults are skipped.
+	foreach ( $t as $i => $token ) {
+		$id = id_of( $token );
+		if ( T_FUNCTION === $id ) {
+			$p = step( $t, $i, -1 );
+			if ( null === $p || T_USE !== id_of( $t[ $p ] ) ) { // `use function x;` imports, it declares nothing.
+				$n = step( $t, $i, 1 );
+				if ( null !== $n && '&' === ( is_array( $t[ $n ] ) ? $t[ $n ][1] : $t[ $n ] ) ) {
+					$n = step( $t, $n, 1 );
+				}
+				$pending = null !== $n && '(' === $t[ $n ];
+				$depth   = 0;
+			}
+		} elseif ( T_FN === $id ) {
+			$out[] = array_merge( arrow_body( $t, $i ), array( true ) );
+		} elseif ( '(' === $id || ')' === $id ) {
+			$depth += '(' === $id ? 1 : -1;
+		} elseif ( ';' === $id && 0 === $depth ) {
+			$pending = null; // An abstract or interface method: no body.
+		} elseif ( in_array( $id, array( '{', T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) ) {
+			$is_body  = '{' === $id && null !== $pending && 0 === $depth;
+			$braces[] = $is_body ? array( $i, $pending ) : null;
+			$pending  = $is_body ? null : $pending;
+		} elseif ( '}' === $id ) {
+			$open = array_pop( $braces );
+			if ( $open ) {
+				$out[] = array( $open[0], $i, $open[1] );
+			}
+		}
+	}
+	return $out;
+}
+
+/**
+ * Scope map: [ body index owning each token (-1 = file level), parent body of each body, the bodies ].
+ */
+function scopes( array $t ): array {
+	$bodies = bodies( $t );
+	usort( $bodies, fn( $a, $b ) => $a[0] <=> $b[0] );
+	$owner  = array_fill( 0, count( $t ), -1 );
+	$parent = array();
+	foreach ( $bodies as $k => $b ) { // Outer bodies start first, so an inner body overwrites its part of the outer.
+		$parent[ $k ] = $owner[ $b[0] ];
+		for ( $j = $b[0]; $j <= $b[1]; $j++ ) {
+			$owner[ $j ] = $k;
+		}
+	}
+	return array( $owner, $parent, $bodies );
+}
+
+/**
+ * Whether code at token $g runs before the use at token $u in the same call: same body, or $u sits in closures or
+ * arrow functions nested inside $g's body. Never across a named function or method.
+ */
+function covers( array $scopes, int $g, int $u ): bool {
+	list( $owner, $parent, $bodies ) = $scopes;
+	for ( $s = $owner[ $u ]; $s !== $owner[ $g ]; $s = $parent[ $s ] ) {
+		if ( -1 === $s || ! $bodies[ $s ][2] ) {
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * `use` aliases: lower-case alias => the imported name (`use function mb_strtolower as lower;`, `use ZipArchive as Z;`).
+ */
+function aliases( array $t ): array {
+	$out = array();
+	foreach ( $t as $i => $token ) {
+		if ( T_USE !== id_of( $token ) ) {
+			continue;
+		}
+		$n = step( $t, $i, 1 );
+		$n = null !== $n && T_FUNCTION === id_of( $t[ $n ] ) ? step( $t, $n, 1 ) : $n;
+		$as = null !== $n ? step( $t, $n, 1 ) : null;
+		$to = null !== $as && T_AS === id_of( $t[ $as ] ) ? step( $t, $as, 1 ) : null;
+		if ( null !== $to && null !== name_of( $t[ $n ] ) && null !== name_of( $t[ $to ] ) ) {
+			$out[ strtolower( name_of( $t[ $to ] ) ) ] = name_of( $t[ $n ] );
+		}
+	}
+	return $out;
+}
+
+/**
  * Every guard in the code: [ token index, line, family it proves ].
  */
 function guards( array $t ): array {
 	$out = array();
 	foreach ( $t as $i => $token ) {
 		$fn = strtolower( (string) name_of( $token ) );
-		if ( ! in_array( $fn, array( 'function_exists', 'class_exists', 'extension_loaded' ), true ) ) {
+		if ( ! in_array( $fn, array( 'function_exists', 'class_exists', 'extension_loaded' ), true ) || not_a_call( $t, step( $t, $i, -1 ) ) ) {
 			continue;
 		}
 		$open = step( $t, $i, 1 );
@@ -147,11 +298,11 @@ function guards( array $t ): array {
 }
 
 /**
- * Whether variable $var is checked for false/truthiness in tokens before $before, at or below line $from.
+ * Whether variable $var is checked for false/truthiness before token $before, at or below line $from, in its body.
  */
-function handle_checked( array $t, string $var, int $before, int $from ): bool {
+function handle_checked( array $t, array $scopes, string $var, int $before, int $from ): bool {
 	for ( $i = 0; $i < $before; $i++ ) {
-		if ( ! is_array( $t[ $i ] ) || T_VARIABLE !== $t[ $i ][0] || $var !== $t[ $i ][1] || $t[ $i ][2] < $from ) {
+		if ( ! is_array( $t[ $i ] ) || T_VARIABLE !== $t[ $i ][0] || $var !== $t[ $i ][1] || $t[ $i ][2] < $from || ! covers( $scopes, $i, $before ) ) {
 			continue;
 		}
 		$n  = step( $t, $i, 1 );
@@ -178,6 +329,9 @@ function handle_checked( array $t, string $var, int $before, int $from ): bool {
 function scan_code( string $code ): array {
 	$t        = token_get_all( $code );
 	$guards   = guards( $t );
+	$scopes   = scopes( $t );
+	$alias    = aliases( $t );
+	$real     = fn( string $n ) => $alias[ strtolower( $n ) ] ?? $n;
 	$findings = array();
 
 	foreach ( $t as $i => $token ) {
@@ -192,18 +346,17 @@ function scan_code( string $code ): array {
 
 		if ( is_array( $token ) && T_NEW === $token[0] ) {
 			$cls = null !== $next ? name_of( $t[ $next ] ) : null;
-			if ( null !== $cls && null !== ( $family = class_family( $cls ) ) ) {
+			if ( null !== $cls && null !== ( $family = class_family( $real( $cls ) ) ) ) {
 				$what = "new $cls";
 			}
 		} elseif ( null !== $next && is_array( $t[ $next ] ) && T_DOUBLE_COLON === $t[ $next ][0] ) {
 			$after = step( $t, $next, 1 );
 			$is_class_const = null !== $after && is_array( $t[ $after ] ) && T_CLASS === $t[ $after ][0];
-			if ( ! $is_class_const && null !== ( $family = class_family( $name ) ) ) {
+			if ( ! $is_class_const && null !== ( $family = class_family( $real( $name ) ) ) ) {
 				$what = "$name::";
 			}
 		} elseif ( null !== $next && '(' === $t[ $next ] ) {
-			$declared = null !== $prev && is_array( $t[ $prev ] ) && in_array( $t[ $prev ][0], array( T_FUNCTION, T_OBJECT_OPERATOR, T_DOUBLE_COLON, T_NEW, T_CONST, defined( 'T_NULLSAFE_OBJECT_OPERATOR' ) ? T_NULLSAFE_OBJECT_OPERATOR : T_OBJECT_OPERATOR ), true );
-			if ( ! $declared && null !== ( $family = function_family( $name ) ) ) {
+			if ( ! not_a_call( $t, $prev ) && null !== ( $family = function_family( $real( $name ) ) ) ) {
 				$what = "$name()";
 			}
 		}
@@ -215,25 +368,25 @@ function scan_code( string $code ): array {
 		$from = $line - WINDOW;
 
 		// finfo_* on a handle: the handle must be checked for false first.
-		$fn = strtolower( $name ?? '' );
+		$fn = strtolower( $real( $name ?? '' ) );
 		if ( 'fileinfo' === $family && 0 === strpos( $fn, 'finfo_' ) && 'finfo_open' !== $fn ) {
 			$arg = step( $t, (int) $next, 1 );
 			$var = null !== $arg && is_array( $t[ $arg ] ) && T_VARIABLE === $t[ $arg ][0] ? $t[ $arg ][1] : null;
-			if ( null === $var || ! handle_checked( $t, $var, $i, $from ) ) {
-				$findings[] = array( $line, "$what uses a fileinfo handle " . ( $var ?? '(not a variable)' ) . ' not checked for false in the ' . WINDOW . ' lines before it (finfo_open() can return false)' );
+			if ( null === $var || ! handle_checked( $t, $scopes, $var, $i, $from ) ) {
+				$findings[] = array( $line, "$what uses a fileinfo handle " . ( $var ?? '(not a variable)' ) . ' not checked for false in the ' . WINDOW . ' lines before it in the same function (finfo_open() can return false)' );
 			}
 			continue;
 		}
 
 		$ok = false;
 		foreach ( $guards as $g ) {
-			if ( $g[0] < $i && $g[1] >= $from && $g[2] === $family ) {
+			if ( $g[0] < $i && $g[1] >= $from && $g[2] === $family && covers( $scopes, $g[0], $i ) ) {
 				$ok = true;
 				break;
 			}
 		}
 		if ( ! $ok ) {
-			$findings[] = array( $line, "$what needs the $family extension: no function_exists/class_exists/extension_loaded guard for it in the " . WINDOW . ' lines before it' );
+			$findings[] = array( $line, "$what needs the $family extension: no function_exists/class_exists/extension_loaded guard for it in the " . WINDOW . ' lines before it in the same function' );
 		}
 	}
 	return $findings;

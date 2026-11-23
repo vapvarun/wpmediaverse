@@ -380,10 +380,10 @@ check_code_standard() {
 # ------------------------------------------------------------------------------
 # Rule 12: every call into an optional PHP extension (mbstring beyond WordPress's
 # polyfills, ctype, fileinfo, SimpleXML/libxml/dom, iconv, zip) has a guard for
-# THAT extension in code (not a comment or string) in the 12 lines before it, and
+# THAT extension in code (not a comment or string) in the 12 lines before it in the same function, and
 # every finfo_* call on a handle checks the handle for false first. The gate and
-# its self-test are bin/lib/extension-guard-check{,.test}.php, identical copies of
-# the family's canonical gate in ~/.claude/skills/wp-plugin-development/scripts/.
+# its self-test are bin/lib/extension-guard-check{,.test}.php (the family gate; a
+# copy also lives in ~/.claude/skills/wp-plugin-development/scripts/, diff first).
 # The header of the checker lists what it scans, what it skips and why, and its
 # blind spot (calls through a variable).
 check_extension_guards() {
