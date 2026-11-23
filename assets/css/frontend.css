@@ -568,11 +568,7 @@ body.dark-mode {
 [data-theme="dark"] .mvs-album-badge .mvs-icon svg,
 [data-bn-theme="dark"] .mvs-album-badge .mvs-icon svg,
 [data-bx-mode="dark"] .mvs-album-badge .mvs-icon svg,
-.dark-mode .mvs-album-badge .mvs-icon svg,
-[data-theme="dark"] .mvs-grid-item-overlay,
-[data-bn-theme="dark"] .mvs-grid-item-overlay,
-[data-bx-mode="dark"] .mvs-grid-item-overlay,
-.dark-mode .mvs-grid-item-overlay {
+.dark-mode .mvs-album-badge .mvs-icon svg {
     color: var(--mvs-text);
 }
 
@@ -1971,8 +1967,10 @@ body.dark-mode .mvs-skeleton::after {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    color: var(--mvs-bg);
+    /* The shared scrim pair. A 0.4 scrim over a white photo left the stats at
+       2.85:1, and --mvs-bg as the text turned dark in dark mode (1.7:1). */
+    background: var(--mvs-overlay);
+    color: var(--mvs-on-overlay);
     font-size: 0.9em;
     opacity: 0;
     transition: opacity 0.3s;

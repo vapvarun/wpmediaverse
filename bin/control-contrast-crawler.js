@@ -63,12 +63,9 @@ const ACTIONS = {
   // Settings: every section is on one page, shown one at a time; reveal them all.
   sections: [{ eval: () => document.querySelectorAll('.mvs-settings-card[data-section]').forEach((c) => { c.hidden = false; c.style.display = 'block'; }) }],
 };
-// Design exemptions, each borderless or image-backed on purpose:
+// Design exemptions, each with its reason:
 // - The Instagram layout's "Add a comment" field is borderless by design, like the feed it copies;
 //   it is drawn with no edge today and stays that way (its top rule is the post's divider).
-// - A grid tile's hover stats sit on the photo behind a scrim. The crawler composites them over the
-//   tile's placeholder, which a loaded photo always covers, so the number it reports is not one a
-//   member sees; the scrim strength is an owner decision, not an edge or text colour.
 // - The logged-out banner is a fixed 135deg purple gradient. The crawler measures text against the
 //   gradient's lightest stop (#667eea, 3.66:1 for white); at the controls' real position on the
 //   gradient white text measures 4.84:1 or more (1280 and 390). Register's edge is solid white,
@@ -76,7 +73,7 @@ const ACTIONS = {
 // - wp-admin's own .nav-tab tabs (the Competitions section nav) are WordPress core chrome: each is
 //   identified by its label (5.35:1 or more) and the active one merges into the panel below by
 //   design; restyling them would set MediaVerse screens apart from every other admin screen.
-const EXEMPT = ['a.nav-tab', 'input.mvs-ig-comment-input', 'a.mvs-grid-item-link', '.mvs-logged-out-banner__close', '.mvs-logged-out-banner__actions .mvs-btn--secondary'];
+const EXEMPT = ['a.nav-tab', 'input.mvs-ig-comment-input', '.mvs-logged-out-banner__close', '.mvs-logged-out-banner__actions .mvs-btn--secondary'];
 
 // Runs inside the page. Returns one record per tagged control.
 const IN_PAGE = (args) => {
