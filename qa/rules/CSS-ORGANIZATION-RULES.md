@@ -317,3 +317,32 @@ added in 2.4.1 was given a background twice — a surface token and a currentCol
 mix — and both computed to `rgb(250,251,253)`, exactly the card behind them. The
 fill was dropped and the glyph carries the tile. If you cannot show the computed
 value differs from its parent, do not ship the declaration.
+
+## Edges: frames and controls
+
+Two border tokens, two jobs.
+
+- `--mvs-border` is the FRAME colour: cards, panels, list dividers, table rules.
+  It is meant to be faint (about 1.4:1 on Reign light, 1.1:1 dark) and stays so.
+- `--mvs-border-control` is the CONTROL edge: inputs, selects, textareas, search
+  pills, outlined buttons, chips and pills, anything a member clicks or types in.
+  It is `color-mix(in oklab, var(--mvs-text) 65%, transparent)`, which clears
+  WCAG 1.4.11's 3:1 on light and dark surfaces (half the text colour measured
+  2.5:1 on Reign's mid-grey text, hence 65%). It is declared in `frontend.css`
+  `:root`, again in the dark block (a dark wrapper below `<html>` redefines
+  `--mvs-text`), in an `@supports not (color: color-mix(...))` block with hex
+  values, and in `admin.css`.
+
+Pick by element, not by look: if it is a control, its edge is
+`--mvs-border-control`. A control that draws no edge today (the Instagram
+layout's comment field) stays borderless; its identity comes from its context,
+and the crawler lists it as an exemption.
+
+Text on a brand fill reads the paired token (`--mvs-btn-primary-fg`,
+`--mvs-btn-primary-fg-hover`, `--mvs-on-accent`), never a literal `#fff`: on a
+light brand colour, white fails 4.5:1. Hover has its own fill, so it has its own
+text token.
+
+Check with `bin/control-contrast-crawler.js` (run instructions in CLAUDE.md,
+Local CI section); `tests/unit/ControlBorderTokenTest.php` pins the token and the
+controls QA measured.
