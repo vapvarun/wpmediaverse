@@ -8,7 +8,7 @@ MediaVerse runs slow work (file clean-up, member deletion, webhooks, document ex
 
 - **One group.** Every MediaVerse job, Free and Pro, is in the Action Scheduler group `mvs`.
 - **No polling.** Jobs are queued by the event that needs them (an upload, a deletion, a competition deadline). Nothing runs every few minutes waiting for work.
-- **Finished jobs are trimmed.** Completed MediaVerse jobs are deleted 7 days after they finished, and cancelled ones 7 days after they were due, with their log rows, on the daily `mvs_prune_logs` run. Failed jobs are kept for 90 days after their last attempt so you can see what went wrong. Pending and running jobs and other plugins' jobs are never touched, and the site-wide Action Scheduler retention is left as it is.
+- **Finished jobs are trimmed.** Completed MediaVerse jobs are deleted 7 days after they finished, and cancelled ones 7 days after they were due, with their log rows, on the daily `mvs_prune_logs` run. Failed jobs are kept for 90 days after their last attempt so you can see what went wrong (filter [`mvs_failed_action_retention_days`](hooks-filters.md#mvs_failed_action_retention_days-new-in-270)). Pending and running jobs and other plugins' jobs are never touched, and the site-wide Action Scheduler retention is left as it is.
 - **Deactivation cancels recomputable jobs and keeps the rest.** Switching MediaVerse (or Pro) off cancels its pending jobs that come back by themselves or cannot be redone (AI analysis, push delivery, search indexing, the competitions tick). Jobs that finish something a member or owner already did (deleting media files, a privacy change, a member deletion, a folder move, trash or purge, a captions request) or carry data nothing else holds (a webhook's event, an upgrade step) stay queued, so the usual update (deactivate, replace, activate) loses nothing. If MediaVerse stays off while another plugin keeps Action Scheduler running, those queued jobs run with nothing to handle them and show as Failed ("no callbacks are registered"). Switching MediaVerse back on, or updating it with the one-click updater, queues again the ones that failed in the last 7 days, with the same arguments, on the next admin page load; older ones stay failed. A job that ran and failed for another reason stays failed. Only the plugin's own hooks are touched, never another plugin's jobs, and running, complete and failed jobs stay. Switching Pro back on re-arms the competitions tick and the daily streak check, and indexes any document uploaded while it was off, on the next admin page load.
 - **Failed file deletions are retried.** When a file cannot be deleted from storage (a cloud outage), MediaVerse tries again after 5 and 10 minutes, 3 attempts in all; change the number with the [`mvs_storage_cleanup_max_attempts`](hooks-filters.md#mvs_storage_cleanup_max_attempts-new-in-270) filter. After the last attempt the file paths are listed as an error under **MediaVerse > Logs**; delete those files by hand.
 - **Works without a server cron.** Action Scheduler runs on normal site traffic through WP-Cron. A real server cron is an optional speed-up, never a requirement.
@@ -23,7 +23,7 @@ add_filter( 'mvs_finished_action_retention_days', function () {
 } );
 ```
 
-With this filter, a finished job from 10 days ago stays and one from 20 days ago is deleted on the next daily run. Failed jobs follow their own 90-day rule.
+With this filter, a finished job from 10 days ago stays and one from 20 days ago is deleted on the next daily run. Failed jobs follow their own 90-day rule, changed with `mvs_failed_action_retention_days`.
 
 ## Look up a MediaVerse job from your own code
 
@@ -42,7 +42,7 @@ The full job list (hook, trigger, how many jobs one event creates, arguments) is
 | Change | Before | From 2.7.0 |
 |---|---|---|
 | Action Scheduler group | `wpmediaverse`, `wpmediaverse-pro`, `mvs-pro`, `mvs-connectors` | `mvs` for every job. Pending jobs are moved on upgrade with the same hook, arguments and run time. |
-| Finished-job retention | Action Scheduler's site-wide 31 days | 7 days for MediaVerse's own completed and cancelled jobs (filter `mvs_finished_action_retention_days`, new) and 90 days for its failed jobs |
+| Finished-job retention | Action Scheduler's site-wide 31 days | 7 days for MediaVerse's own completed and cancelled jobs (filter `mvs_finished_action_retention_days`, new) and 90 days for its failed jobs (filter `mvs_failed_action_retention_days`, new) |
 | Deactivation | Cancelled only recurring jobs; one-off jobs stayed queued with no listener | Cancels the plugin's recomputable pending jobs (`WPMediaVerse\Core\Jobs::cancel_pending()`, new) and keeps the ones listed in `Deactivator::STATE_JOB_HOOKS` / `Lifecycle::STATE_JOB_HOOKS`; Pro re-arms its competitions tick and streak check after reactivation |
 | Jobs failed while the plugin was off | Stayed failed ("no callbacks are registered") | Queued again with the same arguments after reactivation or an update that runs the plugin's migrations (`WPMediaVerse\Core\Jobs::requeue_after_activation()` / `requeue_unheard()`, new), for the plugin's `STATE_JOB_HOOKS` that failed in the last 7 days |
 | `StorageCleanupService::AS_GROUP`, `StorageRepairService::AS_GROUP` | `wpmediaverse` | Deprecated; now equal `mvs` |

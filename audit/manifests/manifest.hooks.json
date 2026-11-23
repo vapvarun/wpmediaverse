@@ -1416,13 +1416,23 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_failed_action_retention_days",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $days"
+      ],
+      "where": "includes/Core/Jobs.php:544",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_finished_action_retention_days",
       "type": "filter",
       "args_count": 1,
       "args_signature": [
         "int $days"
       ],
-      "where": "includes/Core/Jobs.php:528",
+      "where": "includes/Core/Jobs.php:536",
       "consumed_by": []
     },
     {

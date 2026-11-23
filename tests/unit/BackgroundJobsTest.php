@@ -75,7 +75,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		$GLOBALS['wpdb']->update(
 			$GLOBALS['wpdb']->prefix . 'actionscheduler_actions',
 			array(
-				'last_attempt_gmt' => $when,
+				'last_attempt_gmt'   => $when,
 				'last_attempt_local' => $when,
 			),
 			array( 'action_id' => $id )
@@ -125,7 +125,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 			1,
 			as_get_scheduled_actions(
 				array(
-					'hook' => self::HOOK,
+					'hook'   => self::HOOK,
 					'status' => 'pending',
 				),
 				'ids'
@@ -182,7 +182,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		$this->assertSame( array( 'mvs' ), $this->pending_groups( ReportRepository::SWEEP_HOOK ) );
 		$ids    = as_get_scheduled_actions(
 			array(
-				'hook' => ReportRepository::SWEEP_HOOK,
+				'hook'   => ReportRepository::SWEEP_HOOK,
 				'status' => 'pending',
 			),
 			'ids'
@@ -241,7 +241,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 			1,
 			as_get_scheduled_actions(
 				array(
-					'hook' => self::HOOK,
+					'hook'   => self::HOOK,
 					'status' => 'pending',
 				),
 				'ids'
@@ -267,7 +267,7 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 
 		$ids = as_get_scheduled_actions(
 			array(
-				'hook' => self::HOOK,
+				'hook'   => self::HOOK,
 				'status' => 'pending',
 			),
 			'ids'
@@ -294,11 +294,11 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		$this->assertSame( 2000, $moved, 'One call must stop at its row cap.' );
 		$this->assertSame( array( array( array( self::HOOK ) ) ), Jobs::pending_args( Jobs::ADOPT_HOOK ), 'No follow-up job carries the rest.' );
 		$this->assertTrue( $this->exists( $claimed ), 'A claimed row was moved while a runner holds it.' );
-		$ids  = as_get_scheduled_actions(
+		$ids = as_get_scheduled_actions(
 			array(
-				'hook' => self::HOOK,
-				'group' => 'mvs',
-				'status' => 'pending',
+				'hook'     => self::HOOK,
+				'group'    => 'mvs',
+				'status'   => 'pending',
 				'per_page' => 1,
 			),
 			'ids'
@@ -327,5 +327,17 @@ class BackgroundJobsTest extends WP_UnitTestCase {
 		Jobs::prune_history();
 
 		$this->assertTrue( $this->exists( $id ), 'A job that finished an hour ago was pruned by its due date.' );
+	}
+
+	public function test_failed_job_retention_is_filterable(): void {
+		add_filter( 'mvs_failed_action_retention_days', static fn() => 10 );
+		$old   = $this->finished( 20, 'mvs', true );
+		$young = $this->finished( 5, 'mvs', true );
+
+		Jobs::prune_history();
+		remove_all_filters( 'mvs_failed_action_retention_days' );
+
+		$this->assertFalse( $this->exists( $old ), 'A failed job older than the filtered retention was kept.' );
+		$this->assertTrue( $this->exists( $young ) );
 	}
 }

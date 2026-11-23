@@ -116,8 +116,8 @@ class RequeueUnheardJobsTest extends WP_UnitTestCase {
 			Jobs::REQUEUE_BATCH + 1,
 			as_get_scheduled_actions(
 				array(
-					'hook' => self::HOOK,
-					'status' => 'pending',
+					'hook'     => self::HOOK,
+					'status'   => 'pending',
 					'per_page' => -1,
 				),
 				'ids'
@@ -166,8 +166,8 @@ class RequeueUnheardJobsTest extends WP_UnitTestCase {
 			Jobs::REQUEUE_BATCH,
 			as_get_scheduled_actions(
 				array(
-					'hook' => self::HOOK,
-					'status' => 'pending',
+					'hook'     => self::HOOK,
+					'status'   => 'pending',
 					'per_page' => -1,
 				),
 				'ids'
@@ -178,13 +178,71 @@ class RequeueUnheardJobsTest extends WP_UnitTestCase {
 			array(),
 			as_get_scheduled_actions(
 				array(
-					'hook' => self::HOOK,
-					'status' => 'failed',
+					'hook'     => self::HOOK,
+					'status'   => 'failed',
 					'per_page' => -1,
 				),
 				'ids'
 			),
 			'Failed rows were left.'
+		);
+	}
+
+	/**
+	 * A runner may finish the copies a second request queued before the first request reaches those rows. The first
+	 * must not queue them again: each row runs once.
+	 */
+	public function test_a_copy_that_already_ran_is_not_queued_again_by_a_slower_request(): void {
+		for ( $i = 0; $i < 50; $i++ ) {
+			$this->failed_while_off( array( "h{$i}.jpg" ) );
+		}
+		add_action( self::HOOK, '__return_null' );
+
+		$nested = false;
+		$second = static function () use ( &$nested ): void {
+			if ( $nested ) {
+				return;
+			}
+			$nested = true;
+			Jobs::requeue_unheard( Deactivator::STATE_JOB_HOOKS );
+			$store = \ActionScheduler::store();
+			foreach ( as_get_scheduled_actions(
+				array(
+					'hook'     => self::HOOK,
+					'status'   => 'pending',
+					'per_page' => -1,
+				),
+				'ids'
+			) as $id ) {
+				$store->mark_complete( (int) $id ); // A runner finished them.
+			}
+		};
+		add_action( 'action_scheduler_stored_action', $second );
+		Jobs::requeue_unheard( Deactivator::STATE_JOB_HOOKS );
+		remove_action( 'action_scheduler_stored_action', $second );
+
+		$this->assertSame(
+			array(),
+			as_get_scheduled_actions(
+				array(
+					'hook'     => self::HOOK,
+					'status'   => 'pending',
+					'per_page' => -1,
+				),
+				'ids'
+			),
+			'A row that already ran was queued again.'
+		);
+		$this->assertCount(
+			50,
+			as_get_scheduled_actions(
+				array(
+					'hook'     => self::HOOK,
+					'status'   => 'complete',
+					'per_page' => -1,
+				),
+				'ids'
+			)
 		);
 	}
 

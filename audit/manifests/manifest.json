@@ -7540,7 +7540,7 @@
       "mvs-connectors"
     ],
     "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
-    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only, 10 s budget: completed and cancelled rows after mvs_finished_action_retention_days (default 7), failed rows after 90 days (Jobs::FAILED_RETENTION_DAYS); finished rows aged by last attempt, cancelled by scheduled date",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only, 10 s budget: completed and cancelled rows after mvs_finished_action_retention_days (default 7), failed rows after mvs_failed_action_retention_days (default 90, Jobs::FAILED_RETENTION_DAYS); finished rows aged by last attempt, cancelled by scheduled date",
     "doc": "docs/standards/background-jobs.md",
     "since": "2.7.0",
     "lookups": "is_queued: pending or running (start guards); is_pending: waiting only (continuations); async_once: queue unless a copy is waiting; cancel_pending: set-based cancel of exact hooks (deactivation). Differences from Jetonomy Queue are listed in docs/standards/background-jobs.md section 1",

@@ -89,4 +89,32 @@ final class JobRepository {
 			$rows
 		);
 	}
+
+	/**
+	 * Claim a failed row for re-queueing: failed becomes cancelled in one UPDATE, so of several requests that read
+	 * the row only one gets true.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param int $id Action id.
+	 * @return bool Whether this request claimed it.
+	 */
+	public static function claim_failed( int $id ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- atomic claim; Action Scheduler has no compare-and-set.
+		return 1 === (int) $wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}actionscheduler_actions SET status = 'canceled' WHERE action_id = %d AND status = 'failed'", $id ) );
+	}
+
+	/**
+	 * Give a claimed row back (its copy could not be queued).
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param int $id Action id.
+	 */
+	public static function release_failed( int $id ): void {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery -- undoes claim_failed().
+		$wpdb->query( $wpdb->prepare( "UPDATE {$wpdb->prefix}actionscheduler_actions SET status = 'failed' WHERE action_id = %d AND status = 'canceled'", $id ) );
+	}
 }

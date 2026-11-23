@@ -58,8 +58,9 @@ adopt_pending( array $hooks ): int
   set-based UPDATEs of 10,000 rows. It is the deactivation path (section 3, rule 9).
 - `requeue_unheard( $hooks )` queues again, with the same arguments, the failed rows of these hooks that failed
   only because no listener was registered in the last 7 days (`REQUEUE_DAYS`), for hooks that have a listener
-  now, and deletes them with their logs (200 per call). Two requests over the same rows are safe: the second
-  copy is refused and a row already deleted is skipped. `requeue_after_activation( $transient, $hooks )` runs it
+  now, and deletes them with their logs (200 per call). Several requests over the same rows are safe: each row
+  is claimed first (failed to cancelled in one UPDATE, `JobRepository::claim_failed()`), so it is queued once and
+  runs once; a row whose copy no scheduler takes goes back to failed. `requeue_after_activation( $transient, $hooks )` runs it
   on scheduling requests while the activation or update note is set (section 6).
 
 Same job, different name in Jetonomy's `\Jetonomy\Queue`:
@@ -164,7 +165,8 @@ lookups are group-agnostic.
 8. **Own rows only, one retention rule for the family.** The daily `mvs_prune_logs` event calls
    `Jobs::prune_history()`: in group `mvs`, completed actions that finished more than
    `mvs_finished_action_retention_days` ago (default 7), cancelled actions scheduled that long ago, and failed
-   actions last attempted more than 90 days ago (`Jobs::FAILED_RETENTION_DAYS`, the same rule Jetonomy applies)
+   actions last attempted more than `mvs_failed_action_retention_days` ago (default 90,
+   `Jobs::FAILED_RETENTION_DAYS`, the same rule Jetonomy applies)
    are deleted with their log rows, 200 per batch, at most 50 batches of each and 10 seconds a run, checked
    before each row; a row another request deleted first is skipped. Rows in the pre-2.7.0 groups are not
    touched, so a year-old failed row there stays until uninstall. Pending and
@@ -237,6 +239,27 @@ WP-Cron housekeeping (direct `wp_schedule_event()`, light hourly or daily): `mvs
 `mvs_pro_flush_boost_impressions`, `mvs_story_cleanup` (hourly start), `mvs_pro_sweep_replaced_documents`,
 `mvs_pro_prune_play_events`.
 
+## 4a. Defaults changed in 2.7.0
+
+Each default an owner can feel has a filter:
+
+| Default | Was | Now | Filter |
+|---|---|---|---|
+| Completed and cancelled job retention | Action Scheduler's site-wide 31 days | 7 days | `mvs_finished_action_retention_days` |
+| Failed job retention | 31 days | 90 days | `mvs_failed_action_retention_days` |
+| Storage cleanup delete attempts | 5 | 3 | `mvs_storage_cleanup_max_attempts` |
+
+No filter, on purpose:
+
+- Prune and requeue batch sizes and the 10-second budget (`PRUNE_BATCH`, `PRUNE_MAX_BATCHES`, `TIME_BUDGET`,
+  `REQUEUE_BATCH`, `ADOPT_*`): they set how much work one request does, not what happens, and nothing an owner
+  sees changes with them.
+- The 7-day requeue window (`REQUEUE_DAYS`): new in 2.7.0 (before it, nothing was ever queued again), so it
+  changes no default. A failed row older than that stays in Tools > Scheduled Actions, where it can be run by
+  hand.
+- Which jobs deactivation keeps (`STATE_JOB_HOOKS`): a filter could make a site cancel jobs whose data exists
+  nowhere else; the list is a code contract, documented in section 6.
+
 ## 5. Adding a job
 
 1. Look in this list and the manifest (`audit/manifests/manifest.json`, `cron`) for a job that already does it.
@@ -265,7 +288,9 @@ just before deactivation is indexed. Still lost:
 
 - rows that failed more than 7 days before the reactivation (`Jobs::REQUEUE_DAYS`): the plugin was off long
   enough that the work may no longer be wanted; they stay failed until `prune_history()` deletes them;
-- rows whose message was logged in another language than the site's language at reactivation;
+- rows whose message was logged in another language than the site's language at reactivation (the site
+  language changed between deactivating and reactivating): the match is on Action Scheduler's message, in
+  English and in the current language only;
 - state jobs queued on WP-Cron (only before Action Scheduler is ready in a request): WP-Cron keeps the event while
   the plugin is off and runs it with no listener, which drops it without a trace.
 

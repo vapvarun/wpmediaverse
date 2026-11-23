@@ -423,13 +423,14 @@ final class Jobs {
 	 * failed. One pending copy per hook and arguments (async_once). Only hooks that have a listener now, and only rows
 	 * last attempted within REQUEUE_DAYS: older ones stay failed, and prune_history() deletes them in time.
 	 *
-	 * Safe when two requests read the same rows: the second one's copy is refused as a duplicate, and a row the first
-	 * already deleted is skipped.
+	 * Safe when several requests read the same rows: each row is claimed first (failed to cancelled, one UPDATE), so
+	 * only one request queues its copy; the others count it as handled and move on. A row whose copy no scheduler
+	 * takes goes back to failed.
 	 *
 	 * @since 2.7.0
 	 *
 	 * @param string[] $hooks Exact hook names.
-	 * @return int Rows re-queued, at most REQUEUE_BATCH.
+	 * @return int Rows handled, by this request or a concurrent one; at most REQUEUE_BATCH.
 	 */
 	public static function requeue_unheard( array $hooks ): int {
 		if ( ! self::has_as() ) {
@@ -450,14 +451,21 @@ final class Jobs {
 		$store = \ActionScheduler::store();
 		$moved = 0;
 		foreach ( \WPMediaVerse\Repository\JobRepository::unheard_failed( $hooks, $needles, self::REQUEUE_BATCH, self::REQUEUE_DAYS ) as $row ) {
-			try {
-				if ( self::async_once( $row['hook'], $row['args'] ) ) {
-					$store->delete_action( (string) $row['id'] ); // The DB logger deletes the row's logs on this hook.
-					++$moved;
-				}
-			} catch ( \Throwable $e ) {
-				unset( $e ); // Another request deleted the row first; its copy is already queued.
+			// ponytail: a request that dies between the claim and the copy leaves the row cancelled (pruned in 7 days).
+			if ( ! \WPMediaVerse\Repository\JobRepository::claim_failed( $row['id'] ) ) {
+				++$moved; // Another request has it.
+				continue;
 			}
+			if ( ! self::async_once( $row['hook'], $row['args'] ) ) {
+				\WPMediaVerse\Repository\JobRepository::release_failed( $row['id'] );
+				continue;
+			}
+			try {
+				$store->delete_action( (string) $row['id'] ); // The DB logger deletes the row's logs on this hook.
+			} catch ( \InvalidArgumentException $e ) {
+				unset( $e ); // Already gone; the copy is queued either way.
+			}
+			++$moved;
 		}
 		return $moved;
 	}
@@ -525,12 +533,20 @@ final class Jobs {
 		 *
 		 * @param int $days Whole days, at least 1. Default 7.
 		 */
-		$days     = max( 1, (int) apply_filters( 'mvs_finished_action_retention_days', self::FINISHED_RETENTION_DAYS ) );
-		$deadline = microtime( true ) + self::TIME_BUDGET;
+		$days = max( 1, (int) apply_filters( 'mvs_finished_action_retention_days', self::FINISHED_RETENTION_DAYS ) );
+		/**
+		 * Days a failed MediaVerse job is kept, from its last attempt, so the owner can read why it failed.
+		 *
+		 * @since 2.7.0
+		 *
+		 * @param int $days Whole days, at least 1. Default 90.
+		 */
+		$failed_days = max( 1, (int) apply_filters( 'mvs_failed_action_retention_days', self::FAILED_RETENTION_DAYS ) );
+		$deadline    = microtime( true ) + self::TIME_BUDGET;
 		// A finished row is aged by its last attempt (when it finished); a cancelled one never ran, so by its date.
 		return self::delete_finished( \ActionScheduler_Store::STATUS_COMPLETE, 'modified', $days, $deadline )
 			+ self::delete_finished( \ActionScheduler_Store::STATUS_CANCELED, 'date', $days, $deadline )
-			+ self::delete_finished( \ActionScheduler_Store::STATUS_FAILED, 'modified', self::FAILED_RETENTION_DAYS, $deadline );
+			+ self::delete_finished( \ActionScheduler_Store::STATUS_FAILED, 'modified', $failed_days, $deadline );
 	}
 
 	/**
