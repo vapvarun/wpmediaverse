@@ -139,6 +139,7 @@ Clearer controls, focus rings and dialogs for every member, safer background job
 * Improve  - On phones the search field draws its own edge, so the content below it sits 7px lower.
 * Improve  - The guest login prompt is no longer dimmed, and tag remove buttons are no longer faded.
 * Improve  - Share, Report and document share dialogs are named for screen readers.
+* Improve  - Sent chat messages and filled chat buttons keep their text readable on any brand colour.
 * Improve  - Grid tile hover stats are readable over any photo.
 * Improve  - One media edit form on every surface, with Replace File and a required title on the media page too.
 * Improve  - Deleting or merging a tag says when it is still running, and large tag jobs continue in the background.
@@ -158,6 +159,7 @@ Clearer controls, focus rings and dialogs for every member, safer background job
 * Fix      - Back arrows mirror on right-to-left sites, and save errors are readable in dark mode.
 * Fix      - The lightbox comments can be reached on a phone, and a closed chat panel is hidden from the keyboard.
 * Fix      - Moving hundreds of photos into an album no longer runs extra database queries for every photo.
+* Fix      - The Explore Feed block and shortcode style the Load more button on any page.
 * Security - A plain WordPress Editor is no longer a media moderator; the upgrade removes those capabilities from the stored Editor role.
 * Dev      - Action Scheduler 4.0.0 is bundled, the same copy BuddyNext ships, and every background job runs through one queue and one group.
 * Dev      - Finished background jobs are cleaned after 7 days; filters `mvs_finished_action_retention_days`, `mvs_failed_action_retention_days` and `mvs_storage_cleanup_max_attempts` tune it.
