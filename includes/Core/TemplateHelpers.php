@@ -2275,7 +2275,9 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		}
 
 		if ( '' !== $submit ) {
-			$html .= '<button type="submit" class="mvs-btn mvs-btn--secondary mvs-panel-toolbar__apply">' . esc_html( $submit ) . '</button>';
+			// Only a visitor without JavaScript needs it: panel-toolbar.js submits on change, so it is printed
+			// inside noscript and never flashes on load for everyone else.
+			$html .= '<noscript><button type="submit" class="mvs-btn mvs-btn--secondary mvs-panel-toolbar__apply">' . esc_html( $submit ) . '</button></noscript>';
 		}
 
 		$html .= $form ? '</form>' : '</div>';
