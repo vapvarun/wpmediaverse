@@ -1147,16 +1147,21 @@ body.dark-mode .mvs-skeleton::after {
     transition: background 0.15s, color 0.15s;
 }
 
-.mvs-follow-toggle--following {
+/* Two classes: .mvs-btn comes later with one class and sets a transparent border, which hid
+   this button's own border and left "Following" looking like plain text. */
+.mvs-follow-toggle--following,
+.mvs-btn.mvs-follow-toggle--following {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
     border: 1px solid var(--mvs-border-control);
 }
 
-.mvs-follow-toggle--following:hover {
-    background: var(--mvs-danger-bg);
-    color: var(--mvs-danger-text, var(--mvs-danger));
-    border-color: var(--mvs-danger);
+/* Hovers like the tag chips: a light tint of the theme primary, not a warning. */
+.mvs-follow-toggle--following:hover,
+.mvs-btn.mvs-follow-toggle--following:hover {
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
+    color: var(--mvs-primary-text, var(--mvs-primary));
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-follow-toggle:disabled {
