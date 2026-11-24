@@ -13,6 +13,10 @@
 
 defined( 'ABSPATH' ) || exit;
 
+// The Load More button's look and keyboard focus ring live in load-more.css. The MediaVerse page
+// loader enqueues it on its own pages; the block and [mvs_explore_feed] on any other page need it too.
+wp_enqueue_style( 'mvs-load-more' );
+
 // '' means inherit the site's Default Layout setting. Defaulting to 'grid'
 // would make "not set" indistinguishable from "deliberately grid" and leave
 // no way to follow the site setting.

@@ -18,13 +18,20 @@
 	--mvs-chat-border: var(--global-border-color, #dbdbdb);
 	--mvs-chat-text: var(--global-title-color, #262626);
 	--mvs-chat-text-secondary: var(--global-font-color, #6e6e6e);
-	--mvs-chat-bubble-sent: #0095f6;
-	--mvs-chat-bubble-sent-text: #fff;
+	/* Filled controls and the sent bubble carry text, so they take the button pair from
+	 * frontend.css (fill darkened until its text reaches 4.5:1). Without frontend.css the
+	 * fallback #0b6fd0 keeps white at 5.3:1; #0095f6 was 3.2. */
+	--mvs-chat-fill: var(--mvs-btn-primary-bg, #0b6fd0);
+	--mvs-chat-on-fill: var(--mvs-btn-primary-fg, #fff);
+	--mvs-chat-fill-hover: var(--mvs-btn-primary-bg-hover, #0a5fb4);
+	--mvs-chat-on-fill-hover: var(--mvs-btn-primary-fg-hover, #fff);
+	--mvs-chat-bubble-sent: var(--mvs-chat-fill);
+	--mvs-chat-bubble-sent-text: var(--mvs-chat-on-fill);
 	--mvs-chat-bubble-received: #efefef;
 	--mvs-chat-bubble-received-text: #262626;
 	--mvs-chat-bubble-system: transparent;
 	--mvs-chat-online: #44b700;
-	--mvs-chat-danger: #ed4956;
+	--mvs-chat-danger: #d63638; /* white text 4.6:1 (#ed4956 was 3.6) */
 	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 	--mvs-chat-radius: 18px;
 	--mvs-chat-panel-width: 360px;
@@ -64,8 +71,8 @@ body.dark-mode {
 	height: 56px;
 	padding: 0;
 	border-radius: 50%;
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 	border: none;
 	cursor: pointer;
 	display: flex;
@@ -95,7 +102,8 @@ body.dark-mode {
 
 .mvs-chat-trigger:hover {
 	transform: scale(1.05);
-	background: var(--mvs-chat-primary-hover);
+	background: var(--mvs-chat-fill-hover);
+	color: var(--mvs-chat-on-fill-hover);
 }
 
 .mvs-chat-trigger svg {
@@ -521,8 +529,8 @@ body.dark-mode {
 	height: 18px;
 	padding: 0 5px;
 	border-radius: 9px;
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 	font-size: 11px;
 	font-weight: 700;
 	line-height: 18px;
@@ -660,7 +668,8 @@ body.dark-mode {
 }
 
 .mvs-chat-msg--sent .mvs-chat-msg__reply {
-	background: rgba(255, 255, 255, 0.15);
+	/* A darker overlay keeps the quote's text above 4.5:1; a white one lightened the fill. */
+	background: rgba(0, 0, 0, 0.18);
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__reply {
@@ -756,13 +765,13 @@ body.dark-mode {
 
 /* My own reaction — highlighted so it reads as "yours" and tap-to-remove. */
 .mvs-chat-msg__reaction--mine {
-	background: var(--mvs-chat-primary);
-	border-color: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	border-color: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-msg__reaction--mine .mvs-chat-msg__reaction-count {
-	color: #fff;
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-msg__reaction-count {
@@ -1189,8 +1198,8 @@ body.dark-mode {
 	padding: 0;
 	border-radius: 50%;
 	border: none;
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 	cursor: pointer;
 	display: flex;
 	align-items: center;
@@ -1426,9 +1435,9 @@ body.dark-mode {
 }
 
 .mvs-chat-new__group-create {
-	background: var(--mvs-chat-primary);
-	border-color: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	border-color: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-new__group-create:disabled {
@@ -1473,8 +1482,8 @@ body.dark-mode {
 }
 
 .mvs-chat-request-banner__btn--accept {
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-request-banner__btn--decline {
