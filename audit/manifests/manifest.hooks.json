@@ -521,6 +521,17 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_blocked_either_way_ids",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "int[] $ids",
+        "int $user_id"
+      ],
+      "where": "includes/Social/ReportService.php:658",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_body_classes",
       "type": "filter",
       "args_count": 1,
@@ -576,6 +587,18 @@
         "string $others_cap"
       ],
       "where": "includes/Capabilities/MediaCapabilities.php:100",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_can_follow",
+      "type": "filter",
+      "args_count": 3,
+      "args_signature": [
+        "bool $can",
+        "int $follower_id",
+        "int $following_id"
+      ],
+      "where": "includes/Social/FollowService.php:71",
       "consumed_by": []
     },
     {
@@ -961,6 +984,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_display_timezone",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "string $timezone"
+      ],
+      "where": "includes/Core/TemplateHelpers.php:2496",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_dm_access_level",
       "type": "filter",
       "args_count": 3,
@@ -1343,6 +1376,16 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_failed_action_retention_days",
+      "type": "filter",
+      "args_count": 1,
+      "args_signature": [
+        "int $days"
+      ],
+      "where": "includes/Core/Jobs.php:544",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_favorite_added",
       "type": "action",
       "args_count": 2,
@@ -1416,16 +1459,6 @@
       "consumed_by": []
     },
     {
-      "name": "mvs_failed_action_retention_days",
-      "type": "filter",
-      "args_count": 1,
-      "args_signature": [
-        "int $days"
-      ],
-      "where": "includes/Core/Jobs.php:544",
-      "consumed_by": []
-    },
-    {
       "name": "mvs_finished_action_retention_days",
       "type": "filter",
       "args_count": 1,
@@ -1433,6 +1466,17 @@
         "int $days"
       ],
       "where": "includes/Core/Jobs.php:536",
+      "consumed_by": []
+    },
+    {
+      "name": "mvs_follow_request_withdrawn",
+      "type": "action",
+      "args_count": 2,
+      "args_signature": [
+        "int $follower_id",
+        "int $following_id"
+      ],
+      "where": "includes/Social/FollowService.php:153",
       "consumed_by": []
     },
     {

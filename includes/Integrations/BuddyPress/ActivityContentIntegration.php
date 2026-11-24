@@ -52,46 +52,58 @@ class ActivityContentIntegration {
 	 */
 	public function allow_mvs_activity_tags( array $tags ): array {
 		// Grid container and per-item wrappers.
-		$tags['div'] = array_merge( (array) ( $tags['div'] ?? array() ), array(
-			'class'               => array(),
-			'style'               => array(),
-			'data-mvs-media-id'   => array(),
-			'data-mvs-src'        => array(),
-			'data-mvs-permalink'  => array(),
-			'data-wp-interactive' => array(),
-			'data-wp-context'     => array(),
-			'data-wp-on--click'   => array(),
-		) );
+		$tags['div'] = array_merge(
+			(array) ( $tags['div'] ?? array() ),
+			array(
+				'class'               => array(),
+				'style'               => array(),
+				'data-mvs-media-id'   => array(),
+				'data-mvs-src'        => array(),
+				'data-mvs-permalink'  => array(),
+				'data-wp-interactive' => array(),
+				'data-wp-context'     => array(),
+				'data-wp-on--click'   => array(),
+			)
+		);
 
 		// Allow inline <video> player.
 		// controlslist carries "nodownload" for items with downloads off.
-		$tags['video'] = array_merge( (array) ( $tags['video'] ?? array() ), array(
-			'src'          => array(),
-			'controls'     => array(),
-			'controlslist' => array(),
-			'preload'      => array(),
-			'poster'       => array(),
-			'style'        => array(),
-			'class'        => array(),
-			'width'        => array(),
-			'height'       => array(),
-		) );
+		$tags['video'] = array_merge(
+			(array) ( $tags['video'] ?? array() ),
+			array(
+				'src'          => array(),
+				'controls'     => array(),
+				'controlslist' => array(),
+				'preload'      => array(),
+				'poster'       => array(),
+				'style'        => array(),
+				'class'        => array(),
+				'width'        => array(),
+				'height'       => array(),
+			)
+		);
 
 		// Allow <source> inside <video>/<audio>.
-		$tags['source'] = array_merge( (array) ( $tags['source'] ?? array() ), array(
-			'src'  => array(),
-			'type' => array(),
-		) );
+		$tags['source'] = array_merge(
+			(array) ( $tags['source'] ?? array() ),
+			array(
+				'src'  => array(),
+				'type' => array(),
+			)
+		);
 
 		// Allow inline <audio> player.
-		$tags['audio'] = array_merge( (array) ( $tags['audio'] ?? array() ), array(
-			'src'          => array(),
-			'controls'     => array(),
-			'controlslist' => array(),
-			'preload'      => array(),
-			'style'        => array(),
-			'class'        => array(),
-		) );
+		$tags['audio'] = array_merge(
+			(array) ( $tags['audio'] ?? array() ),
+			array(
+				'src'          => array(),
+				'controls'     => array(),
+				'controlslist' => array(),
+				'preload'      => array(),
+				'style'        => array(),
+				'class'        => array(),
+			)
+		);
 
 		// Allow class/style and Interactivity API attrs on <a> for MVS media links.
 		$tags['a']['class']               = array();
@@ -108,10 +120,13 @@ class ActivityContentIntegration {
 		$tags['img']['style']             = array();
 		$tags['img']['loading']           = array();
 		$tags['img']['class']             = array();
-		$tags['span']                     = array_merge( (array) ( $tags['span'] ?? array() ), array(
-			'class'       => array(),
-			'aria-hidden' => array(),
-		) );
+		$tags['span']                     = array_merge(
+			(array) ( $tags['span'] ?? array() ),
+			array(
+				'class'       => array(),
+				'aria-hidden' => array(),
+			)
+		);
 
 		return $tags;
 	}

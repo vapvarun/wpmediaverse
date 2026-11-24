@@ -224,7 +224,7 @@ final class MediaTypes {
 		}
 
 		$check = wp_check_filetype_and_ext( $path, '' !== $name ? $name : basename( $path ) );
-		return is_string( $check['type'] ?? null ) ? $check['type'] : '';
+		return is_string( $check['type'] ) ? $check['type'] : '';
 	}
 
 	/**

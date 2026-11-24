@@ -1,6 +1,17 @@
 {
   "hooks_fired": [
     {
+      "name": "mvs_story_keep_item",
+      "type": "filter",
+      "args_count": 2,
+      "args_signature": [
+        "bool $kept",
+        "int $media_id"
+      ],
+      "where": "includes/Stories/StoryService.php:212",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_activate_scheduled_challenges",
       "type": "action",
       "args_count": 0,

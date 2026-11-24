@@ -52,6 +52,8 @@ class MemberDeletionRemovesFilesTest extends WP_UnitTestCase {
 	}
 
 	private function cleanup_queued(): bool {
+		// Paths are queued at shutdown, in a few packed actions per request: flush as shutdown would.
+		Plugin::container()->get( 'storage_cleanup' )->flush();
 		return (bool) as_get_scheduled_actions( array( 'hook' => StorageCleanupService::CLEANUP_HOOK, 'status' => 'pending' ), 'ids' );
 	}
 

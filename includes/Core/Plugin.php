@@ -558,7 +558,14 @@ class Plugin {
 			 */
 			do_action( 'mvs_loaded', self::$container );
 		} catch ( \Throwable $e ) {
-			\WPMediaVerse\Services\LoggerService::error( 'boot', 'An mvs_loaded listener failed', array( 'error' => $e->getMessage(), 'at' => $e->getFile() . ':' . $e->getLine() ) );
+			\WPMediaVerse\Services\LoggerService::error(
+				'boot',
+				'An mvs_loaded listener failed',
+				array(
+					'error' => $e->getMessage(),
+					'at'    => $e->getFile() . ':' . $e->getLine(),
+				)
+			);
 			add_action(
 				'admin_notices',
 				static function () use ( $e ): void {

@@ -496,10 +496,10 @@ class CacheService {
 	/**
 	 * An object's terms were set: refresh the tag cloud when they were media tags.
 	 *
-	 * @param int    $object_id Object id.
-	 * @param array  $terms     Terms.
-	 * @param array  $tt_ids    Term taxonomy ids.
-	 * @param string $taxonomy  Taxonomy slug.
+	 * @param int                      $object_id Object id.
+	 * @param array<int|string, mixed> $terms     Terms.
+	 * @param array<int, int|string>   $tt_ids    Term taxonomy ids.
+	 * @param string                   $taxonomy  Taxonomy slug.
 	 */
 	public function on_object_terms( $object_id, $terms, $tt_ids, $taxonomy ): void {
 		if ( 'mvs_tag' === $taxonomy ) {

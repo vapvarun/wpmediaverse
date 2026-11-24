@@ -2267,7 +2267,7 @@ class MediaController extends WP_REST_Controller {
 	 * links in a reply never point at files a privacy change has just moved.
 	 *
 	 * @param int $media_id Media id.
-	 * @return array
+	 * @return array<string, mixed>
 	 */
 	private function get_all_settled( int $media_id ): array {
 		\WPMediaVerse\Services\MediaFileRotator::settle( $media_id );
@@ -2575,7 +2575,7 @@ class MediaController extends WP_REST_Controller {
 	 *
 	 * @since 2.7.0
 	 *
-	 * @param array $row views, reactions, comments.
+	 * @param array<string, mixed> $row views, reactions, comments.
 	 * @return array{views:int, reactions:int, comments:int, views_label:string}
 	 */
 	private static function item_stats( array $row ): array {

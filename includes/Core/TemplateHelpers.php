@@ -2517,7 +2517,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	/**
 	 * A stored time shown in the display timezone (Time Standard: one formatter for every PHP surface).
 	 *
-	 * date_i18n() and mysql2date() print a UTC value as if it were local time, so a media item uploaded at
+	 * The core date_i18n() and mysql2date() print a UTC value as if it were local time, so a media item uploaded at
 	 * 10:30 UTC showed the previous day on a UTC+14 site while the JS-built cards showed the right one.
 	 *
 	 * @since 2.7.0

@@ -635,6 +635,7 @@ final class Jobs {
 							'per_page' => min( self::ADOPT_BATCH, self::ADOPT_MAX_ROWS - $moved ),
 						)
 					);
+					$fetched = count( $actions );
 					foreach ( $actions as $id => $action ) {
 						// ponytail: a runner that claims and starts the row between the query and this cancel still
 						// runs it once more as the copy; the window is one query wide.
@@ -645,7 +646,7 @@ final class Jobs {
 						$store->delete_action( (int) $id );
 						++$moved;
 					}
-				} while ( count( $actions ) === self::ADOPT_BATCH );
+				} while ( self::ADOPT_BATCH === $fetched );
 			}
 		}
 		return $moved;
