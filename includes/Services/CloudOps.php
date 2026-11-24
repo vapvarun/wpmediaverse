@@ -296,35 +296,24 @@ class CloudOps {
 	 * @return int Number of URL metas rewritten.
 	 */
 	private static function refresh_variant_urls( int $media_id, $dest_driver ): int {
-		global $wpdb;
-
 		if ( $media_id <= 0 || ! is_object( $dest_driver ) || ! method_exists( $dest_driver, 'url' ) ) {
 			return 0;
 		}
 
-		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->prepare(
-				"SELECT meta_key, meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				$media_id,
-				'%_path'
-			)
-		);
-		if ( empty( $rows ) ) {
+		// Includes a variant left on local disk by a failed cloud upload: its path record is blank, so its path
+		// is read back from its URL, and it takes the destination's URL once it has been moved.
+		$repo  = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$paths = $repo->get_variant_paths( $media_id );
+		if ( empty( $paths ) ) {
 			return 0;
 		}
 
-		$repo    = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$updated = 0;
-		foreach ( $rows as $row ) {
-			$rel_path = (string) $row->meta_value;
-			if ( '' === $rel_path ) {
-				continue;
-			}
-
+		foreach ( $paths as $meta_key => $rel_path ) {
 			// `thumb_large_webp_path` -> `thumb_large_webp`. `file_path` has no
 			// sibling URL meta of this shape (file_url lives on the index row
 			// and was flipped above), so skip it.
-			$url_key = (string) preg_replace( '/_path$/', '', (string) $row->meta_key );
+			$url_key = (string) preg_replace( '/_path$/', '', (string) $meta_key );
 			if ( '' === $url_key || 'file' === $url_key ) {
 				continue;
 			}
