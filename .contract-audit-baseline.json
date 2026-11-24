@@ -169,6 +169,10 @@
     {
       "id": "hook-consumed-never-fired:mvs_convert_legacy_media_names",
       "reason": "False positive. A background-job hook: it is queued by name through a class constant (MediaFileRotator::LEGACY_HOOK) on Action Scheduler or WP-Cron, which fires it. The scanner looks for do_action() with a literal. Verified 2026-10-07."
+    },
+    {
+      "id": "hook-consumed-never-fired:mvs_tag_forget_batch",
+      "reason": "False positive. Fired through Jobs::async( MediaTag::FORGET_HOOK, ... ) in MediaTag (includes/Taxonomies/MediaTag.php), using the class constant; the static scan only resolves the literal at the add_action site. Baselined with the owner's approval on 2026-11-24 for 2.7.0."
     }
   ]
 }

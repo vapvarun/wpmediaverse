@@ -45,3 +45,5 @@ efb6ea214d32ef3d22756c69fcb1028b087a5661
 f1bebf51114f3cffe76a9b81e81b5e3de01a468e
 fdf5a54fda494c0b7e22146db64f7bde5c4131b9
 fdfea0f561afe490ff93b83260ca9d2cd934c3b2
+0ff7c88e9c94d3d9a1d12fe17c672017b4dc8213  # 2.7.0, owner-approved 2026-11-24: MediaListPage type_label/status_label are two different label maps of the same shape
+8f4d28b2f39f0114780f1cf6e0d36237e4664e7b  # 2.7.0, owner-approved 2026-11-24: Sanitizers chat visibility/position are two whitelisted settings with different defaults

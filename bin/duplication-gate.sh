@@ -8,7 +8,7 @@
 # again" from landing — you either reuse the shared helper/partial, or the gate
 # goes red and points at the new copy-paste.
 #
-# Baseline: audit/cleanup/duplicates-baseline.txt (one cluster hash per line).
+# Baseline: audit/cleanup/duplicates-baseline.txt (one cluster hash per line; text after # is the reason).
 # After an intentional change (a real consolidation that removes clusters, or a
 # new duplicate you accept), re-bless it:  composer dup-gate:bless
 #
@@ -39,7 +39,7 @@ fi
 python3 - "$JSON" "$BASELINE" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1]))
-baseline = {h.strip() for h in open(sys.argv[2]) if h.strip()}
+baseline = {h.split('#')[0].strip() for h in open(sys.argv[2]) if h.split('#')[0].strip()}
 clusters = [c for k in ('cross_plugin_duplicates', 'within_plugin_duplicates') for c in d.get(k, [])]
 new = [c for c in clusters if c['hash'] not in baseline]
 if not new:
