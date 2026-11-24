@@ -2246,7 +2246,7 @@ class MediaController extends WP_REST_Controller {
 	 */
 	private function album_summary( int $album_id, ?string $own_privacy ): ?array {
 		$album = $album_id > 0 ? get_post( $album_id ) : null;
-		if ( ! $album || 'mvs_album' !== $album->post_type || 'trash' === $album->post_status ) {
+		if ( ! $album || 'mvs_album' !== $album->post_type || 'publish' !== $album->post_status ) {
 			return null;
 		}
 
