@@ -59,6 +59,7 @@ function apply_filters( string $tag, $val, ...$args ) { return $val; }
 function has_action( ...$a ): bool { return false; }
 function has_filter( ...$a ): bool { return false; }
 function did_action( ...$a ): int { return 0; }
+function doing_action( ...$a ): bool { return false; }
 
 function register_activation_hook( ...$a ): void {}
 function register_deactivation_hook( ...$a ): void {}
@@ -172,6 +173,7 @@ function user_can( $u, string $c ): bool { return false; }
 function wp_user_has_role( $u, string $r ): bool { return false; }
 
 function wp_next_scheduled( string $h, array $args = array() ) { return false; }
+function _get_cron_array() { return array(); }
 function wp_schedule_event( ...$a ): bool { return true; }
 function wp_schedule_single_event( ...$a ): bool { return true; }
 function wp_unschedule_event( ...$a ): bool { return true; }
