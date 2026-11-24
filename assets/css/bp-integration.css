@@ -83,7 +83,7 @@
     width: 16px;
     height: 16px;
     stroke-width: 2;
-    margin-right: 6px;
+    margin-inline-end: 6px;
     flex-shrink: 0;
 }
 
@@ -204,7 +204,7 @@
     line-height: 1.4;
     color: var(--mvs-text);
     background: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 6px;
 }
 
@@ -267,7 +267,7 @@
     /* Always --mvs-on-primary on the red primary — never --mvs-bg, which
      * flips to near-black in dark mode and made the label unreadable
      * (card 10127407439). */
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -275,7 +275,7 @@
 
 #buddypress .mvs-btn-primary:hover {
     background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 #buddypress .mvs-btn-primary:disabled {
@@ -288,7 +288,7 @@
     font-size: 14px;
     background: var(--mvs-surface-2);
     color: var(--mvs-text-secondary);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 6px;
     cursor: pointer;
 }
@@ -308,7 +308,7 @@
 #buddypress #mvs-bp-upload-btn,
 #buddypress #mvs-bp-create-album-btn {
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     border: 1px solid var(--mvs-primary);
     border-radius: 6px;
     cursor: pointer;
@@ -320,7 +320,7 @@
 #buddypress #mvs-bp-create-album-btn:focus {
     background: var(--mvs-primary-hover);
     border-color: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 /* BEM (double-dash) button variants rendered inside #buddypress (album.php
@@ -346,7 +346,7 @@
 #buddypress .mvs-btn.mvs-btn--secondary {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
-    border-color: var(--mvs-border-light);
+    border-color: var(--mvs-border-control);
 }
 
 #buddypress .mvs-btn.mvs-btn--secondary:hover,
@@ -460,7 +460,7 @@
 #buddypress .mvs-bp-screen .mvs-grid-item-actions {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     display: flex;
     gap: 6px;
     opacity: 0;
@@ -494,8 +494,8 @@
 
 #buddypress .mvs-bp-screen .mvs-grid-item-action:hover,
 #buddypress .mvs-bp-screen .mvs-grid-item-action:focus {
-    background: var(--mvs-primary);
-    color: #ffffff;
+    background: var(--mvs-btn-primary-bg, var(--mvs-primary));
+    color: var(--mvs-btn-primary-fg, #ffffff);
     outline: none;
 }
 
@@ -1164,6 +1164,15 @@
     clear: both;
 }
 
+/* A group post is a group post: this line replaces the dropdown while a group is the target. */
+#buddypress #whats-new-form #whats-new-options .mvs-activity-privacy-note {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--mvs-text-muted, var(--mvs-text));
+}
+
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
     display: inline-flex;
     align-items: center;
@@ -1175,7 +1184,7 @@
     min-height: 36px;
     margin: 0;
     padding: 6px 14px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 4px;
     background-color: var(--mvs-bg);
     color: var(--mvs-text);
@@ -1267,7 +1276,7 @@
  * theme overrides often hide them; appearance:none + inline SVG gives a
  * consistent look regardless of theme. */
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy {
-    padding-right: 32px;
+    padding-inline-end: 32px;
     max-width: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -1290,7 +1299,7 @@
     min-height: 36px;
     margin: 0;
     padding: 6px 14px;
-    border: 1px solid var(--mvs-border-light);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 4px;
     background-color: var(--mvs-bg);
     color: var(--mvs-text);
@@ -1306,6 +1315,13 @@
 #buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags:focus {
     border-color: var(--mvs-text-muted);
     outline: none;
+}
+
+/* Keyboard focus gets the ring the other controls show; :focus above is the hover look only. */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:focus-visible,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
 }
 
 /* The composer options row hosts BP's own controls (the JS-injected
@@ -1324,7 +1340,7 @@
 }
 
 #buddypress #whats-new-form #whats-new-options #whats-new-submit {
-    margin-left: auto;
+    margin-inline-start: auto;
 }
 
 /* The wrap grows into the row's free space (otherwise its content-sized
@@ -1344,7 +1360,7 @@
     }
 
     #buddypress #whats-new-form #whats-new-options #whats-new-submit {
-        margin-left: 0;
+        margin-inline-start: 0;
         width: 100%;
     }
 }
@@ -1474,7 +1490,7 @@
  * ============================================================================= */
 @media screen and (min-width: 46.8em) {
     body.wb-reign-theme #buddypress #whats-new-form #whats-new-options > .mvs-activity-media-btn-wrap:first-child {
-        margin-left: 65px;
+        margin-inline-start: 65px;
     }
 }
 
@@ -1623,7 +1639,7 @@
 
 #buddypress .mvs-profile-documents__nav-link {
     padding: var(--mvs-space-2, 0.5rem) var(--mvs-space-3, 1rem);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md, 8px);
     background: var(--mvs-bg);
     color: var(--mvs-text);

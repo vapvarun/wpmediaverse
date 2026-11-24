@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse",
     "name": "WPMediaVerse",
-    "version": "2.5.1",
+    "version": "2.7.0",
     "namespace": "WPMediaVerse",
     "main_file": "wpmediaverse.php",
     "text_domain": "wpmediaverse",
@@ -1541,6 +1541,17 @@
         "disabled"
       ],
       "controls": "Where the floating slide-out chat icon appears for logged-in users. Consumed by Plugin::render_chat_panel() (wp_footer). Filterable per-page via mvs_should_render_chat_panel."
+    },
+    {
+      "key": "mvs_chat_position",
+      "group": "social",
+      "type": "string",
+      "default": "right",
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "Sanitizers::sanitize_chat_position (right|left)",
+      "where": "includes/Admin/Settings/MessagingSettingsRegistrar.php:189",
+      "controls": "Chat Button Position: which corner the floating chat button sits in (owner-approved new option for 2.7.0, 2026-11-21)."
     },
     {
       "key": "mvs_cloud_direct_public_urls",
@@ -5914,7 +5925,7 @@
     {
       "hook": "mvs_prune_logs",
       "interval": "daily (wp_schedule_event)",
-      "handler": "Services\\LoggerService::prune",
+      "handler": "Services\\LoggerService::prune; Core\\Jobs::prune_history (listener in wpmediaverse.php)",
       "file": "includes/Core/Plugin.php:666 (schedule); includes/Core/Plugin.php:668 (handler)"
     },
     {
@@ -5943,7 +5954,7 @@
     },
     {
       "hook": "mvs_ai_process_media",
-      "interval": "async (Action Scheduler, group wpmediaverse)",
+      "interval": "async (Action Scheduler, group mvs)",
       "handler": "Services\\AiService::process",
       "file": "includes/Core/Plugin.php:1154; includes/Admin/MediaListPage.php:1292; includes/CLI/Commands.php:2064"
     },
@@ -5955,7 +5966,7 @@
     },
     {
       "hook": "mvs_repair_storage_paths",
-      "interval": "async/single (Action Scheduler, group wpmediaverse)",
+      "interval": "async/single (Action Scheduler, group mvs)",
       "handler": "Services\\StorageRepairService::run_batch",
       "file": "includes/Services/StorageRepairService.php:372 (schedule); const at :64"
     },
@@ -5964,6 +5975,62 @@
       "interval": "single event (wp_schedule_single_event, 2.4.0 migration)",
       "handler": "Core\\Migrator::backfill_drive_columns",
       "file": "includes/Core/Migrator.php:2126 and :2239 (schedule); const at :38"
+    },
+    {
+      "hook": "mvs_close_orphan_reports",
+      "interval": "async (Jobs), cursor continuation per 500 reports; queued by migration v46",
+      "file": "includes/Repository/ReportRepository.php:158"
+    },
+    {
+      "hook": "mvs_adopt_pending_jobs",
+      "interval": "async (Jobs), continues per 2,000 rows; queued by Jobs::adopt_pending() when an upgrade move hits its cap or runs on a visitor request",
+      "handler": "Core\\Jobs::adopt_pending (listener in wpmediaverse.php)",
+      "file": "includes/Core/Jobs.php (const ADOPT_HOOK)"
+    },
+    {
+      "hook": "mvs_cloud_repatriate_media",
+      "interval": "async (Jobs), 1 per media, deduped",
+      "file": "includes/Services/UploadService.php:2448"
+    },
+    {
+      "hook": "mvs_convert_legacy_media_names",
+      "interval": "async (Jobs), self-continuing",
+      "file": "includes/Services/MediaFileRotator.php:336"
+    },
+    {
+      "hook": "mvs_move_chat_attachments",
+      "interval": "async (Jobs), continues per 25",
+      "file": "includes/Messaging/ChatFiles.php:504"
+    },
+    {
+      "hook": "mvs_rotate_media_files",
+      "interval": "async (Jobs), 1 per 100 ids",
+      "file": "includes/Services/MediaFileRotator.php:135"
+    },
+    {
+      "hook": "mvs_tag_forget_batch",
+      "interval": "async (Jobs), 1 per 200 items, first batch inline",
+      "file": "includes/Taxonomies/MediaTag.php:61"
+    },
+    {
+      "hook": "mvs_tag_merge_batch",
+      "interval": "async (Jobs), continues per batch",
+      "file": "includes/Admin/TagManagementPage.php:616"
+    },
+    {
+      "hook": "mvs_user_deletion_cascade",
+      "interval": "async (Jobs), continues per 100 media",
+      "file": "includes/Services/UserDeletionService.php:402"
+    },
+    {
+      "hook": "mvs_user_deletion_purge",
+      "interval": "async (Jobs)",
+      "file": "includes/Services/UserDeletionService.php:434"
+    },
+    {
+      "hook": "wpmediaverse_activate_preset_key",
+      "interval": "single (WP-Cron), licence preset",
+      "file": "includes/Core/PresetActivation.php:150"
     }
   ],
   "wp_cli": [
@@ -6145,7 +6212,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.1",
+    "branch": "2.7.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -7091,7 +7158,8 @@
         "seed/cleanup demo scripts: mvs_demo_user user meta"
       ],
       "note": "No new hook, route, CLI command, setting or table."
-    }
+    },
+    "delta_2026_11_24_v270": "2.7.0 targeted delta, code-verified against v2.6.4..HEAD (deterministic generator not run). New option mvs_chat_position (settings). New filters/actions (in manifest.hooks.json): mvs_can_follow, mvs_blocked_either_way_ids, mvs_display_timezone, mvs_follow_request_withdrawn, mvs_finished_action_retention_days, mvs_failed_action_retention_days, mvs_storage_cleanup_max_attempts. Action Scheduler DB safety: Core\\Jobs cleans only its own 'mvs' group rows (finished 7 days, failed filterable), claims each failed row before re-queueing, adopt_pending batches until a short page; StorageCleanupService queues paths and flushes on shutdown. No new REST route, AJAX action, admin page, table, block, shortcode or CLI command. Cron list already current. Frontend CSS: control borders, contrast and focus-visible rings only."
   },
   "category_sources": {
     "rest": [
@@ -7387,7 +7455,7 @@
     "post_types": 2,
     "taxonomies": 2,
     "admin_pages": 22,
-    "migrator_version": 30,
+    "migrator_version": 47,
     "hooks_note": "NOT re-enumerated on 2026-09-01: manifest.hooks.json is owned by a separate pass this cycle. Value carried forward unverified."
   },
   "refresh_2026_10_02": {
@@ -7473,5 +7541,22 @@
       ]
     },
     "unchanged": "tables, capabilities, shortcodes, blocks registered, post types"
+  },
+  "jobs_entry_point": {
+    "class": "WPMediaVerse\\Core\\Jobs (Free) for Free and Pro; Pro requires Free 2.7.0 and calls it directly. WPMediaVersePro\\Core\\Jobs is a deprecated shim for its two 2.6.4 methods.",
+    "group": "mvs",
+    "legacy_groups": [
+      "wpmediaverse",
+      "wpmediaverse-pro",
+      "mvs-pro",
+      "mvs-connectors"
+    ],
+    "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only, 10 s budget: completed and cancelled rows after mvs_finished_action_retention_days (default 7), failed rows after mvs_failed_action_retention_days (default 90, Jobs::FAILED_RETENTION_DAYS); finished rows aged by last attempt, cancelled by scheduled date",
+    "doc": "docs/standards/background-jobs.md",
+    "since": "2.7.0",
+    "lookups": "is_queued: pending or running (start guards); is_pending: waiting only (continuations); async_once: queue unless a copy is waiting; cancel_pending: set-based cancel of exact hooks (deactivation). Differences from Jetonomy Queue are listed in docs/standards/background-jobs.md section 1",
+    "deactivation": "Deactivator::clear_scheduled(false) on deactivate cancels pending rows of Free's own CRON_HOOKS + JOB_HOOKS minus STATE_JOB_HOOKS (left pending), uninstall clear_scheduled(true) all (Jobs::cancel_pending, 10,000 per UPDATE, exact hooks never group); Pro Lifecycle::clear_scheduled the same for Pro's lists and Lifecycle::STATE_JOB_HOOKS; Pro re-arms its tick and streak check after activation (transient mvs_pro_rearm_jobs); after activation, or a migration run (one-click update), both requeue their STATE_JOB_HOOKS rows a runner failed with 'no callbacks are registered' in the last 7 days for hooks with a listener (Jobs::requeue_after_activation, 200 per scheduling request; Free transient mvs_requeue_unheard_jobs, Pro mvs_pro_rearm_jobs, a week each); Pro activation also marks the document text backfill pending",
+    "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }

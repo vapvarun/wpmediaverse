@@ -60,6 +60,21 @@ class OverviewPage {
 	}
 
 	/**
+	 * Where plugin-housekeeping notices (licence activation, Pro too old) may show: the Plugins and Updates screens
+	 * and MediaVerse's own screens, never the dashboard or another plugin's pages.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @return bool
+	 */
+	public static function is_housekeeping_screen(): bool {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		return $screen instanceof \WP_Screen
+			&& ( in_array( $screen->id, array( 'plugins', 'plugins-network', 'update-core', 'update-core-network' ), true ) || self::is_mvs_screen( $screen ) );
+	}
+
+	/**
 	 * Enqueue shared admin CSS on all WPMediaVerse admin pages.
 	 *
 	 * @param string $hook_suffix The current admin page.

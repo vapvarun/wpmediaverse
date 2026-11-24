@@ -136,6 +136,10 @@
      */
     --mvs-contrast-flip-l: 0.5624;
     --mvs-on-primary-auto: oklch(from var(--mvs-primary-fill) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
+    /* Hover text gets the same flip, read from the hover colour itself. The
+       theme's hover is often a LIGHTER step (Reign: #3c8ce6), where white text
+       measured 3.45:1; the fill is left as the theme set it. */
+    --mvs-on-primary-hover-auto: oklch(from var(--mvs-primary-hover) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
     /*
      * Text on --mvs-accent, same mechanism and the same ordering requirement.
      * It MUST be declared here, before the @supports block below, not with the
@@ -161,6 +165,14 @@
      *   #0b0b0b white          - 5 of 5 agree.
      */
     --mvs-on-accent: oklch(from var(--mvs-accent) clamp(0, (var(--mvs-contrast-flip-l) - l) * 1000, 1) 0 0);
+    /*
+     * Text on a plain --mvs-primary fill (count badges, active chips, follow
+     * and download buttons): white while white still reaches 4.5:1, else
+     * black. y in xyz-d65 is the WCAG luminance, and white passes up to 0.183.
+     * This keeps a passing white label, which contrast-color() does not: on
+     * Reign's #1d76da it picks black (4.65) over a passing white (4.51).
+     */
+    --mvs-on-primary-solid: color(from var(--mvs-primary) xyz-d65 calc(0.9505 * clamp(0, (0.183 - y) * 100000, 1)) clamp(0, (0.183 - y) * 100000, 1) calc(1.089 * clamp(0, (0.183 - y) * 100000, 1)));
 }
 
 /*
@@ -187,6 +199,7 @@
 @supports (color: contrast-color(red)) {
     :root {
         --mvs-on-primary-auto: contrast-color(var(--mvs-primary-fill));
+        --mvs-on-primary-hover-auto: contrast-color(var(--mvs-primary-hover));
         /* Same treatment for the accent fill. --mvs-accent is NOT redefined in
            the dark block (verified: 0 occurrences in the dark :root), so this
            one declaration serves both modes. */
@@ -239,7 +252,7 @@
     --mvs-btn-primary-bg: var(--mvs-primary-fill, var(--mvs-primary));
     --mvs-btn-primary-fg: var(--mvs-on-primary-auto, var(--mvs-on-primary, #ffffff));
     --mvs-btn-primary-bg-hover: var(--mvs-primary-hover);
-    --mvs-btn-primary-fg-hover: var(--mvs-on-primary, #ffffff);
+    --mvs-btn-primary-fg-hover: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #ffffff));
 
     --mvs-primary-rgb: 0, 115, 170;
     --mvs-danger: var(--red, #d63638);
@@ -339,9 +352,18 @@
          --mvs-border-light   STRUCTURE — cards, panels, sections, rows,
                               dividers. Neutral and quiet; it separates, it does
                               not ask to be looked at.
-         --mvs-border         CONTROLS  — input, select, textarea, button, chip,
-                              dropzone. Theme-tinted: a visible edge here means
-                              "you can interact with me".
+         --mvs-border         FRAMES    — popover and list panels that need more
+                              presence than a card. Theme-tinted.
+         --mvs-border-control CONTROLS  — input, select, textarea, outlined
+                              button, chip, pill, toggle, dropzone, search
+                              wrapper. A visible edge here means "you can
+                              interact with me", so it must reach 3:1 (WCAG
+                              1.4.11) against the surface. The theme's own
+                              border colour does not (1.36:1 on Reign light,
+                              1.1:1 dark), so this tier mixes from the TEXT
+                              colour instead and follows light and dark with
+                              it. 65%, not 50%: Reign's body text is a mid
+                              grey, and half of it measured 2.5:1.
          --mvs-border-strong  EMPHASIS  — active/selected state, table head rule.
 
        Two hard rules that keep this from drifting back:
@@ -352,6 +374,7 @@
           ladder — never swap one for a neutral tier, it destroys the meaning. */
     --mvs-border: var(--reign-site-border-color, var(--global-border-color, var(--border, #dcdcde)));
     --mvs-border-light: var(--border-soft, #e9e9ea);
+    --mvs-border-control: color-mix(in oklab, var(--mvs-text) 65%, transparent);
     /* Elevation — BuddyNext-first (soft, layered --bn-shadow-*), with a matching
        standalone fallback. Shared Wbcom Community-OS standard: components pick a
        token, never a literal box-shadow, so elevation is uniform across the suite. */
@@ -359,10 +382,13 @@
     --mvs-shadow-md: var(--bn-shadow-md, 0 2px 4px rgba(16, 24, 40, 0.04), 0 8px 16px rgba(16, 24, 40, 0.06));
     --mvs-shadow-lg: var(--bn-shadow-lg, 0 8px 16px rgba(16, 24, 40, 0.06), 0 24px 48px rgba(16, 24, 40, 0.08));
 
-    /* Radii — BuddyNext first, then hardcoded fallback */
-    --mvs-radius-sm: var(--r-sm, 6px);
-    --mvs-radius-md: var(--r-md, 8px);
-    --mvs-radius-lg: var(--r-lg, 12px);
+    /* Radii — BuddyNext first, then the theme's shared --global-border-radius (Reign and BuddyX set it in
+       the Customizer), then 6 / 8 / 12px. At the theme default of 8px the three steps are exactly 6 / 8 / 12px,
+       so a site that sets nothing sees no change. The pill stays a pill. */
+    --mvs-radius-xs: calc(var(--mvs-radius-md) * 0.5);
+    --mvs-radius-sm: var(--r-sm, calc(var(--global-border-radius, 8px) * 0.75));
+    --mvs-radius-md: var(--r-md, var(--global-border-radius, 8px));
+    --mvs-radius-lg: var(--r-lg, calc(var(--global-border-radius, 8px) * 1.5));
     --mvs-radius-pill: var(--r-full, 100px);
 
     /*
@@ -443,7 +469,10 @@
        (base/sticky/fab) stays low. */
     --mvs-z-base:    1;
     --mvs-z-sticky:  50;
-    --mvs-z-fab:     100;
+    /* Floating chat button: above theme chrome (sticky headers, bottom bars), below every MediaVerse overlay, modal and toast. */
+    --mvs-z-fab:     9980;
+    --mvs-z-chat-overlay: 9985;
+    --mvs-z-chat-panel:   9986;
     --mvs-z-overlay: 9990;
     --mvs-z-modal:   9991;
     --mvs-z-toast:   9992;
@@ -495,6 +524,9 @@ body.dark-mode {
     --mvs-text-muted: var(--reign-site-alternate-text-color, #888888);
     --mvs-border: var(--reign-site-border-color, #363636);
     --mvs-border-light: #2e2e2e;
+    /* Re-declared, not inherited: a dark wrapper below <html> re-defines
+       --mvs-text, and a mix computed on :root would keep the light value. */
+    --mvs-border-control: color-mix(in oklab, var(--mvs-text) 65%, transparent);
     /* Dark mode clamps the OTHER WAY - it does not skip the clamp.
        This used to be `var(--mvs-primary)` on the reasoning that "a theme
        already lightens its brand here (measured 7.98:1)". That was true of the
@@ -521,6 +553,22 @@ body.dark-mode {
     --mvs-danger-bg: rgba(var(--mvs-danger-rgb), 0.18);
 }
 
+/* Browsers without color-mix() get the control tier as a fixed grey that
+   clears 3:1 on the plugin's light and dark fallbacks. */
+@supports not (color: color-mix(in oklab, red, blue)) {
+    :root {
+        --mvs-border-control: #8c8f94;
+    }
+
+    [data-theme="dark"],
+    [data-bn-theme="dark"],
+    [data-bx-mode="dark"],
+    html.dark-mode,
+    body.dark-mode {
+        --mvs-border-control: #8a8a8a;
+    }
+}
+
 [data-theme="dark"] .mvs-album-badge,
 [data-bn-theme="dark"] .mvs-album-badge,
 [data-bx-mode="dark"] .mvs-album-badge,
@@ -528,11 +576,7 @@ body.dark-mode {
 [data-theme="dark"] .mvs-album-badge .mvs-icon svg,
 [data-bn-theme="dark"] .mvs-album-badge .mvs-icon svg,
 [data-bx-mode="dark"] .mvs-album-badge .mvs-icon svg,
-.dark-mode .mvs-album-badge .mvs-icon svg,
-[data-theme="dark"] .mvs-grid-item-overlay,
-[data-bn-theme="dark"] .mvs-grid-item-overlay,
-[data-bx-mode="dark"] .mvs-grid-item-overlay,
-.dark-mode .mvs-grid-item-overlay {
+.dark-mode .mvs-album-badge .mvs-icon svg {
     color: var(--mvs-text);
 }
 
@@ -584,6 +628,21 @@ body.dark-mode {
 .mvs-single-album h1,
 .mvs-single-collection h1,
 .mvs-explore-page h1,
+/* A notice printed by a Documents shortcode (switched off, or needs Pro). It can sit outside the
+   .mvs-documents wrapper, so it carries its own font and colours. */
+.mvs-documents__notice {
+    margin: 0 0 1rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--mvs-border-light);
+    border-inline-start: 4px solid var(--mvs-primary-fill);
+    border-radius: 6px;
+    background: var(--mvs-bg);
+    color: var(--mvs-text);
+    font-family: var(--mvs-font);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+}
+
 .mvs-documents h1,
 .mvs-dashboard h1,
 .mvs-profile-edit h1 {
@@ -769,6 +828,11 @@ body.mvs-page select {
                 background var(--mvs-duration-fast) var(--mvs-easing);
 }
 
+/* A back arrow points to where the reader came from: right-to-left sites mirror it. */
+[dir="rtl"] .mvs-back-link svg {
+    transform: scaleX(-1);
+}
+
 .mvs-back-link:hover,
 .mvs-back-link:focus-visible {
     color: var(--mvs-primary-text, var(--mvs-primary));
@@ -901,7 +965,7 @@ body:has(.mvs-fab-container, .mvs-chat-trigger) {
 .mvs-back-link[data-mvs-tooltip]::after {
     top: calc(100% + 6px);
     bottom: auto;
-    left: 0;
+    inset-inline-start: 0;
     transform: translateY(-4px);
 }
 
@@ -1042,7 +1106,7 @@ body.dark-mode .mvs-skeleton::after {
        the text inherited the ambient theme colour and went unreadable in dark
        mode (measured 1.07-1.38:1). */
     color: var(--mvs-text);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 }
 
@@ -1085,12 +1149,12 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-follow-toggle--following {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
 }
 
 .mvs-follow-toggle--following:hover {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
     border-color: var(--mvs-danger);
 }
 
@@ -1189,7 +1253,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-media-article {
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
@@ -1378,13 +1442,14 @@ body.dark-mode .mvs-skeleton::after {
 /* Follow steps back on a document page so Download is the only primary. */
 .mvs-btn.mvs-follow-btn--quiet {
     background: transparent;
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
     color: var(--mvs-text-secondary);
     font-weight: 500;
 }
 
 .mvs-btn.mvs-follow-btn--quiet:hover,
-.mvs-btn.mvs-follow-btn--quiet:focus-visible {
+.mvs-btn.mvs-follow-btn--quiet:focus,
+.mvs-btn.mvs-follow-btn--quiet:active {
     border-color: var(--mvs-primary);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
@@ -1496,7 +1561,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-album-article {
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     padding: 24px;
@@ -1615,7 +1680,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-grid-item {
     position: relative;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface-2);
     /* Pair the foreground with the background this component sets; without it
        the text inherited the ambient theme colour and went unreadable in dark
@@ -1855,7 +1920,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-media-grid.mvs-grid--list .mvs-grid-item > a {
     aspect-ratio: 1;
     height: auto;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     overflow: hidden;
 }
 
@@ -1905,14 +1970,16 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-grid-item-overlay {
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(0, 0, 0, 0.4);
-    color: var(--mvs-bg);
+    /* The shared scrim pair. A 0.4 scrim over a white photo left the stats at
+       2.85:1, and --mvs-bg as the text turned dark in dark mode (1.7:1). */
+    background: var(--mvs-overlay);
+    color: var(--mvs-on-overlay);
     font-size: 0.9em;
     opacity: 0;
     transition: opacity 0.3s;
@@ -1976,7 +2043,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-feed .mvs-grid-item {
     aspect-ratio: auto;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     overflow: hidden;
     background: var(--mvs-bg);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
@@ -2075,7 +2142,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-grid-item-author-link:focus-visible {
     outline: 2px solid var(--mvs-primary, currentColor);
     outline-offset: 2px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
 }
 
 /* On touch screens the author row is a tap target: reach the plugin's touch
@@ -2090,14 +2157,14 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-album-badge {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     display: flex;
     align-items: center;
     gap: 2px;
     background: rgba(0, 0, 0, 0.6);
     color: var(--mvs-bg);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.8em;
     font-weight: 600;
     pointer-events: none;
@@ -2115,14 +2182,14 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-gallery-badge {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     display: flex;
     align-items: center;
     gap: 2px;
     background: rgba(0, 0, 0, 0.6);
-    color: var(--mvs-surface);
+    color: var(--mvs-on-overlay);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.8em;
     font-weight: 600;
     pointer-events: none;
@@ -2133,7 +2200,7 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-gallery-badge .mvs-icon svg {
     width: 16px;
     height: 16px;
-    color: var(--mvs-surface);
+    color: var(--mvs-on-overlay);
 }
 
 /* ==========================================================================
@@ -2156,7 +2223,7 @@ body.dark-mode .mvs-skeleton::after {
     display: inline-block;
     padding: 8px 14px;
     background: var(--mvs-surface-2);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     text-decoration: none;
     color: var(--mvs-text);
     font-size: 0.9em;
@@ -2189,7 +2256,7 @@ body.dark-mode .mvs-skeleton::after {
     max-width: 400px;
     margin: 0 auto;
     background: var(--mvs-overlay);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     overflow: hidden;
     aspect-ratio: 9/16;
 }
@@ -2207,8 +2274,8 @@ body.dark-mode .mvs-skeleton::after {
     padding: 8px 12px;
     position: absolute;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     z-index: 2;
 }
 
@@ -2230,8 +2297,8 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-story-header {
     position: absolute;
     top: 24px;
-    left: 12px;
-    right: 12px;
+    inset-inline-start: 12px;
+    inset-inline-end: 12px;
     z-index: 2;
     display: flex;
     align-items: center;
@@ -2271,7 +2338,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-stat-card {
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     padding: 20px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     text-align: center;
@@ -2311,7 +2378,7 @@ body.dark-mode .mvs-skeleton::after {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9em;
@@ -2322,6 +2389,13 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-social-bar button:hover {
     background: none;
     border: 1px solid var(--mvs-primary);
+    color: var(--mvs-primary-text, var(--mvs-primary));
+}
+
+/* Focused or pressed, a bar button keeps the hover label: the delete button's
+   .mvs-btn--danger state colour is white for a red fill this bar never paints. */
+.mvs-social-bar button:focus,
+.mvs-social-bar button:active {
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
@@ -2376,7 +2450,7 @@ body.dark-mode .mvs-skeleton::after {
     gap: 6px;
     padding: 6px 12px;
     background: none;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     cursor: pointer;
     font-size: 0.9em;
@@ -2430,8 +2504,8 @@ body.dark-mode .mvs-skeleton::after {
     flex: 1;
     padding: 10px 12px;
     background-color: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
-    border-radius: 8px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-md);
     resize: none;
     min-height: 40px;
     font-family: inherit;
@@ -2441,9 +2515,9 @@ body.dark-mode .mvs-skeleton::after {
 .mvs-comment-form button {
     padding: 10px 16px;
     background: var(--mvs-primary);
-    color: var(--mvs-btn-primary-fg, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-btn-primary-fg, #fff));
     border: none;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     cursor: pointer;
     font-size: 0.9em;
     align-self: flex-end;
@@ -2452,6 +2526,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-comment-form button:hover {
     background: var(--mvs-primary-hover);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-btn-primary-fg, #fff));
 }
 
 .mvs-comment-list {
@@ -2587,15 +2662,10 @@ body.dark-mode .mvs-skeleton::after {
     cursor: pointer;
     font-size: 0.95em;
     font-weight: 600;
-    color: var(--mvs-text);
-    opacity: 0.75;
+    /* Dimmed by colour, not opacity: 0.75 opacity on the secondary text
+       colour measured 3.35:1, under AA. */
+    color: var(--mvs-text-secondary);
     transition: all 0.2s;
-}
-
-.mvs-dashboard-tab:hover,
-.mvs-dashboard-tab:focus,
-.mvs-dashboard-tab.active {
-    opacity: 1;
 }
 
 .mvs-dashboard-tab:hover,
@@ -2608,7 +2678,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-tab:first-child {
-    padding-left: 0;
+    padding-inline-start: 0;
 }
 
 .mvs-dashboard-tab.active {
@@ -2708,8 +2778,8 @@ body.dark-mode .mvs-skeleton::after {
            10248974871). margin-inline also survives RTL, which the shorthand
            did not. */
         margin-inline: -20px;
-        padding-left: 20px;
-        padding-right: 20px;
+        padding-inline-start: 20px;
+        padding-inline-end: 20px;
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
@@ -2851,6 +2921,7 @@ body.dark-mode .mvs-skeleton::after {
 
 .mvs-btn--danger:hover,
 .mvs-btn--danger:focus,
+.mvs-btn--danger:active,
 .mvs-btn--danger:visited {
     background: var(--mvs-danger);
     color: var(--mvs-on-danger, #ffffff);
@@ -2900,7 +2971,7 @@ body.dark-mode .mvs-skeleton::after {
     display: flex;
     flex-direction: column;
     background: var(--mvs-bg);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     transition: box-shadow 0.2s;
@@ -2999,19 +3070,44 @@ body.dark-mode .mvs-skeleton::after {
     max-width: 100%;
 }
 
+/* Album names are typed by members and can be any length, so the picker is capped (a select
+   otherwise grows to its longest option and pushes every other control onto a new row). A long
+   name is cut with an ellipsis; the full name is in the list. */
+.mvs-bulk-album {
+    width: 14rem;
+    max-width: 100%;
+    text-overflow: ellipsis;
+}
+
 @media (max-width: 480px) {
+    /* Pairs of controls share a row (picker + its button) instead of one control per row: the
+       stacked bar was ~510px tall at 390px and covered most of the screen while it is sticky. */
     .mvs-bulk-bar {
-        flex-direction: column;
-        align-items: stretch;
+        align-items: center;
+        /* Never more than about half the screen while it is pinned: past that the controls scroll
+           inside the bar, so every one stays reachable and the page behind stays visible. */
+        max-height: 50vh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
     }
 
     .mvs-bulk-count {
+        flex: 1 0 100%;
         margin-inline-end: 0;
     }
 
-    .mvs-bulk-privacy {
-        /* Full row on a phone. width:auto would size it to its (long) label
-           and push the arrow past the bar's edge. */
+    .mvs-bulk-privacy-label,
+    .mvs-bulk-album-label,
+    .mvs-bulk-tags-label {
+        flex: 1 1 9rem;
+        min-width: 0;
+    }
+
+    .mvs-bulk-privacy,
+    .mvs-bulk-album,
+    .mvs-bulk-tags {
+        /* Fill the label. width:auto would size a select to its (long) label and push the arrow
+           past the bar's edge. */
         width: 100%;
     }
 }
@@ -3115,7 +3211,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-privacy-badge--private {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
 }
 
 /* Load More */
@@ -3146,7 +3242,7 @@ a.mvs-dashboard-card-title:hover {
     min-width: 0;
     min-height: var(--mvs-touch-min);
     padding: 0 var(--mvs-space-3);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     /* !important fights BuddyX's bx-tokens-applied.css, whose form rule is
        `input:not([type="submit"]):not([type="button"]):not([type="checkbox"])
@@ -3171,11 +3267,21 @@ a.mvs-dashboard-card-title:hover {
     min-width: 9rem;
     max-width: 100%;
     padding: 0 var(--mvs-space-3);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface);
     color: var(--mvs-text);
     font-size: var(--mvs-font-sm);
+}
+
+/* The Apply button (shown when the filters do not apply on change) matches the selects beside it. Its margin
+   is ours too: a theme rule like `select + button[type=submit] { margin-top: .75rem }` (Reign has one) pushed it
+   13px lower than the selects and made the toolbar taller. */
+.mvs-panel-toolbar__apply {
+    margin: 0;
+    min-height: var(--mvs-touch-min);
+    border-radius: var(--mvs-radius-md);
+    align-self: center;
 }
 
 .mvs-panel-toolbar__count {
@@ -3387,8 +3493,8 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     padding: 8px 12px;
     background-color: var(--mvs-bg);
-    border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
     box-sizing: border-box;
@@ -3419,8 +3525,8 @@ a.mvs-dashboard-card-title:hover {
     flex-wrap: wrap;
     gap: 4px;
     padding: 6px;
-    border: 1px solid var(--mvs-border-light);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     min-height: 38px;
     align-items: center;
     cursor: text;
@@ -3439,7 +3545,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 2px 8px;
     background: var(--mvs-btn-primary-bg);
     color: var(--mvs-btn-primary-fg);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     font-size: 0.8em;
 }
 
@@ -3455,11 +3561,14 @@ a.mvs-dashboard-card-title:hover {
     margin: calc(var(--mvs-touch-min, 44px) / -2 + 0.5em) 0;
     padding: 0;
     line-height: 1;
-    opacity: 0.8;
 }
 
-.mvs-tag-pill-remove:hover {
-    opacity: 1;
+/* The ring is the pill's own text colour so it contrasts on a filled and on an outlined pill; the
+   negative offset keeps it inside the 44px target instead of spilling over the neighbouring pill. */
+.mvs-tag-pill-remove:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -8px;
+    border-radius: 50%;
 }
 
 .mvs-tag-text-input {
@@ -3481,8 +3590,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-tag-autocomplete {
     position: absolute;
     top: 100%;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border-light);
     border-top: none;
@@ -3519,8 +3628,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-confirm-overlay {
     position: fixed;
     top: 0;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
     z-index: 100001;
@@ -3531,7 +3640,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-confirm {
     background: var(--mvs-bg);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 28px;
     max-width: 380px;
     width: 90%;
@@ -3558,8 +3667,8 @@ a.mvs-dashboard-card-title:hover {
     box-sizing: border-box;
     margin: 12px 0;
     font-size: 14px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     background-color: var(--mvs-surface-2);
     color: var(--mvs-text);
 }
@@ -3605,14 +3714,14 @@ a.mvs-dashboard-card-title:hover {
     overflow-y: auto;
     padding: 8px;
     border: 1px solid var(--mvs-border-light);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     margin-top: 8px;
 }
 
 .mvs-media-picker-item {
     position: relative;
     aspect-ratio: 1;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     overflow: hidden;
     cursor: pointer;
     border: 2px solid transparent;
@@ -3647,7 +3756,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-media-picker-check {
     position: absolute;
     top: 4px;
-    right: 4px;
+    inset-inline-end: 4px;
     width: 22px;
     height: 22px;
     background: var(--mvs-btn-primary-bg);
@@ -3675,7 +3784,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-collection-card-info .mvs-owner-actions {
     display: flex;
-    margin-left: 0;
+    margin-inline-start: 0;
     padding: 12px 0 0;
 }
 
@@ -3800,10 +3909,66 @@ a.mvs-dashboard-card-title:hover {
     flex: 0 0 auto;
 }
 
+/* A tag name can be any length: past about 20rem it is cut with an ellipsis (the full name is the
+   link's title), so one long tag cannot take half a row or be wider than a phone's scroller. */
+.mvs-tag-cloud-items .mvs-tag-cloud-item {
+    max-width: min(20rem, 85vw);
+}
+
+.mvs-tag-cloud-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The display value on the chip beats the browser's [hidden]; "More tags" uses the attribute. */
+.mvs-tag-cloud-item[hidden] {
+    display: none;
+}
+
 .mvs-tag-cloud--all,
 .mvs-tag-cloud--all .mvs-tag-cloud-items {
     flex-wrap: wrap;
     overflow: visible;
+}
+
+/* Tablet and desktop: the chips wrap onto at most two rows and only whole pills show, never one cut
+   in half at the edge; "More tags" has the rest. A fully wrapped list of 20 chips pushed the results
+   down, which is why this was one scrolling row. */
+@media (min-width: 641px) {
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) {
+        align-items: flex-start;
+    }
+
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) .mvs-tag-cloud-items {
+        flex-wrap: wrap;
+        overflow: hidden;
+        max-height: calc(2 * var(--mvs-touch-min, 44px) + 8px);
+        padding-bottom: 0;
+        -webkit-mask-image: none;
+        mask-image: none;
+    }
+}
+
+/* Phones: "All" and "More tags" share the first row and the chips get the full width below it, as
+   one scrolling row with a stronger fade (the chips were squeezed into a 126px window between them). */
+@media (max-width: 640px) {
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) {
+        flex-wrap: wrap;
+    }
+
+    .mvs-tag-cloud:not(.mvs-tag-cloud--all) .mvs-tag-cloud-items {
+        order: 3;
+        flex: 1 0 100%;
+        -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent);
+        mask-image: linear-gradient(to right, #000 calc(100% - 44px), transparent);
+    }
+
+    [dir="rtl"] .mvs-tag-cloud:not(.mvs-tag-cloud--all) .mvs-tag-cloud-items {
+        -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent);
+        mask-image: linear-gradient(to left, #000 calc(100% - 44px), transparent);
+    }
 }
 
 .mvs-tag-cloud-item {
@@ -3867,7 +4032,7 @@ a.mvs-dashboard-card-title:hover {
  */
 .mvs-tag-cloud-item.active {
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
 }
 
 /* ==========================================================================
@@ -3885,8 +4050,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
     box-sizing: border-box;
@@ -3905,7 +4070,7 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 24px;
     background: var(--mvs-bg, #fff);
     border: 1px solid var(--mvs-border-light, #dcdcde);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 20px;
 }
 
@@ -3916,8 +4081,8 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     margin: 0 0 1rem;
     padding: 28px 20px;
-    border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
+    border: 2px dashed var(--mvs-border-control);
+    border-radius: var(--mvs-radius-md);
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
     background: var(--mvs-surface-2);
@@ -3951,7 +4116,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 12px;
     padding: 12px;
     background: var(--mvs-surface-2);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
 }
 
 .mvs-dashboard-upload-fields input[type="text"],
@@ -3959,8 +4124,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-upload-fields select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     font-family: inherit;
     box-sizing: border-box;
@@ -4015,7 +4180,7 @@ a.mvs-dashboard-card-title:hover {
        it, so an outline here would be the third edge in a row (border contract
        rule 1). */
     background: var(--mvs-bg-subtle, #f6f7f8);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
 }
 
 /* Respect the HTML [hidden] attribute set by data-wp-bind--hidden. The
@@ -4143,7 +4308,7 @@ a.mvs-dashboard-card-title:hover {
     padding: 20px;
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border-light);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
 }
 
 /* The dropzone itself. Every sibling above was already unscoped here for
@@ -4160,8 +4325,8 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     gap: 12px;
     padding: 20px 24px;
-    border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
+    border: 2px dashed var(--mvs-border-control);
+    border-radius: var(--mvs-radius-md);
     background: var(--mvs-surface-2);
     text-align: center;
     cursor: pointer;
@@ -4215,7 +4380,7 @@ a.mvs-dashboard-card-title:hover {
     width: 80px;
     height: 80px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     border: 1px solid var(--mvs-border-light);
 }
 
@@ -4236,7 +4401,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-bp-upload-status {
     margin-top: 10px;
     padding: 8px 12px;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 13px;
     background: var(--mvs-info-bg);
     color: var(--mvs-primary-text, var(--mvs-primary));
@@ -4278,7 +4443,7 @@ a.mvs-dashboard-card-title:hover {
  * source of truth so width/height/object-fit can't drift. Border-radius
  * applies to the wrapper so it clips the letterbox bars too. */
 .mvs-media-video {
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     overflow: hidden;
 }
 
@@ -4406,7 +4571,7 @@ a.mvs-dashboard-card-title:hover {
     width: 22px;
     height: 22px;
     /* Optical centering — the play triangle isn't centered in its bounding box. */
-    margin-left: 2px;
+    margin-inline-start: 2px;
 }
 
 .mvs-grid-item a:hover .mvs-grid-play-icon {
@@ -4597,7 +4762,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 14px;
     padding: 40px 32px;
     background: var(--mvs-bg, #ffffff);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
 }
 
 .mvs-lightbox-document .mvs-doc-card__glyph {
@@ -4645,7 +4810,7 @@ a.mvs-dashboard-card-title:hover {
     margin: 20px auto;
     background: var(--mvs-surface-2);
     border: 1px solid var(--mvs-border-light);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     overflow: hidden;
 }
 
@@ -4705,7 +4870,7 @@ a.mvs-dashboard-card-title:hover {
     background: none;
     border: none;
     cursor: pointer;
-    text-align: left;
+    text-align: start;
     font: inherit;
     color: inherit;
     min-width: 0;
@@ -4786,7 +4951,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-card-info {
     background: var(--mvs-bg);
     border: 1px solid var(--mvs-border-light);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 24px 28px;
     margin-bottom: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -4820,6 +4985,11 @@ a.mvs-dashboard-card-title:hover {
     color: var(--mvs-text);
     text-decoration: none;
     font-weight: 500;
+    /* The avatar and the name are both inside the link, so the gap has to be declared here: a gap on the
+       outer span only separates its direct children, and it has just this one. */
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .mvs-collection-meta-author a:hover,
@@ -4863,7 +5033,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-search-input {
     flex: 1;
     padding: 10px 16px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 8px 0 0 8px;
     font-size: 0.95em;
     background: var(--mvs-bg);
@@ -4887,7 +5057,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-search-btn {
     padding: 10px 20px;
     border: 1px solid var(--mvs-primary);
-    border-left: 0;
+    border-inline-start: 0;
     border-radius: 0 8px 8px 0;
     background: var(--mvs-btn-primary-bg);
     color: var(--mvs-btn-primary-fg);
@@ -4938,7 +5108,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-pill {
     display: inline-block;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.75em;
     background: rgba(var(--mvs-primary-rgb), 0.15);
     color: var(--mvs-primary-text, var(--mvs-primary));
@@ -4949,8 +5119,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-type-toggle {
     display: flex;
     gap: 0;
-    border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     overflow: hidden;
     width: fit-content;
 }
@@ -4966,7 +5136,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-toggle-btn:not(:last-child) {
-    border-right: 1px solid var(--mvs-border);
+    border-inline-end: 1px solid var(--mvs-border-control);
 }
 
 .mvs-toggle-btn.active {
@@ -5034,8 +5204,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-row select,
 .mvs-rule-row input {
     padding: 8px 10px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.9em;
 }
 
@@ -5054,10 +5224,10 @@ a.mvs-dashboard-card-title:hover {
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-xs);
     background: var(--mvs-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text);
     font-size: 1.2em;
     cursor: pointer;
     display: flex;
@@ -5069,7 +5239,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-rule-remove:hover,
 .mvs-rule-remove:focus {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text);
     border-color: var(--mvs-danger);
 }
 
@@ -5077,7 +5247,7 @@ a.mvs-dashboard-card-title:hover {
     margin-top: 12px;
     padding: 10px 14px;
     background: var(--mvs-success-bg);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9em;
     color: var(--mvs-success);
     font-weight: 500;
@@ -5161,11 +5331,11 @@ a.mvs-dashboard-card-title:hover {
 .mvs-collection-card .mvs-collection-type-badge {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     background: rgba(0, 0, 0, 0.7);
     color: #fff;
     padding: 2px 8px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -5199,7 +5369,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-notification-bell {
     position: relative;
     cursor: pointer;
-    margin-left: auto;
+    margin-inline-start: auto;
     user-select: none;
 }
 
@@ -5231,7 +5401,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-notification-badge {
     position: absolute;
     top: -6px;
-    right: -8px;
+    inset-inline-end: -8px;
     background: var(--mvs-danger);
     color: var(--mvs-bg);
     font-size: 11px;
@@ -5247,13 +5417,13 @@ a.mvs-dashboard-card-title:hover {
 .mvs-notification-dropdown {
     position: absolute;
     top: 100%;
-    right: 0;
+    inset-inline-end: 0;
     width: 340px;
     max-height: 400px;
     overflow-y: auto;
     background: var(--mvs-bg, #fff);
     border: 1px solid var(--mvs-border-light, #ddd);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     box-shadow: var(--mvs-shadow-lg, 0 8px 32px rgba(0, 0, 0, 0.18));
     z-index: 998;
     margin-top: 8px;
@@ -5322,8 +5492,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-comment-edit-textarea {
     width: 100%;
     padding: 8px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-xs);
     font-size: 0.9em;
     resize: vertical;
     box-sizing: border-box;
@@ -5346,7 +5516,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-follow-btn {
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     padding: 6px 16px;
     font-size: 0.8125rem;
     font-weight: 600;
@@ -5354,25 +5524,25 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-primary);
     /* Always use --mvs-on-primary (#fff) here; never --mvs-bg which flips
        to dark in dark-mode themes and becomes unreadable on the red bg. */
-    color: var(--mvs-on-primary, #ffffff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     border: 1px solid var(--mvs-primary);
 }
 
 .mvs-follow-btn:hover {
     background: var(--mvs-primary-hover);
     border-color: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary, #ffffff);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 .mvs-follow-btn.active {
     background: var(--mvs-bg);
     color: var(--mvs-text);
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-follow-btn.active:hover {
     background: var(--mvs-surface-2);
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
 }
 
 /* ==========================================================================
@@ -5390,7 +5560,7 @@ a.mvs-dashboard-card-title:hover {
     background: var(--mvs-overlay);
     color: var(--mvs-on-overlay);
     border: none;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     padding: 2px 8px;
     min-block-size: 24px; /* WCAG 2.2 target-size floor on fine pointers; 44px on touch below. */
     font-size: 11px;
@@ -5443,10 +5613,10 @@ a.mvs-dashboard-card-title:hover {
 .mvs-media-picker-cover-badge {
     position: absolute;
     top: 4px;
-    left: 4px;
+    inset-inline-start: 4px;
     background: var(--mvs-btn-primary-bg);
     color: var(--mvs-btn-primary-fg);
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     padding: 2px 8px;
     font-size: 11px;
     font-weight: 700;
@@ -5461,7 +5631,7 @@ a.mvs-dashboard-card-title:hover {
     inset-inline: 4px;
     bottom: 4px;
     padding: 2px 6px;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     background: var(--mvs-overlay);
     color: var(--mvs-on-overlay);
     font-size: 11px;
@@ -5517,8 +5687,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-grid-pagination-links span {
     display: inline-block;
     padding: 8px 14px;
-    border: 1px solid var(--mvs-border-light);
-    border-radius: 4px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-xs);
     text-decoration: none;
     font-size: 13px;
     color: var(--mvs-text);
@@ -5553,8 +5723,8 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-upload-dropzone {
-    border: 2px dashed var(--mvs-border);
-    border-radius: 8px;
+    border: 2px dashed var(--mvs-border-control);
+    border-radius: var(--mvs-radius-md);
     padding: 40px 20px;
     text-align: center;
     cursor: pointer;
@@ -5586,8 +5756,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-privacy {
     margin-top: 12px;
     padding: 6px 12px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-xs);
     font-size: 13px;
 }
 
@@ -5607,8 +5777,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-upload-fields textarea {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid var(--mvs-border);
-    border-radius: 4px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-xs);
     font-size: 13px;
     box-sizing: border-box;
 }
@@ -5624,7 +5794,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-media-content img {
     max-width: 100%;
     height: auto;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
 }
 
 /* ONE declaration. There were two, at identical specificity with no media
@@ -5652,7 +5822,7 @@ a.mvs-dashboard-card-title:hover {
     align-items: center;
     gap: 3px;
     padding: 5px 10px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -5677,7 +5847,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-favorite-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -5689,12 +5859,12 @@ a.mvs-dashboard-card-title:hover {
 .mvs-favorite-btn.active {
     background: var(--mvs-danger-bg);
     border-color: var(--mvs-danger);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
 }
 
 .mvs-share-btn {
     padding: 5px 12px;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 20px;
     background: var(--mvs-bg);
     cursor: pointer;
@@ -5708,7 +5878,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-view-count {
-    margin-left: auto;
+    margin-inline-start: auto;
     font-size: 0.8125rem;
     color: var(--mvs-text-muted);
 }
@@ -5722,8 +5892,8 @@ a.mvs-dashboard-card-title:hover {
 
     .mvs-media-article {
         border-radius: 0;
-        border-left: none;
-        border-right: none;
+        border-inline-start: none;
+        border-inline-end: none;
     }
 }
 
@@ -5819,7 +5989,7 @@ a.mvs-dashboard-card-title:hover {
 /* Messages */
 .mvs-profile-message {
     padding: 0.75rem 1rem;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     margin-bottom: 1rem;
     font-size: 0.875rem;
 }
@@ -5832,7 +6002,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-profile-message--error {
     background: var(--mvs-danger-bg);
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
     border: 1px solid #f5c6cb;
 }
 
@@ -5844,7 +6014,7 @@ a.mvs-dashboard-card-title:hover {
     margin-bottom: 2rem;
     padding: 1.5rem;
     background: var(--mvs-surface-2);
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
 }
 
 .mvs-profile-avatar-preview {
@@ -5882,7 +6052,7 @@ a.mvs-dashboard-card-title:hover {
     border: none;
     cursor: pointer;
     padding: 0;
-    text-align: left;
+    text-align: start;
 }
 
 .mvs-profile-avatar-remove:hover {
@@ -5917,13 +6087,18 @@ a.mvs-dashboard-card-title:hover {
 .mvs-profile-field input[type="text"],
 .mvs-profile-field textarea {
     padding: 0.625rem 0.75rem;
-    border: 1px solid var(--mvs-border);
-    border-radius: 6px;
+    border: 1px solid var(--mvs-border-control);
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.9375rem;
     font-family: inherit;
     transition: border-color 0.2s;
     width: 100%;
     box-sizing: border-box;
+}
+
+/* The select keeps the theme's box and takes only the control edge. */
+.mvs-profile-field select {
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-profile-field input[type="text"]:focus,
@@ -5972,7 +6147,7 @@ a.mvs-dashboard-card-title:hover {
     justify-content: center;
     gap: 0.375rem;
     padding: 0.625rem 1.25rem;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
@@ -6014,8 +6189,11 @@ a.mvs-dashboard-card-title:hover {
     border-color: var(--mvs-btn-primary-bg);
 }
 
+/* :active too: a theme's a:active (0,1,1) outranks the one-class base, which
+   recoloured a pressed link button's label. */
 .mvs-btn--primary:hover,
 .mvs-btn--primary:focus,
+.mvs-btn--primary:active,
 .mvs-btn--primary:visited {
     background: var(--mvs-btn-primary-bg-hover);
     color: var(--mvs-btn-primary-fg-hover);
@@ -6034,14 +6212,15 @@ a.mvs-dashboard-card-title:hover {
 .mvs-btn.mvs-btn--secondary {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
 }
 
 .mvs-btn.mvs-btn--secondary:hover,
-.mvs-btn.mvs-btn--secondary:focus {
+.mvs-btn.mvs-btn--secondary:focus,
+.mvs-btn.mvs-btn--secondary:active {
     background: var(--mvs-border-light);
     color: var(--mvs-text);
-    border-color: var(--mvs-border);
+    border-color: var(--mvs-border-control);
 }
 
 /* Secondary button icons keep a neutral, theme-agnostic color — some themes
@@ -6054,8 +6233,10 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-btn.mvs-btn--secondary:hover svg,
 .mvs-btn.mvs-btn--secondary:focus svg,
+.mvs-btn.mvs-btn--secondary:active svg,
 .mvs-btn.mvs-btn--secondary:hover [data-lucide],
-.mvs-btn.mvs-btn--secondary:focus [data-lucide] {
+.mvs-btn.mvs-btn--secondary:focus [data-lucide],
+.mvs-btn.mvs-btn--secondary:active [data-lucide] {
     color: var(--mvs-text);
 }
 
@@ -6063,12 +6244,14 @@ a.mvs-dashboard-card-title:hover {
     background: none;
     border: none;
     padding: 0.25rem 0.5rem;
-    border-radius: 4px;
+    border-radius: var(--mvs-radius-xs);
     color: var(--mvs-text-secondary);
     transition: background 0.15s, color 0.15s;
 }
 
-.mvs-btn--text:hover {
+.mvs-btn--text:hover,
+.mvs-btn--text:focus,
+.mvs-btn--text:active {
     background: rgba(214, 54, 56, 0.08);
     color: var(--mvs-danger);
     border: none;
@@ -6118,7 +6301,7 @@ a.mvs-dashboard-card-title:hover {
        the text inherited the ambient theme colour and went unreadable in dark
        mode (measured 1.07-1.38:1). */
     color: var(--mvs-text);
-    border: 1.5px solid var(--mvs-border);
+    border: 1.5px solid var(--mvs-border-control);
     border-radius: 100px;
     padding: 5px 5px 5px 6px;
     gap: 0;
@@ -6241,7 +6424,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 12px;
     padding: 12px 16px;
     border: 1px solid var(--mvs-border-light);
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     margin-bottom: 8px;
     text-decoration: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -6274,8 +6457,9 @@ a.mvs-dashboard-card-title:hover {
 }
 
 /* Login prompt links styled like buttons */
+/* Not dimmed: it is a working control (it opens the login), and at 0.7 its
+   edge measured 2.26:1 and its label 3.95:1. */
 .mvs-login-prompt {
-    opacity: 0.7;
     cursor: pointer;
     text-decoration: none;
 }
@@ -6308,7 +6492,7 @@ a.mvs-dashboard-card-title:hover {
        near-black in dark mode (dark text on purple). Keep it white. */
     color: #fff;
     padding: 14px 24px;
-    border-radius: 8px;
+    border-radius: var(--mvs-radius-md);
     margin: 0 auto 20px;
     max-width: var(--mvs-content-width, 1200px);
     position: relative;
@@ -6330,7 +6514,7 @@ a.mvs-dashboard-card-title:hover {
     display: flex;
     gap: 8px;
     flex-shrink: 0;
-    margin-right: 15px;
+    margin-inline-end: 15px;
 }
 
 .mvs-logged-out-banner__actions .mvs-btn--primary {
@@ -6346,6 +6530,17 @@ a.mvs-dashboard-card-title:hover {
     border: none;
 }
 
+/* Its own pair in every state: the generic primary hover (frontend.css and
+   shared-ui-frame.css) repainted the fill to the theme's hover blue under the
+   indigo label (1.07:1). The fill stays white; the label deepens. */
+.mvs-logged-out-banner__actions .mvs-btn--primary:hover,
+.mvs-logged-out-banner__actions .mvs-btn--primary:focus,
+.mvs-logged-out-banner__actions .mvs-btn--primary:active,
+.mvs-logged-out-banner__actions .mvs-btn--primary:visited {
+    background: #fff;
+    color: #3730a3;
+}
+
 .mvs-logged-out-banner__actions .mvs-btn--secondary {
     background: transparent;
     /* Fixed white, for the reason the comment above already gives: the banner
@@ -6353,7 +6548,9 @@ a.mvs-dashboard-card-title:hover {
        near-black in dark — dark text on purple. The primary button was fixed
        for exactly this and the secondary was left behind. */
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    /* Solid white: at 60% the edge measured 2.8:1 where the banner stacks at
+       390px and the button sits on the gradient's lighter middle. */
+    border: 1px solid #fff;
 }
 
 .mvs-logged-out-banner__close {
@@ -6377,7 +6574,7 @@ a.mvs-dashboard-card-title:hover {
     line-height: 1;
     position: absolute;
     top: 8px;
-    right: 4px;
+    inset-inline-end: 4px;
 }
 
 .mvs-logged-out-banner__close:hover {
@@ -6591,7 +6788,7 @@ a.mvs-dashboard-card-title:hover {
     gap: 10px;
     background: var(--mvs-warning-bg);
     border: 1px solid var(--mvs-warning);
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     padding: 10px 16px;
     margin-bottom: 16px;
     font-size: 0.875rem;
@@ -6729,6 +6926,10 @@ a.mvs-dashboard-card-title:hover {
 .mvs-notification-bell-toggle:focus-visible,
 .mvs-modal-close:focus-visible,
 .mvs-dashboard-dropzone:focus-visible,
+.mvs-search-mode-btn:focus-visible,
+.mvs-bulk-check:focus-visible,
+.mvs-fab:focus-visible,
+.mvs-toggle-btn:focus-visible,
 .mvs-load-more-btn:focus-visible {
     outline: 2px solid var(--mvs-primary);
     outline-offset: 2px;
@@ -6984,6 +7185,24 @@ a.mvs-dashboard-card-title:hover {
     .mvs-search-mode-btn {
         flex: 1;
     }
+
+    /* Wrapped, the bar's edge frames the switch and the field together, so
+       the field row has no edge of its own. The edge moves to the field. */
+    .mvs-search-bar,
+    .mvs-search-bar:focus-within {
+        border-color: transparent;
+        box-shadow: none;
+    }
+
+    .mvs-search-field {
+        margin-top: 4px;
+        border: 1.5px solid var(--mvs-border-control);
+        border-radius: var(--mvs-radius-lg);
+    }
+
+    .mvs-search-field:focus-within {
+        border-color: var(--mvs-primary);
+    }
 }
 
 
@@ -7013,7 +7232,7 @@ a.mvs-dashboard-card-title:hover {
        a theme that doesn't define a dark variant. The outer overlay scrim
        handles the page-backdrop dimming. */
     background: transparent;
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     overflow: hidden;
     animation: mvs-slide-up 0.3s ease;
 }
@@ -7021,7 +7240,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-close {
     position: absolute;
     top: 12px;
-    right: 12px;
+    inset-inline-end: 12px;
     z-index: 10;
     background: rgba(0, 0, 0, .5);
     border: none;
@@ -7049,7 +7268,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-fullscreen {
     position: absolute;
     top: 12px;
-    right: 64px;
+    inset-inline-end: 64px;
     z-index: 10;
     background: rgba(0, 0, 0, .5);
     border: none;
@@ -7184,7 +7403,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-audio {
     width: min(400px, 80%);
     display: block;
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     padding: 8px;
     filter: invert(1);
 }
@@ -7240,6 +7459,7 @@ a.mvs-dashboard-card-title:hover {
     line-height: 1;
 }
 
+/* Prev/next stay physical (not inset-inline): their arrow icons and the arrow keys are not mirrored in RTL. */
 .mvs-lightbox-nav--prev {
     left: 12px;
 }
@@ -7254,9 +7474,9 @@ a.mvs-dashboard-card-title:hover {
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0, 0, 0, .6);
-    color: var(--mvs-surface);
+    color: var(--mvs-on-overlay);
     padding: 4px 12px;
-    border-radius: 12px;
+    border-radius: var(--mvs-radius-lg);
     font-size: 13px;
 }
 
@@ -7272,7 +7492,7 @@ a.mvs-dashboard-card-title:hover {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--mvs-border-light);
+    border-inline-start: 1px solid var(--mvs-border-light);
     overflow-y: auto;
     background: var(--mvs-surface);
 }
@@ -7342,7 +7562,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-reaction:hover {
     background: var(--mvs-surface-2);
-    border-color: var(--mvs-border-light);
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-lightbox-reaction.active {
@@ -7385,7 +7605,7 @@ a.mvs-dashboard-card-title:hover {
        theme's web font was still loading (2.6.0 member walk). */
     padding: 6px 0;
     text-align: center;
-    border-radius: 6px;
+    border-radius: var(--mvs-radius-sm);
     text-decoration: none;
     color: var(--mvs-text);
     /* Overflow is handled on .mvs-lightbox-action__label, not here. A bare text
@@ -7447,7 +7667,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-lightbox-reaction:hover {
     background: var(--mvs-surface-2) !important;
-    border-color: var(--mvs-border-light) !important;
+    border-color: var(--mvs-border-control) !important;
 }
 
 .mvs-lightbox-reaction.active {
@@ -7522,7 +7742,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-action--report:hover {
-    color: var(--mvs-danger);
+    color: var(--mvs-danger-text, var(--mvs-danger));
     background: var(--mvs-danger-bg);
 }
 
@@ -7550,7 +7770,7 @@ a.mvs-dashboard-card-title:hover {
     .mvs-lightbox-sidebar {
         width: 100%;
         flex: 1 1 auto;
-        border-left: none;
+        border-inline-start: none;
         border-top: 1px solid var(--mvs-border-light);
     }
 
@@ -7574,7 +7794,7 @@ a.mvs-dashboard-card-title:hover {
     /* Override --report's margin-left:auto so the 5 buttons distribute
        evenly via space-around above. */
     .mvs-lightbox-action--report {
-        margin-left: 0;
+        margin-inline-start: 0;
         font-size: 12px;
     }
 
@@ -7616,7 +7836,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-desc strong {
-    margin-right: 6px;
+    margin-inline-end: 6px;
 }
 
 .mvs-lightbox-comments {
@@ -7638,7 +7858,7 @@ a.mvs-dashboard-card-title:hover {
     line-height: 1.4;
     background-color: var(--mvs-surface);
     color: var(--mvs-text, inherit);
-    border-color: var(--mvs-border-light, var(--mvs-border));
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-lightbox-sidebar .mvs-comment-form textarea::placeholder,
@@ -7824,7 +8044,7 @@ a.mvs-dashboard-card-title:hover {
     width: 100%;
     font: inherit;
     padding: var(--mvs-space-2, 0.5rem);
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     border-radius: var(--mvs-radius-md, 8px);
     background: var(--mvs-bg);
     color: var(--mvs-text);
@@ -7905,7 +8125,7 @@ a.mvs-dashboard-card-title:hover {
     flex: 1;
     /* Explicit surface + text tokens (not the theme's input styling) so the
        field is a defined rounded control that stays readable in dark mode. */
-    border: 1px solid var(--mvs-border, #d1d5db);
+    border: 1px solid var(--mvs-border-control);
     border-radius: 999px;
     padding: 9px 14px;
     font-size: 14px;
@@ -7980,16 +8200,30 @@ a.mvs-dashboard-card-title:hover {
     .mvs-lightbox-sidebar {
         width: 100%;
         flex: 0 0 45%;
-        border-left: none;
+        border-inline-start: none;
         border-top: 1px solid var(--mvs-border-light);
+    }
+
+    /* One scroll area on a phone. The sidebar is the scroller here, and the info, actions and comment box above
+       the list already fill most of it, so a second scroller for the list was squeezed to about 16px and the
+       comments could not be reached. The comments pane and the list take their natural height and the sidebar
+       scrolls them as one column (desktop keeps its own bounded list). */
+    .mvs-lightbox-comments {
+        flex: 0 0 auto;
+        min-height: auto;
+    }
+
+    .mvs-lightbox-comment-list {
+        flex: 0 0 auto;
+        overflow-y: visible;
     }
 }
 /* Replace-file row inside edit modal */
 .mvs-replace-file-row {
-    padding: 0 24px 12px;
+    /* Sits inside the edit form's own padding, in the modal and the inline panel alike. */
+    padding: 12px 0 0;
     border-top: 1px solid var(--mvs-border-light);
     margin-top: 12px;
-    padding-top: 12px;
 }
 
 .mvs-replace-file-label {
@@ -8027,8 +8261,8 @@ a.mvs-dashboard-card-title:hover {
     padding: 8px 12px;
     margin-top: 8px;
     background: var(--mvs-surface-2, #f5f5f5);
-    border-left: 3px solid var(--mvs-primary, #2271b1);
-    border-radius: 4px;
+    border-inline-start: 3px solid var(--mvs-primary, #2271b1);
+    border-radius: var(--mvs-radius-xs);
     font-size: 13px;
     color: var(--mvs-text-secondary, #555);
 }
@@ -8056,14 +8290,14 @@ a.mvs-dashboard-card-title:hover {
 .mvs-album-cover-badge {
     position: absolute;
     top: 8px;
-    left: 8px;
+    inset-inline-start: 8px;
     z-index: 2;
     padding: 4px 10px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--mvs-surface, #fff);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     background: var(--mvs-primary, #2271b1);
     border-radius: 999px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
@@ -8073,7 +8307,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-album-set-cover {
     position: absolute;
     top: 8px;
-    right: 8px;
+    inset-inline-end: 8px;
     z-index: 2;
     display: inline-flex;
     align-items: center;
@@ -8648,7 +8882,7 @@ button.mvs-follows-open,
     padding: var(--mvs-space-2) var(--mvs-space-4);
     border-radius: var(--mvs-radius-md);
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
     font-size: var(--mvs-font-md);
     font-weight: 600;
     text-decoration: none;
@@ -8658,7 +8892,7 @@ button.mvs-follows-open,
 .mvs-doc-download:hover,
 .mvs-doc-download:focus-visible {
     background: var(--mvs-primary-hover);
-    color: var(--mvs-on-primary);
+    color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
     text-decoration: none;
 }
 
@@ -9005,7 +9239,7 @@ a.mvs-dashboard-tab:focus-visible {
 
 .mvs-dashboard-tabs .mvs-dashboard-tab.active .mvs-dashboard-tab__count {
     background: var(--mvs-primary);
-    color: var(--mvs-on-primary);
+    color: var(--mvs-on-primary-solid, var(--mvs-on-primary, #fff));
 }
 
 /* ---------------------------------------------------------------------------
@@ -9280,7 +9514,7 @@ a.mvs-dashboard-tab:focus-visible {
     min-inline-size: var(--mvs-touch-min, 44px);
     justify-content: center;
     background: transparent;
-    border: 1px solid var(--mvs-border);
+    border: 1px solid var(--mvs-border-control);
     color: var(--mvs-text-secondary);
 }
 
@@ -9391,4 +9625,69 @@ a.mvs-dashboard-tab:focus-visible {
 .mvs-dashboard-upload-progress .mvs-upload-progress__bar {
 	flex: 1 1 0;
 	min-width: 0;
+}
+
+/* ==========================================================================
+   Media Grid block in a narrow container (sidebar, widget area, narrow column)
+
+   The justified-rows layout sizes a tile from its aspect ratio and a row
+   height, so in a container narrower than about two tiles every tile fills the
+   row and the block's Columns setting is ignored. These rules key on the
+   block's OWN width (a container query), not the viewport, so the same block
+   behaves in a 267px sidebar on a desktop and in a 390px phone column alike.
+   Wider containers are untouched.
+   ========================================================================== */
+.mvs-media-grid-block {
+    container: mvs-grid / inline-size;
+}
+
+@container mvs-grid (max-width: 419px) {
+
+    /* The owner's Columns choice, capped at three: five 50px thumbnails in a
+       sidebar are not a gallery. Both layouts share one rule. */
+    .mvs-media-grid.mvs-grid--original,
+    .mvs-media-grid.mvs-cols-3,
+    .mvs-media-grid.mvs-cols-4,
+    .mvs-media-grid.mvs-cols-5 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .mvs-media-grid.mvs-grid--original.mvs-cols-2,
+    .mvs-media-grid.mvs-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    /* :last-child too: the lone-orphan cap above is more specific and would
+       otherwise keep the final tile narrower than its neighbours. */
+    .mvs-grid--original .mvs-grid-item,
+    .mvs-grid--original .mvs-grid-item:last-child {
+        flex: none;
+        min-width: 0;
+        max-width: none;
+    }
+
+    /* Square crops: a justified tile's fixed row height has no meaning here. */
+    .mvs-media-grid.mvs-grid--original .mvs-grid-item-link,
+    .mvs-media-grid.mvs-grid--original .mvs-grid-item > a {
+        height: auto;
+        aspect-ratio: 1;
+    }
+
+    .mvs-grid-pagination {
+        margin-top: 12px;
+    }
+
+    .mvs-grid-pagination-links a,
+    .mvs-grid-pagination-links span {
+        padding: 6px 10px;
+    }
+}
+
+/* A grid in a widget area (sidebar, footer column) is a teaser, not an archive:
+   page links under a strip of thumbnails read as clutter, so it shows its first
+   page of items only. This keys on WHERE the block sits, not on its width, so a
+   narrow phone column that holds a full gallery keeps its paging. */
+:where(.widget, .widget_block, aside) .mvs-media-grid-block .mvs-grid-pagination {
+    display: none;
 }

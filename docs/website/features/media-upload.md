@@ -86,6 +86,8 @@ When uploading multiple files at once into an album, MediaVerse now creates **on
 
 The settings cog on dashboard cards now opens a prefilled edit modal - change title, description, privacy level, and per-media **Allow Downloads** in place. Save updates the row live without a page reload. The matching `PUT /mvs/v1/media/{id}` REST endpoint accepts an `allow_download` boolean.
 
+Editing a media item looks and works the same everywhere: on its own page (a panel under the photo), from My Media, from the lightbox and from a BuddyPress media tab. The form has the title, description, tags (type a tag and press Enter, or pick a suggestion), privacy, the option to update the URL slug, the download switch and **Replace File**. A photo in an album shows that its privacy follows the album. If a save fails the message appears in the form and nothing you typed is lost.
+
 When you change the title, the URL slug stays stable by default. Tick the new **Update URL slug** checkbox if you want the slug regenerated from the new title - the page redirects to the new URL automatically so existing tabs and bookmarks don't 404.
 
 ## What Happens After Upload

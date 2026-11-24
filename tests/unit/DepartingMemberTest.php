@@ -92,7 +92,7 @@ class DepartingMemberTest extends WP_UnitTestCase {
 	private function run_deletion_queue(): void {
 		$service = \WPMediaVerse\Core\Plugin::container()->get( 'user_deletion' );
 		for ( $run = 0; $run < 10 && \WPMediaVerse\Services\UserDeletionService::cascade_pending( $this->leaver ); $run++ ) {
-			as_unschedule_all_actions( \WPMediaVerse\Services\UserDeletionService::CASCADE_HOOK, array( $this->leaver ), 'wpmediaverse' );
+			as_unschedule_all_actions( \WPMediaVerse\Services\UserDeletionService::CASCADE_HOOK, array( $this->leaver ) );
 			$service->process_cascade_batch( $this->leaver );
 		}
 		\WPMediaVerse\Repository\MediaRepository::reset_test_cache();

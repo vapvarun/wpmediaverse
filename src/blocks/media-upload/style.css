@@ -8,7 +8,7 @@
 }
 
 .mvs-upload-dropzone {
-	border: 2px dashed var(--mvs-border);
+	border: 2px dashed var(--mvs-border-control);
 	border-radius: 8px;
 	padding: 48px 24px;
 	text-align: center;
@@ -70,7 +70,7 @@
 
 .mvs-upload-privacy select {
 	padding: 6px 12px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: 4px;
 	font-size: 0.9em;
 }
@@ -182,7 +182,7 @@
 .mvs-upload-fields textarea {
 	width: 100%;
 	padding: 8px 12px;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: 4px;
 	font-size: 0.9em;
 }
@@ -241,7 +241,7 @@
 .mvs-upload-cancel {
 	min-height: 40px;
 	padding: 0 14px;
-	border: 1px solid var(--mvs-border, #dcdcde);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: 6px;
 	background: transparent;
 	color: var(--mvs-text, #1d2327);

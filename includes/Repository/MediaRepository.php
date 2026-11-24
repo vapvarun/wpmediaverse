@@ -3438,6 +3438,30 @@ class MediaRepository implements MediaRepositoryInterface {
 	}
 
 	/**
+	 * Which of these media ids exist in mvs_media_index, in one query.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param int[] $media_ids Media ids.
+	 * @return int[] The ids that exist.
+	 */
+	public function existing_ids( array $media_ids ): array {
+		$media_ids = array_values( array_filter( array_unique( array_map( 'intval', $media_ids ) ) ) );
+		if ( ! $media_ids ) {
+			return array();
+		}
+
+		global $wpdb;
+
+		return array_map(
+			'intval',
+			(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN (" . implode( ',', $media_ids ) . ')' // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- ids are ints.
+			)
+		);
+	}
+
+	/**
 	 * Check if a media item exists in mvs_media_index.
 	 *
 	 * @param int $media_id Media ID.
@@ -5222,6 +5246,9 @@ class MediaRepository implements MediaRepositoryInterface {
 	/**
 	 * Find a media id by its stored file hash.
 	 *
+	 * A composer draft (status draft, not held for moderation) is not a finished upload, so it never counts: a file
+	 * that uploaded while the composer failed to show it must be selectable again. Held uploads still count.
+	 *
 	 * @since 2.4.0
 	 *
 	 * @param string $hash      sha256 of the stored file.
@@ -5238,7 +5265,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			return null;
 		}
 
-		$sql  = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s";
+		$sql  = "SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE file_hash = %s AND NOT ( status = 'draft' AND moderation_status <> 'pending' )";
 		$args = array( $hash );
 		if ( $author_id > 0 ) {
 			$sql   .= ' AND post_author = %d';
@@ -5542,7 +5569,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		$kept  = array();
 
 		foreach ( (array) $words as $word ) {
-			if ( mb_strlen( $word, 'UTF-8' ) < 3 || in_array( mb_strtolower( $word, 'UTF-8' ), self::FULLTEXT_STOPWORDS, true ) ) {
+			if ( mb_strlen( $word, 'UTF-8' ) < 3 || in_array( \WPMediaVerse\Core\Text::lower( $word ), self::FULLTEXT_STOPWORDS, true ) ) {
 				continue;
 			}
 			$kept[] = '+' . $word . '*';
@@ -6710,7 +6737,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		if ( '' !== $path && 0 === strpos( trailingslashit( $path ), $base ) ) {
 			$rest = rawurldecode( trim( substr( $path, strlen( $base ) ), '/' ) );
 			if ( '' !== $rest && false === strpos( $rest, '/' ) && '@' !== $rest[0] ) {
-				if ( ctype_digit( $rest ) && $this->exists( (int) $rest ) ) {
+				if ( \WPMediaVerse\Core\Text::is_digits( $rest ) && $this->exists( (int) $rest ) ) {
 					$id = (int) $rest;
 				} else {
 					$row = $this->get_by_slug( $rest );
@@ -6968,6 +6995,42 @@ class MediaRepository implements MediaRepositoryInterface {
 		self::invalidate_row_cache( $media_id );
 
 		return false !== $result;
+	}
+
+	/**
+	 * Published photos, videos and audio held on one space's drive.
+	 *
+	 * For a community plugin deleting a space: documents on the same drive are the
+	 * document engine's own to clear, so only the media types are returned. Rides
+	 * KEY drive_listing, so a space with thousands of items costs one indexed read.
+	 *
+	 * @since 2.7.0
+	 *
+	 * Pass the last id of the previous page as $after_id to walk the drive: a caller
+	 * that leaves some items in place still reaches the ones after them.
+	 *
+	 * @param int $space_id Space id.
+	 * @param int $limit    Rows to return, 1 to 500.
+	 * @param int $after_id Return only ids greater than this (0 = from the oldest).
+	 * @return int[] Media ids, oldest first.
+	 */
+	public function space_drive_media_ids( int $space_id, int $limit = 100, int $after_id = 0 ): array {
+		global $wpdb;
+
+		if ( $space_id <= 0 ) {
+			return array();
+		}
+
+		list( $type_sql, $type_params ) = MediaTypes::in_clause( MediaTypes::MEDIA );
+
+		$ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+			$wpdb->prepare(
+				"SELECT media_id FROM {$this->index_table()} WHERE drive_type = 'space' AND drive_id = %d AND status = 'publish' AND {$type_sql} AND media_id > %d ORDER BY media_id ASC LIMIT %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				array_merge( array( $space_id ), $type_params, array( max( 0, $after_id ), max( 1, min( 500, $limit ) ) ) )
+			)
+		);
+
+		return array_map( 'intval', $ids );
 	}
 
 	/**

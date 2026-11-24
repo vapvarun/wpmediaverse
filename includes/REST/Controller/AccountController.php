@@ -177,7 +177,7 @@ class AccountController {
 				'message'       => sprintf(
 					/* translators: %s: date the account will be deleted. */
 					__( 'Your account will be permanently deleted on %s. You can cancel until then.', 'wpmediaverse' ),
-					date_i18n( get_option( 'date_format' ), $when )
+					\WPMediaVerse\Core\TemplateHelpers::date_label( $when )
 				),
 			),
 			200

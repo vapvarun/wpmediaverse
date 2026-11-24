@@ -115,32 +115,8 @@ class MessagingSettingsRegistrar {
 			)
 		);
 
-		// Chat-panel visibility — controls where the slide-out chat icon
-		// appears for logged-in users. Defaults to 'everywhere' to preserve
-		// 1.1.x behavior; sites that want a quieter chrome can scope it.
-		register_setting(
-			SettingsPage::OPTION_GROUP . '_social',
-			'mvs_chat_panel_visibility',
-			array(
-				'type'              => 'string',
-				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_panel_visibility' ),
-				'default'           => 'everywhere',
-			)
-		);
-		FieldRenderer::add_field(
-			'mvs_chat_panel_visibility',
-			__( 'Chat Panel Visibility', 'wpmediaverse' ),
-			array( FieldRenderer::class, 'render_select_field' ),
-			SettingsPage::PAGE_SLUG . '-social',
-			'mvs_messaging',
-			array(
-				'option'      => 'mvs_chat_panel_visibility',
-				'choices'     => \WPMediaVerse\Core\SettingsHelper::chat_panel_choices(),
-				'description' => __( 'Where the floating chat icon appears for logged-in members.', 'wpmediaverse' ),
-			)
-		);
+		$this->register_chat_panel_settings();
 
-		// Online status visibility.
 		register_setting(
 			SettingsPage::OPTION_GROUP . '_social',
 			'mvs_show_online_status',
@@ -166,5 +142,75 @@ class MessagingSettingsRegistrar {
 				'description' => __( 'Who can see that a member is online right now.', 'wpmediaverse' ),
 			)
 		);
+	}
+
+	/**
+	 * Register the floating chat settings: where it shows and which corner it sits in.
+	 *
+	 * Not offered while BuddyNext is active: BuddyNext owns messaging then, MediaVerse's floating
+	 * chat never renders on any page, and a control with no effect is worse than none.
+	 *
+	 * @return void
+	 */
+	private function register_chat_panel_settings(): void {
+		if ( apply_filters( 'mvs_buddynext_active', false ) ) {
+			return;
+		}
+
+		// Chat-panel visibility — controls where the slide-out chat icon
+		// appears for logged-in users. Defaults to 'everywhere' to preserve
+		// 1.1.x behavior; sites that want a quieter chrome can scope it.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_social',
+			'mvs_chat_panel_visibility',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_panel_visibility' ),
+				'default'           => 'everywhere',
+			)
+		);
+		FieldRenderer::add_field(
+			'mvs_chat_panel_visibility',
+			__( 'Chat Panel Visibility', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-social',
+			'mvs_messaging',
+			array(
+				'option'      => 'mvs_chat_panel_visibility',
+				'choices'     => \WPMediaVerse\Core\SettingsHelper::chat_panel_choices(),
+				'description' => __( 'Where the floating chat icon appears for logged-in members.', 'wpmediaverse' ),
+			)
+		);
+
+		// Chat button corner (owner decision 2026-11-21, the one new option approved for 2.7.0): a site
+		// whose theme or another plugin keeps a floating button in the bottom-right corner (a course
+		// notification bell, a cookie badge) moves the chat to the other corner instead of one hiding the
+		// other. 'right' is where it has always been, so nothing changes on update.
+		register_setting(
+			SettingsPage::OPTION_GROUP . '_social',
+			'mvs_chat_position',
+			array(
+				'type'              => 'string',
+				'sanitize_callback' => array( Sanitizers::class, 'sanitize_chat_position' ),
+				'default'           => 'right',
+			)
+		);
+		FieldRenderer::add_field(
+			'mvs_chat_position',
+			__( 'Chat Button Position', 'wpmediaverse' ),
+			array( FieldRenderer::class, 'render_select_field' ),
+			SettingsPage::PAGE_SLUG . '-social',
+			'mvs_messaging',
+			array(
+				'option'      => 'mvs_chat_position',
+				'choices'     => array(
+					'right' => __( 'Bottom right (default)', 'wpmediaverse' ),
+					'left'  => __( 'Bottom left', 'wpmediaverse' ),
+				),
+				'description' => __( 'Which corner the floating chat button sits in, and the side its panel slides in from. Choose the left if another floating button, such as a course notification bell, already uses the bottom right.', 'wpmediaverse' ),
+			)
+		);
+
+		// Online status visibility.
 	}
 }

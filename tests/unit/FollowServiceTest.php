@@ -39,6 +39,65 @@ class FollowServiceTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A community plugin that turns the follow into a request answers 'pending': no row, no event.
+	 */
+	public function test_follow_pending_writes_nothing_and_fires_nothing(): void {
+		$fired = 0;
+		$count = static function () use ( &$fired ): void {
+			++$fired;
+		};
+		add_filter( 'mvs_can_follow', static fn() => 'pending' );
+		add_action( 'mvs_user_followed', $count );
+
+		$result = $this->service->follow( $this->user_a, $this->user_b );
+
+		remove_all_filters( 'mvs_can_follow' );
+		remove_action( 'mvs_user_followed', $count );
+
+		$this->assertSame( 'pending', $result );
+		$this->assertFalse( $this->service->is_following( $this->user_a, $this->user_b ) );
+		$this->assertSame( 0, $fired );
+	}
+
+	/**
+	 * A refusal stays a refusal.
+	 */
+	public function test_follow_refused_by_filter_returns_false(): void {
+		add_filter( 'mvs_can_follow', '__return_false' );
+		$result = $this->service->follow( $this->user_a, $this->user_b );
+		remove_all_filters( 'mvs_can_follow' );
+
+		$this->assertFalse( $result );
+	}
+
+	/**
+	 * An unfollow with no follow of its own lets a community plugin withdraw its request.
+	 */
+	public function test_unfollow_without_a_follow_fires_the_withdraw_action(): void {
+		$withdrawn = array();
+		$unfollows = 0;
+		$on_wd     = static function ( $a, $b ) use ( &$withdrawn ): void {
+			$withdrawn[] = array( $a, $b );
+		};
+		$on_un     = static function () use ( &$unfollows ): void {
+			++$unfollows;
+		};
+		add_action( 'mvs_follow_request_withdrawn', $on_wd, 10, 2 );
+		add_action( 'mvs_user_unfollowed', $on_un );
+
+		$this->assertFalse( $this->service->unfollow( $this->user_a, $this->user_b ) );
+
+		$this->service->follow( $this->user_c, $this->user_d );
+		$this->assertTrue( $this->service->unfollow( $this->user_c, $this->user_d ) );
+
+		remove_action( 'mvs_follow_request_withdrawn', $on_wd, 10 );
+		remove_action( 'mvs_user_unfollowed', $on_un );
+
+		$this->assertSame( array( array( $this->user_a, $this->user_b ) ), $withdrawn, 'Only the unfollow that found nothing asks for a withdrawal.' );
+		$this->assertSame( 1, $unfollows, 'A real unfollow still fires its own event once.' );
+	}
+
+	/**
 	 * A user cannot follow themselves.
 	 */
 	public function test_follow_self_returns_false(): void {

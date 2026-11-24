@@ -103,12 +103,21 @@ function formatDuration( seconds ) {
 	return m + ':' + String( s ).padStart( 2, '0' );
 }
 
-// Calendar-day key in the viewer's timezone. Used only to detect day
+// Date options in the site timezone PHP passes (Time Standard); an offset zone an older browser rejects falls back to its own.
+const inSiteZone = ( tz, opts = {} ) => {
+	try {
+		return new Intl.DateTimeFormat( undefined, { timeZone: tz || undefined } ) && { ...opts, timeZone: tz || undefined };
+	} catch {
+		return opts;
+	}
+};
+
+// Calendar-day key in the site timezone. Used only to detect day
 // boundaries between adjacent messages.
 function dayKey( dateStr ) {
 	const d = new Date( parseServerDate( dateStr ) );
 	if ( isNaN( d.getTime() ) ) return '';
-	return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+	return d.toLocaleDateString( 'en-CA', inSiteZone( config.timeZone ) );
 }
 
 // "Today" / "Yesterday" / weekday within the last week / full date beyond that,
@@ -118,19 +127,18 @@ function dayLabel( dateStr ) {
 	if ( isNaN( d.getTime() ) ) return '';
 	const now = new Date();
 	if ( dayKey( d ) === dayKey( now ) ) return __( 'Today', 'wpmediaverse' );
-	const yest = new Date( now );
-	yest.setDate( now.getDate() - 1 );
+	const yest = new Date( now.getTime() - 86400000 );
 	if ( dayKey( d ) === dayKey( yest ) ) return __( 'Yesterday', 'wpmediaverse' );
 	const ageDays = ( now - d ) / 86400000;
-	if ( ageDays < 7 ) return d.toLocaleDateString( undefined, { weekday: 'long' } );
-	return d.toLocaleDateString( undefined, { year: 'numeric', month: 'long', day: 'numeric' } );
+	if ( ageDays < 7 ) return d.toLocaleDateString( document.documentElement.lang || undefined, inSiteZone( config.timeZone, { weekday: 'long' } ) );
+	return d.toLocaleDateString( document.documentElement.lang || undefined, inSiteZone( config.timeZone, { year: 'numeric', month: 'long', day: 'numeric' } ) );
 }
 
 // Time-only label for a message bubble.
 function messageTimeLabel( dateStr ) {
 	const d = new Date( parseServerDate( dateStr ) );
 	if ( isNaN( d.getTime() ) ) return '';
-	return d.toLocaleTimeString( undefined, { hour: 'numeric', minute: '2-digit' } );
+	return d.toLocaleTimeString( document.documentElement.lang || undefined, inSiteZone( config.timeZone, { hour: 'numeric', minute: '2-digit' } ) );
 }
 
 // Temp ID counter for optimistic messages.
@@ -526,7 +534,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			const ts   = parseServerDate( p.last_active );
 			const mins = Math.max( 1, Math.floor( ( Date.now() - ts ) / 60000 ) );
 			if ( mins >= 10080 ) {
-				return __( 'Active on %s' ).replace( '%s', new Date( ts ).toLocaleDateString( lang ) );
+				return __( 'Active on %s' ).replace( '%s', new Date( ts ).toLocaleDateString( lang, inSiteZone( config.timeZone ) ) );
 			}
 			const rtf = new Intl.RelativeTimeFormat( lang );
 			const ago = mins < 60
@@ -2263,7 +2271,7 @@ const { state, actions } = store( 'mvs/messaging', {
 		formatMessageTime( dateStr ) {
 			if ( ! dateStr ) return '';
 			const d = new Date( parseServerDate( dateStr ) );
-			return d.toLocaleTimeString( [], { hour: '2-digit', minute: '2-digit' } );
+			return d.toLocaleTimeString( document.documentElement.lang || undefined, inSiteZone( config.timeZone, { hour: '2-digit', minute: '2-digit' } ) );
 		},
 	} ),
 

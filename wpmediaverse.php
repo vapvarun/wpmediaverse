@@ -3,7 +3,7 @@
  * Plugin Name: MediaVerse
  * Plugin URI:  https://wbcomdesigns.com/downloads/mediaverse/
  * Description: Complete media platform for WordPress with albums, social features, AI moderation, and BuddyPress integration.
- * Version:     2.6.4
+ * Version:     2.7.0
  * Author:      vapvarun, wbcomdesigns
  * Author URI:  https://wbcomdesigns.com/
  * License:     GPL-2.0-or-later
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MVS_VERSION', '2.6.4' );
+define( 'MVS_VERSION', '2.7.0' );
 // Kept in step with the `Requires PHP` header above by `BootGuardTest`. WordPress
 // enforces that header at activation and update time; this constant is what the
 // runtime guard below uses, for the case the header cannot cover — a host moving
@@ -28,7 +28,7 @@ define( 'MVS_MIN_PHP', '8.1' );
 // lockstep; bump this together with MVS_VERSION. Free works standalone, so an
 // older Pro is only warned (not gated) — Pro carries its own hard requirement
 // on the free plugin in the other direction.
-define( 'MVS_MIN_PRO', '2.6.4' );
+define( 'MVS_MIN_PRO', '2.7.0' );
 define( 'MVS_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MVS_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MVS_PLUGIN_FILE', __FILE__ );
@@ -216,6 +216,17 @@ add_action(
 	}
 );
 
+// Free's key is preset and buys updates only, so there is nothing for an owner to manage: drop the SDK's
+// "Manage License" row link (added at priority 100). The key and the update channel are untouched.
+add_filter(
+	'plugin_action_links_' . plugin_basename( MVS_PLUGIN_FILE ),
+	static function ( $actions ) {
+		unset( $actions['edd_sdk_manage'] );
+		return $actions;
+	},
+	101
+);
+
 /**
  * One licence-server request (activate, deactivate, check or get_version) for MediaVerse and MediaVerse Pro.
  *
@@ -240,6 +251,15 @@ function mvs_licence_request( array $params ) {
 	return is_object( $reply ) ? $reply : false;
 }
 
+// MediaVerse is not on wordpress.org, so WordPress's just-in-time loader (which reads only wp-content/languages/plugins)
+// never finds the bundled languages/ folder. Load it on init, as Pro does; earlier raises the WP 6.7+ notice.
+add_action(
+	'init',
+	static function () {
+		load_plugin_textdomain( 'wpmediaverse', false, dirname( plugin_basename( MVS_PLUGIN_FILE ) ) . '/languages' );
+	}
+);
+
 // Lockstep compatibility check: warn when an OLDER WPMediaVerse Pro is active
 // next to this newer free build. Free keeps working; the notice nudges the admin
 // to update Pro so the cross-plugin APIs line up. Pro carries the reciprocal
@@ -255,7 +275,7 @@ add_action(
 		if ( ! version_compare( strtok( MVS_PRO_VERSION, '-' ), MVS_MIN_PRO, '<' ) ) {
 			return;
 		}
-		if ( ! current_user_can( 'update_plugins' ) ) {
+		if ( ! current_user_can( 'update_plugins' ) || ! \WPMediaVerse\Admin\OverviewPage::is_housekeeping_screen() ) {
 			return;
 		}
 		printf(
@@ -284,6 +304,31 @@ register_deactivation_hook( __FILE__, array( 'WPMediaVerse\\Core\\Deactivator', 
 
 // Bootstrap the plugin.
 add_action( 'plugins_loaded', array( 'WPMediaVerse\\Core\\Plugin', 'init' ) );
+
+// Daily: delete our own finished Action Scheduler rows past their retention.
+add_action(
+	'mvs_prune_logs',
+	static function (): void {
+		\WPMediaVerse\Core\Jobs::prune_history();
+	}
+);
+
+// After an activation: queue again the state jobs a runner failed while MediaVerse was off.
+add_action(
+	'init',
+	static function (): void {
+		\WPMediaVerse\Core\Jobs::requeue_after_activation( \WPMediaVerse\Core\Activator::REQUEUE_TRANSIENT, \WPMediaVerse\Core\Deactivator::STATE_JOB_HOOKS );
+	},
+	20
+);
+
+// The follow-up run Core\Jobs::adopt_pending() queues when one run reaches its cap.
+add_action(
+	'mvs_adopt_pending_jobs',
+	static function ( $hooks ): void {
+		\WPMediaVerse\Core\Jobs::adopt_pending( (array) $hooks );
+	}
+);
 
 // WP-CLI commands.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {

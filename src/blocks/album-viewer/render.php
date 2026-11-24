@@ -51,7 +51,9 @@ $album = $mvs_album_post;
 // "you cannot see this album" notice confirms the album exists, which is the
 // one thing a privacy gate must not disclose. Coding Rule 11 wants the editor
 // told about mistakes, not the visitor told about content.
-if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $album_id, get_current_user_id() ) ) {
+//
+// The id is an ALBUM id: say so, or a photo that shares its number decides.
+if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $album_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
 	return;
 }
 
@@ -89,7 +91,7 @@ $mvs_classes = trim(
 		)
 	)
 );
-$wrapper = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
+$wrapper     = empty( $mvs_shortcode_context ) ? get_block_wrapper_attributes( array( 'class' => $mvs_classes ) ) : 'class="' . esc_attr( $mvs_classes ) . '"';
 ?>
 <div <?php echo $wrapper; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( $show_title ) : ?>

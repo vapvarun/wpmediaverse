@@ -25,7 +25,7 @@ class FollowService {
 	 *
 	 * @param int $follower_id  The user doing the following.
 	 * @param int $following_id The user being followed.
-	 * @return bool|int Follow row ID on success, false on failure.
+	 * @return bool|int|string Follow row ID on success, 'pending' when a community plugin recorded a request, false on failure.
 	 */
 	public function follow( int $follower_id, int $following_id ) {
 		if ( $follower_id === $following_id || ! $follower_id || ! $following_id ) {
@@ -48,6 +48,31 @@ class FollowService {
 			)
 		);
 		if ( $blocked ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether a follow may be recorded.
+		 *
+		 * A community plugin that owns who may follow whom (a private account
+		 * turns a follow into a request, a limit refuses it) answers here, so
+		 * no follow is written that it would take back a moment later.
+		 *
+		 * Answer 'pending' when the community plugin recorded a follow REQUEST (a private account):
+		 * no follow row is written here, and the caller is told the request is waiting instead of
+		 * being refused.
+		 *
+		 * @since 2.7.0
+		 *
+		 * @param bool|string $can          True to record the follow, false to refuse it, 'pending' for a request.
+		 * @param int         $follower_id  The user doing the following.
+		 * @param int         $following_id The user being followed.
+		 */
+		$can = apply_filters( 'mvs_can_follow', true, $follower_id, $following_id );
+		if ( 'pending' === $can ) {
+			return 'pending';
+		}
+		if ( ! $can ) {
 			return false;
 		}
 
@@ -113,6 +138,19 @@ class FollowService {
 			 * @param int $following_id The user being unfollowed.
 			 */
 			do_action( 'mvs_user_unfollowed', $follower_id, $following_id );
+		} else {
+			/**
+			 * Fires when an unfollow found no follow of its own to remove.
+			 *
+			 * A community plugin that turned the follow into a request (see mvs_can_follow) holds
+			 * that request, not MediaVerse; it withdraws it here so cancelling works from every client.
+			 *
+			 * @since 2.7.0
+			 *
+			 * @param int $follower_id  The user unfollowing.
+			 * @param int $following_id The user being unfollowed.
+			 */
+			do_action( 'mvs_follow_request_withdrawn', $follower_id, $following_id );
 		}
 
 		return (bool) $deleted;

@@ -32,6 +32,28 @@
 	var attachedMedia = []; // Array of { id, thumbUrl }
 
 	// A video's preview frame is a blob URL; release it when the item leaves the composer.
+	// A post in a group is a group post: while a group is the target (a group page, or the "Post in"
+	// picker set to a group) the privacy dropdown gives way to a plain line, and the server enforces it.
+	function inGroup() {
+		var wrap = document.getElementById( 'mvs-activity-media-btn-wrap' );
+		if ( wrap && '1' === wrap.getAttribute( 'data-mvs-group' ) ) { return true; }
+		var postIn = document.getElementById( 'whats-new-post-in' );
+		return !! ( postIn && postIn.value && '0' !== postIn.value && 'profile' !== postIn.value );
+	}
+
+	function syncGroupPrivacy() {
+		var sel = document.getElementById( 'mvs-activity-privacy' );
+		var note = document.getElementById( 'mvs-activity-group-note' );
+		if ( ! sel || ! note || '1' !== sel.dataset.mvsRevealed ) { return; }
+		var group = inGroup();
+		sel.style.display = group ? 'none' : '';
+		note.style.display = group ? '' : 'none';
+	}
+
+	document.addEventListener( 'change', function( e ) {
+		if ( e.target && 'whats-new-post-in' === e.target.id ) { syncGroupPrivacy(); }
+	} );
+
 	function releaseThumb( item ) {
 		if ( item && 'string' === typeof item.thumbUrl && 0 === item.thumbUrl.indexOf( 'blob:' ) ) {
 			URL.revokeObjectURL( item.thumbUrl );
@@ -194,7 +216,7 @@
 				restUrl + 'media?context=activity',
 				file,
 				{
-					privacy: privacySel && privacySel.value ? privacySel.value : '',
+					privacy: ! inGroup() && privacySel && privacySel.value ? privacySel.value : '',
 					poster: frame,
 					extra: { status: 'draft' }
 				},
@@ -296,8 +318,9 @@
 		// the privacy level to.
 		var privacySel = document.getElementById( 'mvs-activity-privacy' );
 		if ( privacySel ) {
-			privacySel.style.display = '';
+			privacySel.dataset.mvsRevealed = '1';
 		}
+		syncGroupPrivacy();
 		// Reveal the tags field too — applied to the attached media at post
 		// time.
 		var tagsField = document.getElementById( 'mvs-activity-tags' );
@@ -350,12 +373,22 @@
 			uploadingText.textContent = sprintf( __( 'Uploading %d files...', 'wpmediaverse' ), files.length ) + ' ' + pct + '%';
 		}
 
+		// One file failing (a duplicate, a refused type) must not cost the others: each upload settles on its own,
+		// the files that made it are attached, and every refusal is named below the previews.
+		var failures = [];
 		function runNext() {
 			if ( nextIndex >= files.length ) {
 				return Promise.resolve();
 			}
 			var index = nextIndex++;
-			return uploadFile( files[ index ], btn, slots, index, onProgress ).then( runNext );
+			return uploadFile( files[ index ], btn, slots, index, onProgress ).catch( function( err ) {
+				failures.push( sprintf(
+					/* translators: 1: file name, 2: why the upload was refused. */
+					__( '%1$s: %2$s', 'wpmediaverse' ),
+					files[ index ].name,
+					( err && err.message ) ? err.message : __( 'Upload failed. Please try again.', 'wpmediaverse' )
+				) );
+			} ).then( runNext );
 		}
 
 		var workers = [];
@@ -381,24 +414,22 @@
 				btn.style.opacity = '0.5';
 				btn.disabled = true;
 			}
-		} ).catch( function( err ) {
-			// Redraw what is still attached, then add the reason below it. The
-			// reason stays until the member's next upload, removal or post, so a
-			// long message is never cleared before it is read.
-			renderPreview();
+			if ( ! failures.length ) {
+				return;
+			}
+			// Under the previews, one line per refused file with the server's reason ("This file has already been
+			// uploaded."). It stays until the member's next upload, removal or post, so it is never cleared unread.
 			preview.style.display = '';
 			var errText = document.createElement( 'span' );
 			errText.setAttribute( 'role', 'alert' );
-			// Show the specific server message (e.g. "PDF uploads are not
-			// supported.") instead of a generic line, so an unsupported-type
-			// upload tells the user WHY.
-			errText.textContent = ( err && err.message )
-				? err.message
-				: __( 'Upload failed. Please try again.', 'wpmediaverse' );
 			errText.className = 'mvs-activity-media-error';
+			failures.forEach( function( line, i ) {
+				if ( i ) {
+					errText.appendChild( document.createElement( 'br' ) );
+				}
+				errText.appendChild( document.createTextNode( line ) );
+			} );
 			preview.appendChild( errText );
-			btn.disabled = false;
-			btn.style.opacity = '1';
 		} );
 
 		fileInput.value = '';

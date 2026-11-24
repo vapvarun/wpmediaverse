@@ -30,6 +30,16 @@ class WebhookService {
 	);
 
 	/**
+	 * Delivery attempts per webhook: the first send plus two retries.
+	 */
+	const MAX_ATTEMPTS = 3;
+
+	/**
+	 * Seconds added per failed attempt before the next retry (5 minutes, then 10).
+	 */
+	const RETRY_STEP_SECONDS = 5 * MINUTE_IN_SECONDS;
+
+	/**
 	 * Initialize the webhook service.
 	 */
 	public function init(): void {
@@ -165,18 +175,16 @@ class WebhookService {
 				$headers['X-MVS-Signature'] = 'sha256=' . $signature;
 			}
 
-			// Use Action Scheduler for async delivery if available.
-			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action(
-					'mvs_deliver_webhook',
-					array(
-						'url'     => $webhook['url'],
-						'body'    => $body,
-						'headers' => $headers,
-					),
-					'wpmediaverse'
-				);
-			} else {
+			// Deliver in the background; inline only when the scheduler is not ready.
+			$queued = \WPMediaVerse\Core\Jobs::async(
+				'mvs_deliver_webhook',
+				array(
+					'url'     => $webhook['url'],
+					'body'    => $body,
+					'headers' => $headers,
+				)
+			);
+			if ( ! $queued ) {
 				$this->send( $webhook['url'], $body, $headers );
 			}
 		}
@@ -231,20 +239,19 @@ class WebhookService {
 	 * @return bool Always false (current attempt failed).
 	 */
 	private function maybe_retry( string $url, string $body, array $headers, int $attempt ): bool {
-		if ( $attempt >= 3 || ! function_exists( 'as_schedule_single_action' ) ) {
+		if ( $attempt >= self::MAX_ATTEMPTS ) {
 			return false;
 		}
 
-		as_schedule_single_action(
-			time() + ( 300 * $attempt ), // 5min, 10min.
+		\WPMediaVerse\Core\Jobs::at(
+			time() + ( self::RETRY_STEP_SECONDS * $attempt ), // 5 min, then 10 min.
 			'mvs_deliver_webhook',
 			array(
 				'url'     => $url,
 				'body'    => $body,
 				'headers' => $headers,
 				'attempt' => $attempt + 1,
-			),
-			'wpmediaverse'
+			)
 		);
 
 		return false;

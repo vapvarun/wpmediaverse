@@ -167,7 +167,7 @@ class MemberModeration {
 						<strong>
 							<?php
 							/* translators: %s: date */
-							echo esc_html( sprintf( __( 'Deletion scheduled for %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ), $mvs_deletion_at ) ) );
+							echo esc_html( sprintf( __( 'Deletion scheduled for %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $mvs_deletion_at ) ) );
 							?>
 						</strong>
 						<a href="<?php echo esc_url( $this->action_url( (int) $user->ID, 'cancel_deletion' ) ); ?>"><?php esc_html_e( 'Cancel deletion', 'wpmediaverse' ); ?></a>
@@ -295,7 +295,7 @@ class MemberModeration {
 				: '';
 			return '<strong>' . esc_html(
 				/* translators: %s: date */
-				sprintf( __( 'Deletion scheduled for %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ), $deletion_at ) )
+				sprintf( __( 'Deletion scheduled for %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $deletion_at ) )
 			) . '</strong>' . $cancel;
 		}
 

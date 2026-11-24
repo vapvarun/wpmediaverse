@@ -44,7 +44,7 @@ class ActivityFormIntegration {
 		$allow_user_privacy = \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy();
 		$default_privacy    = \WPMediaVerse\Core\SettingsHelper::get_default_privacy();
 		?>
-		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap">
+		<div id="mvs-activity-media-btn-wrap" class="mvs-activity-media-btn-wrap"<?php echo function_exists( 'bp_is_group' ) && bp_is_group() ? ' data-mvs-group="1"' : ''; ?>>
 			<input type="file" id="mvs-activity-media-file" accept="image/*,video/*,audio/*" multiple style="display:none" />
 			<button
 				type="button"
@@ -83,6 +83,8 @@ class ActivityFormIntegration {
 					<?php endif; ?>
 					<option value="private" <?php selected( $default_privacy, 'private' ); ?>><?php esc_html_e( 'Only me: hidden from everyone else', 'wpmediaverse' ); ?></option>
 				</select>
+				<?php // A post in a group is a group post: the dropdown is swapped for this line while a group is the target. ?>
+				<p id="mvs-activity-group-note" class="mvs-activity-privacy-note" style="display:none"><?php esc_html_e( 'Visible to members of this group', 'wpmediaverse' ); ?></p>
 			<?php endif; ?>
 			<?php
 			// Tags for the attached media. Hidden until files are chosen (the JS
@@ -176,8 +178,9 @@ class ActivityFormIntegration {
 	 * @param string $content     Activity content.
 	 * @param int    $user_id     User ID.
 	 * @param int    $activity_id Activity ID.
+	 * @param string $forced_privacy Privacy to apply instead of the dropdown's ('group' for a group post).
 	 */
-	public function attach_media_to_activity( $content, $user_id, $activity_id ): void {
+	public function attach_media_to_activity( $content, $user_id, $activity_id, string $forced_privacy = '' ): void {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- hooked into bp_activity_posted_update; BuddyPress verifies its own nonce before this callback fires.
 		$raw_ids = isset( $_POST['mvs_activity_media_ids'] ) ? sanitize_text_field( wp_unslash( $_POST['mvs_activity_media_ids'] ) ) : '';
 		if ( ! $raw_ids ) {
@@ -200,7 +203,7 @@ class ActivityFormIntegration {
 		// the default privacy (usually public). Without this step the dropdown
 		// is dead UI: the activity stays public regardless of selection and
 		// leaks to logged-out users on the sitewide stream.
-		$chosen_privacy = $this->resolve_chosen_privacy();
+		$chosen_privacy = '' !== $forced_privacy ? $forced_privacy : $this->resolve_chosen_privacy();
 
 		// Tags typed in the activity-form tags field, applied per media below.
 		$chosen_tags = $this->resolve_chosen_tags();
@@ -279,23 +282,11 @@ class ActivityFormIntegration {
 		// reflects it because the loop above synced each media row.
 		$effective_privacy = ActivitySyncIntegration::effective_privacy_for_batch( $valid_ids );
 
-		// Private uploads leave zero public footprint — delete the activity
-		// BuddyPress already inserted (we can't prevent the insert; we hook
-		// on bp_activity_posted_update which fires AFTER bp_activity_add).
-		// Without this, BP keeps the entry with hide_sitewide=1 + still
-		// surfaces it on the author's profile activity tab to any visitor,
-		// leaking the broken-thumbnail card. Other
-		// non-public levels (members/friends/group/custom) keep the
-		// activity and rely on ActivityPrivacyFilter's viewer-aware WHERE.
-		if ( 'private' === $effective_privacy && function_exists( 'bp_activity_delete' ) ) {
-			bp_activity_delete( array( 'id' => $activity_id ) );
-			// Untag the media so subsequent surfaces don't try to backfill
-			// an activity that no longer exists.
-			foreach ( $valid_ids as $mid ) {
-				$repo->delete( $mid, 'bp_activity_id' );
-			}
-			return;
-		}
+		// "Only me" keeps the post: BuddyPress already inserted it, so it is hidden sitewide
+		// (hide_sitewide) and ActivityPrivacyFilter shows it to its author only, on every
+		// stream, profile and group feed. Deleting it would silently lose the member's
+		// caption. Other non-public levels (members/friends/group/custom) work the same way,
+		// each limited to its audience by the filter.
 
 		$hide_sitewide = ActivitySyncIntegration::privacy_to_hide_sitewide( $effective_privacy );
 
@@ -329,8 +320,9 @@ class ActivityFormIntegration {
 	 * @param int    $activity_id Activity ID.
 	 */
 	public function attach_media_to_group_activity( $content, $user_id, $group_id, $activity_id ): void {
-		// Delegate to the same logic as personal activity.
-		$this->attach_media_to_activity( $content, $user_id, $activity_id );
+		// Same logic as a personal post, with the audience fixed to the group: a group post is
+		// a group post whatever the dropdown said, so a crafted request cannot make it private.
+		$this->attach_media_to_activity( $content, $user_id, $activity_id, 'group' );
 
 		// Also set group meta on each media item so it appears in group media grid.
 		$raw_ids = bp_activity_get_meta( $activity_id, '_mvs_media_ids', true );
@@ -339,7 +331,6 @@ class ActivityFormIntegration {
 			// write it as CSV, but a meta value is never type-guaranteed).
 			$media_ids = array_filter( array_map( 'absint', explode( ',', (string) $raw_ids ) ) );
 			foreach ( $media_ids as $media_id ) {
-				\WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->apply_requested_privacy( $media_id, 'group' );
 				\WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->set( $media_id, 'group_id', $group_id );
 			}
 		}

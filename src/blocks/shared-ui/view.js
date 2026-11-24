@@ -33,6 +33,15 @@ let savedListenerAdded = false;
  * @param {string} s Date string.
  * @return {number} Epoch ms (NaN-safe: returns Date.now() on an unparseable value).
  */
+// Date options in the site timezone PHP passes (Time Standard); an offset zone an older browser rejects falls back to its own.
+const inSiteZone = ( tz, opts = {} ) => {
+	try {
+		return new Intl.DateTimeFormat( undefined, { timeZone: tz || undefined } ) && { ...opts, timeZone: tz || undefined };
+	} catch {
+		return opts;
+	}
+};
+
 function gmtToMs( s ) {
 	s = String( s || '' );
 	const base = /[tT]/.test( s ) ? s : s.replace( ' ', 'T' );
@@ -159,6 +168,8 @@ function lightboxRememberTrigger() {
  */
 // Who opened the edit modal / the confirm, so focus can go back on close.
 let editReturnFocus = null;
+// Media id whose lightbox opened the edit modal: dismissing the modal goes back to that lightbox (one layer at a time).
+let editFromLightbox = 0;
 let confirmReturnFocus = null;
 
 /**
@@ -238,7 +249,7 @@ function mapLightboxComment( c ) {
 		author_avatar: c.author_avatar || '',
 		author_url: c.author_url || '',
 		date: c.date,
-		date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
+		date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined, inSiteZone( state.timeZone ) ),
 		content: c.content,
 		// Kept so the delete confirm can say how many replies go with it.
 		replies: Array.isArray( c.replies ) ? c.replies : [],
@@ -248,6 +259,7 @@ function mapLightboxComment( c ) {
 		reported: false,
 		editing: false,
 		editText: '',
+		editError: '',
 	};
 }
 
@@ -283,6 +295,35 @@ function galleryQuery( mediaId ) {
 	} );
 	const q = out.toString();
 	return q ? '?' + q : '';
+}
+
+/**
+ * The URL slug a title would produce. Mirrors the server's sanitize_title (the
+ * server still runs its own pass and the collision check), so this is only
+ * optimistic formatting. The one copy: every edit surface uses it.
+ *
+ * @param {string} title Title as typed.
+ * @return {string} Lowercase, dash-separated slug.
+ */
+function slugFromTitle( title ) {
+	return String( title || '' )
+		.toLowerCase()
+		.replace( /[^\w\s-]/g, '' )
+		.trim()
+		.replace( /\s+/g, '-' )
+		.replace( /-+/g, '-' );
+}
+
+/**
+ * Tell the page an edit went through. A surface that shows the item (My Media
+ * list, the single media page) listens and refreshes it in place.
+ *
+ * @param {number}  id       Media ID.
+ * @param {Object}  item     Item as the REST API returned it after the edit.
+ * @param {boolean} replaced True when the file itself was replaced.
+ */
+function announceMediaUpdated( id, item, replaced ) {
+	document.dispatchEvent( new CustomEvent( 'mvs:media-updated', { detail: { id, item, replaced } } ) );
 }
 
 const { state, actions } = store( 'mvs/shared-ui', {
@@ -410,11 +451,22 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				.replace( '%1$s', album.title || '' )
 				.replace( '%2$s', state.privacyShortLabel( album.privacy || 'public' ) );
 		},
+		get editModalOverlayVisible() {
+			return state.editModalVisible && 'modal' === state.editModalMode;
+		},
+		get editInlineVisible() {
+			return state.editModalVisible && 'inline' === state.editModalMode;
+		},
+		/** The title box is empty: Save stays off and the form says why. */
+		get editTitleMissing() {
+			return state.editModalVisible && ! state.editModalLoading
+				&& '' === String( state.editModalTitle || '' ).trim();
+		},
 		get editModalSaveDisabled() {
 			// Runbook contract C.member.lightbox-edit-modal: "save disabled
-			// while title empty".
-			return state.editModalSaving
-				|| '' === String( state.editModalTitle || '' ).trim();
+			// while title empty". While saving the button is only aria-disabled
+			// (saveEditModal ignores a second press), so focus stays on it.
+			return '' === String( state.editModalTitle || '' ).trim();
 		},
 		get uploadModalHeading() {
 			const titles = {
@@ -514,7 +566,13 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		editModalPrivacy: 'public',
 		editModalAlbum: null, // { id, title, privacy } when the photo is in an album
 		editModalAllowDownload: true,
-		editModalTags: '',
+		// 'modal' (My Media, lightbox, BuddyPress tab) or 'inline' (single media page).
+		editModalMode: 'modal',
+		editModalTagList: [],
+		editModalTagInput: '',
+		editModalTagResults: [],
+		editModalTagDropdown: false,
+		editModalReplaceProgress: '',
 		// Off by default — title edits leave the URL slug alone. The user
 		// can opt in via the "Update URL slug from title" checkbox; the
 		// save handler will compute sanitize_title(title) on the JS side
@@ -522,6 +580,8 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// branch applies.
 		editModalRegenerateSlug: false,
 		editModalError: '',
+		// A failed save that sending again may fix (network, server error): shows Retry. A refusal does not.
+		editModalCanRetry: false,
 
 
 		// --- Popular tag pills (cached for the session, lazily loaded the
@@ -743,8 +803,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			const s = state.lightboxStats;
 			const views = s?.views || 0;
 			const downloads = s?.downloads || 0;
-			let text = views + ' view' + ( views !== 1 ? 's' : '' );
-			if ( downloads > 0 ) text += ' · ' + downloads + ' download' + ( downloads !== 1 ? 's' : '' );
+			// The stats route sends labels made with _n() and the real count (every plural form); the seeded pair is the fallback.
+			const i = state.i18n || {};
+			let text = s?.views_label || ( views === 1 ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', views );
+			if ( downloads > 0 ) {
+				text += ' · ' + ( s?.downloads_label || ( downloads === 1 ? ( i.downloadOne || '%s download' ) : ( i.downloadMany || '%s downloads' ) ).replace( '%s', downloads ) );
+			}
 			return text;
 		},
 		get lightboxFavoriteLabel() {
@@ -780,6 +844,12 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// The inline edit form shows only while editing this comment.
 		get hideLightboxCommentEditForm() {
 			return ! getContext().item?.editing;
+		},
+		get hideLightboxCommentEditError() {
+			return ! getContext().item?.editError;
+		},
+		get hideEditModalRetry() {
+			return ! state.editModalCanRetry;
 		},
 		get hideLightboxCommentContent() {
 			return !! getContext().item?.editing;
@@ -852,7 +922,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		// --- Confirm ---
 		// tone 'primary' for an invitation (Log in); the default 'danger' is for
 		// the destructive confirms this dialog was built for.
-		showConfirm( msg, callback, buttonLabel = 'Confirm', tone = 'danger' ) {
+		showConfirm( msg, callback, buttonLabel = state.i18n?.confirm || 'Confirm', tone = 'danger' ) {
 			state.confirmMessage = msg;
 			state.confirmCallback = callback;
 			state.confirmButtonLabel = buttonLabel;
@@ -1067,23 +1137,30 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				} );
 			}
 		},
-		async openEditModal( mediaId ) {
+		async openEditModal( mediaId, options = {} ) {
 			actions.loadPopularTags(); // fire-and-forget; pills lazy-load.
 
 			const id = parseInt( mediaId, 10 );
 			if ( ! id ) return;
+			const inline = !! options.inline;
 			state.editModalMediaId = id;
-			// lightboxEdit() presets the tile behind the lightbox; anything else
-			// returns focus to the control that opened the modal.
-			if ( ! editReturnFocus ) {
-				editReturnFocus = document.activeElement;
+			state.editModalMode = inline ? 'inline' : 'modal';
+			// The inline panel is part of the page: no scroll lock, no focus trap.
+			if ( ! inline ) {
+				// lightboxEdit() presets the tile behind the lightbox; anything else
+				// returns focus to the control that opened the modal.
+				if ( ! editReturnFocus ) {
+					editReturnFocus = document.activeElement;
+				}
+				document.body.style.overflow = 'hidden';
 			}
 			state.editModalVisible = true;
-			// Focus into the dialog once it renders (Close is there even while it loads).
-			focusWhenShown( '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-close' );
+			if ( ! inline ) {
+				// Focus into the dialog once it renders (Close is there even while it loads).
+				focusWhenShown( '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-close' );
+			}
 			state.editModalLoading = true;
 			state.editModalError = '';
-			document.body.style.overflow = 'hidden';
 
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -1096,13 +1173,21 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.editModalPrivacy = data.privacy || 'public';
 				state.editModalAlbum = data.album || null;
 				state.editModalAllowDownload = data.allow_download !== false;
-				state.editModalTags = ( data.tags || [] ).join( ', ' );
+				state.editModalTagList = Array.from( data.tags || [] );
+				state.editModalTagInput = '';
+				state.editModalTagResults = [];
+				state.editModalTagDropdown = false;
 			} catch {
-				state.editModalError = 'Could not load this media. Try again.';
+				state.editModalError = state.i18n?.loadMediaFailed || 'Could not load this media. Try again.';
 			}
 			state.editModalLoading = false;
+			if ( ! state.editModalError ) {
+				// Start on the first field once it holds the item's values (the dialog held focus on Close while loading).
+				focusWhenShown( inline ? '.mvs-inline-edit:not([hidden]) .mvs-modal-field-input' : '.mvs-edit-modal-overlay:not([hidden]) .mvs-modal-field-input' );
+			}
 		},
 		closeEditModal() {
+			const wasModal = 'modal' === state.editModalMode;
 			state.editModalVisible = false;
 			state.editModalMediaId = 0;
 			state.editModalTitle = '';
@@ -1110,13 +1195,30 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalPrivacy = 'public';
 			state.editModalAlbum = null;
 			state.editModalAllowDownload = true;
-			state.editModalTags = '';
+			state.editModalTagList = [];
+			state.editModalTagInput = '';
+			state.editModalTagResults = [];
+			state.editModalTagDropdown = false;
+			state.editModalReplaceProgress = '';
 			state.editModalRegenerateSlug = false;
 			state.editModalError = '';
+			state.editModalCanRetry = false;
 			state.editModalSaving = false;
-			document.body.style.overflow = '';
-			returnFocus( editReturnFocus );
-			editReturnFocus = null;
+			state.editModalMode = 'modal';
+			const backTo = editFromLightbox;
+			editFromLightbox = 0;
+			if ( wasModal ) {
+				document.body.style.overflow = '';
+				if ( backTo ) {
+					// Escape, X or Cancel steps back to the lightbox it came from, which keeps the tile as its return target.
+					const tile = editReturnFocus;
+					actions.openLightboxById( backTo );
+					lightboxReturnFocus = tile;
+				} else {
+					returnFocus( editReturnFocus );
+				}
+				editReturnFocus = null;
+			}
 		},
 		updateEditTitle() {
 			state.editModalTitle = getElement().ref?.value || '';
@@ -1124,8 +1226,38 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateEditDescription() {
 			state.editModalDescription = getElement().ref?.value || '';
 		},
-		updateEditTags() {
-			state.editModalTags = getElement().ref?.value || '';
+		async updateEditTagInput() {
+			state.editModalTagInput = getElement().ref?.value || '';
+			const restUrl = window.mvsBpActions?.restUrl
+				|| ( window.location.origin + '/wp-json/mvs/v1/' );
+			await actions.searchTags( state.editModalTagInput, restUrl );
+			state.editModalTagResults = ( state.tagResults || [] )
+				.filter( ( t ) => ! state.editModalTagList.includes( t ) );
+			state.editModalTagDropdown = state.editModalTagResults.length > 0;
+		},
+		addEditTag( event ) {
+			if ( event.key !== 'Enter' ) return;
+			event.preventDefault();
+			const val = String( state.editModalTagInput || '' ).trim();
+			if ( val && ! state.editModalTagList.includes( val ) ) {
+				state.editModalTagList = [ ...state.editModalTagList, val ];
+			}
+			state.editModalTagInput = '';
+			state.editModalTagDropdown = false;
+		},
+		selectEditTag( event ) {
+			const tag = event.target.dataset.tagName;
+			if ( tag && ! state.editModalTagList.includes( tag ) ) {
+				state.editModalTagList = [ ...state.editModalTagList, tag ];
+			}
+			state.editModalTagInput = '';
+			state.editModalTagDropdown = false;
+		},
+		removeEditTag( event ) {
+			const tag = event.target.closest( '[data-tag-name]' )?.dataset.tagName;
+			if ( tag ) {
+				state.editModalTagList = state.editModalTagList.filter( ( t ) => t !== tag );
+			}
 		},
 		updateEditPrivacy() {
 			state.editModalPrivacy = getElement().ref?.value || 'public';
@@ -1136,18 +1268,64 @@ const { state, actions } = store( 'mvs/shared-ui', {
 		updateEditRegenerateSlug() {
 			state.editModalRegenerateSlug = !! getElement().ref?.checked;
 		},
+		handleEditReplaceFile( event ) {
+			const file = event.target.files[ 0 ];
+			if ( ! file ) return;
+			event.target.value = '';
+			actions.replaceEditFile( file );
+		},
+		async replaceEditFile( file ) {
+			const id = state.editModalMediaId;
+			if ( ! id || state.editModalSaving ) return;
+
+			state.editModalSaving = true;
+			state.editModalReplaceProgress = '0%';
+			let item = null;
+			try {
+				const restUrl = window.mvsBpActions?.restUrl
+					|| ( window.location.origin + '/wp-json/mvs/v1/' );
+				// A replacement video can be large: show how much has been sent.
+				const res = await window.mvsRest.uploadMedia( `${ restUrl }media/${ id }/replace`, file, {}, ( loaded, total ) => {
+					state.editModalReplaceProgress = Math.min( 100, Math.round( ( loaded / total ) * 100 ) ) + '%';
+				} );
+				if ( res.ok ) {
+					item = res.data || {};
+					actions.showToast( ( state.i18n?.fileReplaced || 'File replaced!' ), 'success' );
+				} else {
+					const err = res.data || {};
+					actions.showToast( err.message || ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+				}
+			} catch {
+				actions.showToast( ( state.i18n?.replaceFailed || 'Replace failed.' ), 'error' );
+			}
+			state.editModalSaving = false;
+			state.editModalReplaceProgress = '';
+			if ( item ) {
+				announceMediaUpdated( id, item, true );
+			}
+		},
 		async saveEditModal() {
 			if ( state.editModalSaving || ! state.editModalMediaId ) return;
 
 			// Mirrors the server guard (mvs_empty_title). Whitespace-only is
-			// empty — " " is not a name.
+			// empty: " " is not a name.
 			if ( '' === String( state.editModalTitle || '' ).trim() ) {
 				state.editModalError = ( state.i18n?.titleRequired || 'Title cannot be empty.' );
 				return;
 			}
 
+			// A tag typed but not yet confirmed with Enter is still the member's
+			// intent when they press Save.
+			const pendingTag = String( state.editModalTagInput || '' ).trim();
+			if ( pendingTag && ! state.editModalTagList.includes( pendingTag ) ) {
+				state.editModalTagList = [ ...state.editModalTagList, pendingTag ];
+			}
+			state.editModalTagInput = '';
+			state.editModalTagDropdown = false;
+
 			state.editModalSaving = true;
 			state.editModalError = '';
+			state.editModalCanRetry = false;
 
 			try {
 				const restUrl = window.mvsBpActions?.restUrl
@@ -1157,40 +1335,34 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					description: state.editModalDescription,
 					privacy: state.editModalPrivacy,
 					allow_download: state.editModalAllowDownload,
-					tags: String( state.editModalTags || '' ).split( ',' ).map( ( t ) => t.trim() ).filter( Boolean ),
+					// Array.from() unwraps the Interactivity proxy: serialised raw it can
+					// read as `{}` and the server then clears every tag.
+					tags: Array.from( state.editModalTagList ),
 				};
-				// Only include `slug` when the admin explicitly opted into
-				// regenerating it from the new title. Leaving the field out
-				// preserves the existing URL — the safer default per the
-				// WordPress permalink convention.
+				// Only include `slug` when the owner explicitly opted into
+				// regenerating it from the new title. Leaving it out keeps the
+				// existing URL, the safer default (inbound links stay valid).
 				if ( state.editModalRegenerateSlug ) {
-					// Match the server's sanitize_title — lowercase, dashes
-					// for spaces, strip everything else. The server runs the
-					// same pass + collision check, so this is just optimistic
-					// formatting (and no-op if title unchanged).
-					body.slug = ( state.editModalTitle || '' )
-						.toLowerCase()
-						.replace( /[^\w\s-]/g, '' )
-						.trim()
-						.replace( /\s+/g, '-' )
-						.replace( /-+/g, '-' );
+					body.slug = slugFromTitle( state.editModalTitle );
 				}
 				const res = await window.mvsRest.restFetch( `${ restUrl }media/${ state.editModalMediaId }`, {
 					method: 'PUT',
 					body,
 				} );
 				if ( ! res.ok ) {
-					const err = res.data || {};
-					throw new Error( err.message || 'save_failed' );
+					const failure = new Error( ( res.data && res.data.message ) || '' );
+					// A 4xx with a reason is a refusal (expired session, no permission, item gone): sending it
+					// again changes nothing, so show the reason and no Retry. Anything else may be passing.
+					failure.refused = res.status >= 400 && res.status < 500 && ! [ 408, 429 ].includes( res.status ) && '' !== failure.message;
+					throw failure;
 				}
 				const updated = res.data || {};
+				const id = state.editModalMediaId;
 
-				// When the user opted into a slug change AND they're CURRENTLY
-				// on the media's single page (`/media/{old-slug}/`), the page
-				// they're viewing now points at a dead URL. Redirect to the
-				// new permalink so reload doesn't 404. On other pages
-				// (Explore, BP profile, etc.) we just close the modal — the
-				// page they're on is unaffected by the slug change.
+				// When the owner opted into a slug change AND they are on the
+				// media's own page (`/media/{old-slug}/`), that page now points at
+				// a dead URL: go to the new permalink so a reload does not 404. On
+				// other pages (Explore, profile, My Media) the page is unaffected.
 				if (
 					updated.link &&
 					typeof window !== 'undefined' &&
@@ -1198,16 +1370,25 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					/\/media\/[^/]+\/?$/.test( window.location.pathname )
 				) {
 					actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
+					editFromLightbox = 0;
 					actions.closeEditModal();
 					window.location.replace( updated.link );
 					return;
 				}
 
 				actions.showToast( ( state.i18n?.settingsSaved || 'Media settings saved.' ), 'success' );
+				editFromLightbox = 0;
 				actions.closeEditModal();
+				announceMediaUpdated( id, updated, false );
 			} catch ( err ) {
-				state.editModalError = err.message || 'Could not save. Try again.';
+				// The form stays open with what the member typed, and focus moves to the message so it is heard.
+				// Save (or Retry) sends the same values again; Escape closes as before.
 				state.editModalSaving = false;
+				state.editModalCanRetry = ! err.refused;
+				state.editModalError = err.refused
+					? err.message
+					: ( state.i18n?.saveFailedKept || 'Could not save. Your changes are still here.' );
+				focusWhenShown( '.mvs-modal-error:not([hidden]) [role="alert"]' );
 			}
 		},
 		// A blank player told a member nothing; show why and offer the file.
@@ -1504,7 +1685,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 						if ( errData && errData.message ) {
 							state.uploadModalLastError = errData.message;
 						} else {
-							state.uploadModalLastError = 'Upload failed.';
+							state.uploadModalLastError = state.i18n?.uploadFailed || 'Upload failed.';
 						}
 					}
 				} catch {
@@ -1638,6 +1819,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				state.lightboxLoading = false;
 				actions.showToast( ( state.i18n?.failedLoad || 'Failed to load media.' ), 'error' );
 			}
+		},
+		/**
+		 * Remember the tile a lightbox was opened from, for openers in other stores (My Media sets the state itself).
+		 *
+		 * @param {Element} el The clicked tile.
+		 */
+		rememberLightboxTrigger( el ) {
+			lightboxReturnFocus = el || document.activeElement;
 		},
 		async openLightboxById( mediaId ) {
 			if ( ! mediaId ) return;
@@ -1947,12 +2136,17 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( item ) {
 				item.editing = false;
 				item.editText = '';
+				item.editError = '';
 			}
 		},
 		async saveEditLightboxComment() {
 			const ctx = getContext();
 			const item = ctx.item;
 			if ( ! item || ! item.editText || ! item.editText.trim() ) return;
+			const { ref } = getElement();
+			const form = ref ? ref.closest( '.mvs-lightbox-comment-edit' ) : null;
+			const kept = state.i18n?.saveFailedKept || 'Could not save. Your changes are still here.';
+			item.editError = '';
 			try {
 				const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + state.lightboxMediaId + '/comments/' + item.id, {
 					method: 'PUT',
@@ -1963,12 +2157,14 @@ const { state, actions } = store( 'mvs/shared-ui', {
 					item.editing = false;
 					item.editText = '';
 					actions.showToast( ( state.i18n?.commentUpdated || 'Comment updated.' ), 'success' );
-				} else {
-					actions.showToast( ( res.data && res.data.message ) || ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+					return;
 				}
+				// Inline, next to the text the member typed (kept); Save sends it again.
+				item.editError = ( res.data && res.data.message ) || kept;
 			} catch {
-				actions.showToast( ( state.i18n?.editFailed || 'Edit failed.' ), 'error' );
+				item.editError = kept;
 			}
+			window.requestAnimationFrame( () => form?.querySelector( '[role="alert"]' )?.focus() );
 		},
 		// Deleting a comment deletes its replies, so the confirm says how many.
 		commentDeleteConfirm( item ) {
@@ -2030,6 +2226,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			editReturnFocus = lightboxReturnFocus;
 			lightboxReturnFocus = null;
 			actions.closeLightbox();
+			editFromLightbox = mediaId;
 			await actions.openEditModal( mediaId );
 		},
 		async lightboxShare() {
@@ -2226,7 +2423,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 				dialogTrapTab( event, '.mvs-confirm-overlay:not([hidden]) .mvs-confirm' );
 				return;
 			}
-			if ( event.key === 'Tab' && state.editModalVisible ) {
+			if ( event.key === 'Tab' && state.editModalOverlayVisible ) {
 				dialogTrapTab( event, '.mvs-edit-modal' );
 				return;
 			}
@@ -2242,7 +2439,7 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			if ( event.key === 'Escape' ) {
 				if ( state.confirmVisible ) {
 					actions.handleConfirmCancel();
-				} else if ( state.editModalVisible ) {
+				} else if ( state.editModalOverlayVisible ) {
 					actions.closeEditModal();
 				} else if ( state.uploadModalVisible ) {
 					actions.closeUploadModal();

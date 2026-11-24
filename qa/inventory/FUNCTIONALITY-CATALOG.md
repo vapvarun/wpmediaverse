@@ -487,6 +487,7 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Where:** Edit control on the single-media page / dashboard card (cog icon, dashboard cards only — never shown on Explore/Album/Collection cards). `PUT /mvs/v1/media/{id}`.
 - **Setup:** An item you own (or, as admin, any item).
 - **Steps:** 1. Open the Edit modal on your own item. 2. Change title, description, privacy, and the "Allow download" toggle. 3. Save. 4. Try leaving Title empty and observe the Save button.
+- **One form on every surface (2.7.0):** the single media page (inline panel), My Media (modal), the lightbox's Edit and the BuddyPress media tab all use ONE form (`templates/partials/media-edit-form.php`) and ONE save routine (the `mvs/shared-ui` store). Fields on all three: title, description, tags (pills with autocomplete; a tag typed but not confirmed with Enter is kept on Save), privacy (locked, with a note, while the photo is in an album), Update URL slug, Allow download (only when site downloads are on), Replace File with progress. A failed save shows the server's message inside the form, which stays open with what was typed. After Save the My Media list and the single page show the new values without a reload; tag links are the canonical /media-tag/<slug>/ addresses. Albums have their own small form (not part of this).
 - **Expected:** Fields prefill from the item's current data. Save PUTs `title, description, slug, privacy, allow_download, tags[], categories[]` and the card/page updates live without reload. Empty title disables the Save button (client-side guard) rather than allowing a titleless save.
 - **UX expectation:** ESC closes the modal without saving. A privacy CHANGE (not merely resubmitting the unchanged value) is refused with 403 `mvs_privacy_locked` when the member's privacy choice has been taken away (Settings > General > "Allow Users to Set Privacy" off) — someone with `manage_mvs_settings` is exempt from that lock. Save success updates the visible card/page in place; failure shows a toast, form stays open with entered values intact (no data loss on error).
 - **Settings that change it:** `mvs_allow_user_privacy` gates whether a privacy CHANGE is accepted at all. `mvs_allow_downloads` (global) still overrides the per-item toggle when off.
@@ -1393,7 +1394,8 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **Steps:** 1. Add the block, set columns/type/category/tag/order attributes in the editor. 2. Publish and view the page. 3. Repeat with the shortcode instead, using equivalent attributes.
 - **Expected:** Grid renders per the chosen attributes on the frontend. The shortcode is a thin wrapper around the same block render — results should be visually identical to the block for the same effective settings, EXCEPT that the shortcode's `columns`/`per_page` are always forced from the site's admin settings (`mvs_grid_columns`/`mvs_items_per_page`) and cannot be overridden by shortcode attributes, unlike the block's own `columns`/`perPage` attributes.
 - **UX expectation:** Empty state ("nothing shared yet" equivalent) when the filter matches nothing. Lightbox opens on click when `showLightbox` is true (block default).
-- **Settings that change it:** `mvs_grid_columns`, `mvs_items_per_page` (shortcode only, as above).
+- **Settings that change it:** `mvs_grid_columns`, `mvs_items_per_page` (shortcode only, as above); the block's `showPagination` attribute (default true; false removes the page links, and grids saved without it keep them).
+- **Narrow container:** the block is a size container. Under 420px wide the tiles are square and use the Columns setting capped at three, the last tile the same width as the others; wider blocks are unchanged. Inside a widget area (`.widget`, `.widget_block`, `aside`) the page links are hidden; a narrow content column keeps them. Widths to verify: 267 (sidebar), 390, 768, 1280, light and dark.
 - **Galleries:** one tile per gallery, the first item the viewer may see (same rule as Explore, `MediaRepository::gallery_hidden_clause()`).
 - **Edge cases:** A non-core `layout` value (anything other than grid/masonry/list/square/original) on the shortcode falls through to Pro's layout filter, then to the plain grid if Pro isn't active — verify Free-only never errors on an unrecognised layout string, it just shows the default grid.
 
@@ -1794,6 +1796,17 @@ Free frontend, then Free admin, settings, tools and REST, then Pro.
 - **UX expectation:** Description text must warn this is irreversible ("removes media records, albums, messages, settings and permissions... cannot reinstall to recover them") before the admin ticks it — this is a destructive, delayed-effect setting, so the warning has to be visible at tick-time, not just in a confirm dialog at uninstall (WordPress's own plugin-delete confirm is generic and won't mention this).
 - **Settings that change it:** "Remove Data on Delete" (`mvs_delete_data_on_uninstall`), default `false`.
 - **Edge cases:** If MediaVerse Pro is also installed, Free's uninstall must NOT drop tables/options while Pro is still relying on them — the option is meant to be read by whichever plugin is uninstalled last.
+
+#### MV-SET-036 — Background jobs across a deactivation
+- **Edition:** Free + Pro
+- **Who:** Admin who switches MediaVerse off and on (including the update flow: deactivate, replace, activate).
+- **Where:** Plugins screen; Tools > Scheduled Actions (search `mvs_`).
+- **Setup:** Pending jobs of both kinds: delete a few media (file cleanup, kept) and enable AI moderation then upload (AI analysis, cancelled). For Pro, trash a folder.
+- **Steps:** 1. Deactivate MediaVerse. 2. Check Scheduled Actions: cleanup and folder rows stay Pending, AI analysis rows show Canceled. 3. Reactivate and open any admin page: the Pending rows run. 4. With another plugin keeping Action Scheduler running (WooCommerce), deactivate, wait two minutes: the kept rows turn Failed ("no callbacks are registered"). 5. Reactivate and open an admin page: each Failed row is replaced by a Pending copy with the same arguments.
+- **Expected:** Deactivation cancels only recomputable jobs (`Deactivator::STATE_JOB_HOOKS` / `Lifecycle::STATE_JOB_HOOKS` stay). After reactivation (or a one-click update that runs migrations), state jobs failed only for lack of a listener in the last 7 days are queued again, 200 per admin request. A job that ran and errored stays Failed, and so does one that failed more than 7 days ago. Other plugins' jobs are never touched.
+- **UX expectation:** Nothing a member or owner already did (deleted media, a privacy change, a member deletion, a folder action) is silently lost by switching the plugin off and on.
+- **Settings that change it:** none.
+- **Edge cases:** Failed rows older than 90 days are already pruned and cannot come back. Check: QA command without PHPUnit for the reaper case: `wp eval-file wp-content/plugins/wpmediaverse-pro/bin/qa-reaper-check.php`.
 
 #### MV-SET-007 — Storage driver (Where files are stored)
 - **Edition:** Free (Free is `local`-only; cloud drivers need Pro)
@@ -4768,8 +4781,8 @@ Note: the existing manual runbook's Journey P1 (Compete Hub) describes an older 
 - **Steps:** 1. Search by exact title term. 2. Search by a term only in the body of a plain-text/Office doc. 3. Search by a tag. 4. Search a PDF by a term only in its body.
 - **Expected:** Title/content/tag matches rank (content/title weighted ahead of tags). PDF is findable by title/tags only — never by body text, since extraction never runs on PDFs.
 - **UX expectation:** A PDF that doesn't surface for a body-text search must not look like "search is broken" — if a QA pass files this as a bug, it should be corrected to note it's the documented PDF exception. A freshly-uploaded, not-yet-extracted document should show as "indexing" state, not a false "no results."
-- **Settings that change it:** `mvs_pro_documents_extraction` — turning it off stops new indexing.
-- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan). A search inside one drive finds the member's file however many better matches the site has elsewhere (the drive narrows inside the query), and a space's search includes files linked into it.
+- **Settings that change it:** `mvs_pro_documents_extraction` — turning it off stops new indexing. Turning it back on catches up the documents added while it was off (the backfill starts on the next admin page load).
+- **Edge cases:** query below the minimum term length handled gracefully (no crash, no full-table scan). A document whose file is replaced is found by the new file's text, not the old one's. Documents uploaded before extraction existed are indexed by the backfill, which starts on an admin page load and resumes after a deactivation. A search inside one drive finds the member's file however many better matches the site has elsewhere (the drive narrows inside the query), and a space's search includes files linked into it.
 
 #### MV-DOC-029 — Space search covering linked files
 - **Edition:** Pro (bridged via BuddyNext)

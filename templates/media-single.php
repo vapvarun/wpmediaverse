@@ -6,7 +6,7 @@
  * Override by copying to your-theme/wpmediaverse/media-single.php
  *
  * @package WPMediaVerse
- * @version 2.6.4
+ * @version 2.7.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -111,7 +111,7 @@ $mvs_author_name  = $mvs_author
 	: $mvs_author_plain;
 
 // Format date.
-$mvs_date_display = $mvs_created ? date_i18n( get_option( 'date_format' ), strtotime( $mvs_created ) ) : '';
+$mvs_date_display = $mvs_created ? \WPMediaVerse\Core\TemplateHelpers::date_label( $mvs_created ) : '';
 
 // Permalink for this media.
 $mvs_permalink = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_permalink( $mvs_media_id );
@@ -635,7 +635,6 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				'initialTitle'        => $mvs_title,
 				'initialDesc'         => $mvs_desc,
 				'initialPrivacy'      => $current_privacy,
-				'initialTags'         => $mvs_tag_names,
 				'reactions'           => array(),
 				'userReaction'        => '',
 				'isFavorite'          => $mvs_is_favorited,
@@ -644,19 +643,6 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 				'commentText'         => '',
 				'viewCount'           => '',
 				'editVisible'         => false,
-				'editTitle'           => $mvs_title,
-				'editDesc'            => $mvs_desc,
-				'editPrivacy'         => $current_privacy,
-				// Off by default — title edits leave the URL slug alone.
-				'editRegenerateSlug'  => false,
-				// The item's own setting; the site-wide switch hides the field.
-				'editAllowDownload'   => '0' !== (string) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $mvs_media_id, 'allow_download' ),
-				// Empty at SSR so the data-wp-each <template> matches hydration; the
-				// store's callbacks.init() fills editTags from initialTags (above).
-				'editTags'            => array(),
-				'tagInput'            => '',
-				'tagResults'          => array(),
-				'tagDropdownVisible'  => false,
 				'saving'              => false,
 				// Plain text — the adjacent <i data-lucide="share-2"> supplies the icon.
 				// Previously this had a leading 🔗 emoji which rendered alongside the
@@ -688,7 +674,7 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 							data-wp-class--active="context.item.active"
 							data-wp-bind--aria-pressed="context.item.active"
 							data-wp-bind--data-reaction-type="context.item.type"
-							data-wp-bind--aria-label="context.item.type"
+							data-wp-bind--aria-label="context.item.label"
 							data-wp-on--click="actions.toggleReaction">
 							<img class="mvs-reaction-emoji" data-wp-bind--src="context.item.icon" alt="" width="20" height="20" />
 							<span class="mvs-count" data-wp-text="context.item.count" data-wp-bind--hidden="!context.item.count"></span>
@@ -826,92 +812,22 @@ $mvs_archive_url = \WPMediaVerse\Core\Plugin::container()->get( 'template_helper
 			</div>
 
 			<?php if ( $mvs_can_edit ) : ?>
-			<!-- Inline Edit Form -->
-			<div class="mvs-inline-edit" data-wp-bind--hidden="!context.editVisible">
-				<div class="mvs-field">
-					<label for="mvs-single-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-					<input id="mvs-single-edit-title" type="text" data-wp-bind--value="context.editTitle"
-						data-wp-on--input="actions.updateEditTitle" />
-				</div>
-				<div class="mvs-field">
-					<label for="mvs-single-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-					<textarea id="mvs-single-edit-description" data-wp-on--input="actions.updateEditDesc"
-						data-wp-bind--value="context.editDesc"></textarea>
-				</div>
-				<!-- Privacy + slug-regenerate share a row to save vertical space.
-					Off by default — keeps inbound URLs stable. -->
-				<div class="mvs-field-row">
-					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
-					<div class="mvs-field mvs-field--inline">
-						<label for="mvs-single-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select id="mvs-single-edit-privacy" data-wp-on--change="actions.updateEditPrivacy">
-							<?php
-							// The shared labels, not bare "Public / Members / Private":
-							// "Members" alone reads as followers-only (Basecamp
-							// 10286023341), and this was the last picker on its own list.
-							\WPMediaVerse\Core\TemplateHelpers::privacy_options( (string) $current_privacy );
-							?>
-						</select>
-					</div>
-					<?php endif; ?>
-					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
-						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-							<input type="checkbox" class="mvs-edit-regenerate-slug"
-								data-wp-on--change="actions.updateEditRegenerateSlug"
-								data-wp-bind--checked="context.editRegenerateSlug" />
-							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
-						</label>
-					</div>
-				</div>
-				<?php // Same switch as the lightbox edit form; it was missing here. ?>
-				<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
-				<div class="mvs-field mvs-field--checkbox">
-					<label>
-						<input type="checkbox" class="mvs-edit-allow-download"
-							data-wp-on--change="actions.updateEditAllowDownload"
-							data-wp-bind--checked="context.editAllowDownload" />
-						<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
-					</label>
-					<p class="mvs-field-hint"><?php esc_html_e( 'Uncheck to remove the Download button and the player\'s download option for this item. It cannot stop someone who can play or view it from saving or recording it. The site-wide download setting still applies.', 'wpmediaverse' ); ?></p>
-				</div>
-				<?php endif; ?>
-				<div class="mvs-field">
-					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
-					<div class="mvs-tag-input-wrap">
-						<div class="mvs-tag-pills">
-							<template data-wp-each="context.editTags">
-								<span class="mvs-tag-pill">
-									<span data-wp-text="context.item"></span>
-									<button type="button" class="mvs-tag-pill-remove"
-										aria-label="<?php esc_attr_e( 'Remove tag', 'wpmediaverse' ); ?>"
-										data-wp-bind--data-tag-name="context.item"
-										data-wp-on--click="actions.removeTag">&times;</button>
-								</span>
-							</template>
-							<input type="text" class="mvs-tag-text-input" aria-label="<?php esc_attr_e( 'Add tags', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
-								data-wp-bind--value="context.tagInput"
-								data-wp-on--input="actions.updateTagInput"
-								data-wp-on--keydown="actions.addTagFromInput" />
-						</div>
-						<div class="mvs-tag-autocomplete" data-wp-bind--hidden="!context.tagDropdownVisible">
-							<template data-wp-each="context.tagResults">
-								<div class="mvs-tag-autocomplete-item"
-									data-wp-bind--data-tag-name="context.item"
-									data-wp-text="context.item"
-									data-wp-on--click="actions.selectTag"></div>
-							</template>
-						</div>
-					</div>
-				</div>
+			<!-- Inline edit: the shared edit form (partials/media-edit-form.php), shown in the page instead of a modal. -->
+			<div class="mvs-inline-edit" data-wp-interactive="mvs/shared-ui" hidden data-wp-bind--hidden="!state.editInlineVisible">
+				<?php
+				$mvs_edit_prefix = 'mvs-single-edit';
+				include MVS_PLUGIN_DIR . 'templates/partials/media-edit-form.php';
+				?>
 				<div class="mvs-inline-edit-actions">
 					<button class="mvs-btn mvs-btn--secondary" type="button"
-						data-wp-on--click="actions.saveEdit"
-						data-wp-bind--disabled="context.saving">
-						<span data-wp-bind--hidden="context.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-						<span data-wp-bind--hidden="!context.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
+						data-wp-on--click="actions.saveEditModal"
+						data-wp-bind--disabled="state.editModalSaveDisabled"
+						data-wp-bind--aria-disabled="state.editModalSaving">
+						<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
+						<span data-wp-bind--hidden="!state.editModalSaving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
 					</button>
 					<button class="mvs-btn mvs-btn--secondary" type="button"
-						data-wp-on--click="actions.cancelEdit">
+						data-wp-on--click="actions.closeEditModal">
 						<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 					</button>
 				</div>

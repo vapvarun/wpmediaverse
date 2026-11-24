@@ -32,6 +32,9 @@
 	--mvs-border:        #dcdcde;
 	--mvs-border-light:  #e5e5e7;
 	--mvs-border-strong: #a7aaad;
+	/* Control edges (input, select, outlined button, segmented toggle): 3:1
+	   against the admin surfaces, WCAG 1.4.11. Same formula as the front. */
+	--mvs-border-control: color-mix(in oklab, var(--mvs-text) 65%, transparent);
 	/*
 	 * WordPress admin blue, NOT the danger red these four used to be.
 	 *
@@ -449,7 +452,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-recent-table th {
-	text-align: left;
+	text-align: start;
 	padding: 8px 12px;
 	border-bottom: 1px solid var(--mvs-border-strong);
 	font-size: 12px;
@@ -580,7 +583,7 @@ a.mvs-stat-card:focus {
 	padding: 2px 8px;
 	border-radius: 3px;
 	font-size: 11px;
-	margin-right: 3px;
+	margin-inline-end: 3px;
 	margin-bottom: 2px;
 }
 
@@ -635,7 +638,7 @@ a.mvs-stat-card:focus {
 	text-transform: uppercase;
 	padding: 2px 6px;
 	border-radius: 3px;
-	margin-left: 6px;
+	margin-inline-start: 6px;
 	vertical-align: middle;
 }
 
@@ -752,7 +755,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-settings-panel--pro {
-	border-left: 3px solid #6366f1;
+	border-inline-start: 3px solid #6366f1;
 }
 
 .mvs-settings-panel--pro .mvs-settings-panel__icon {
@@ -806,7 +809,7 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text-muted);
 	font-weight: 400;
 	vertical-align: middle;
-	margin-left: 8px;
+	margin-inline-start: 8px;
 }
 
 
@@ -827,7 +830,7 @@ a.mvs-stat-card:focus {
 	align-items: flex-start;
 	background: linear-gradient(135deg, var(--mvs-info-bg) 0%, var(--mvs-info-bg) 100%);
 	border: 1px solid var(--mvs-border-light);
-	border-left: 4px solid var(--mvs-accent);
+	border-inline-start: 4px solid var(--mvs-accent);
 	border-radius: var(--mvs-radius-sm);
 	padding: 20px 24px;
 	margin: 20px 0;
@@ -863,7 +866,7 @@ a.mvs-stat-card:focus {
 	color: var(--mvs-text-muted);
 	position: absolute;
 	top: 12px;
-	right: 12px;
+	inset-inline-end: 12px;
 }
 
 .mvs-welcome-banner__dismiss:hover {
@@ -1018,7 +1021,7 @@ a.mvs-stat-card:focus {
 .mvs-bulk-count {
 	font-size: 13px;
 	color: var(--mvs-text-muted);
-	margin-left: 8px;
+	margin-inline-start: 8px;
 }
 
 /* ==========================================================================
@@ -1037,7 +1040,7 @@ a.mvs-stat-card:focus {
 .mvs-date-range-selector {
 	display: flex;
 	gap: 0;
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	border-radius: var(--mvs-radius-sm);
 	overflow: hidden;
 }
@@ -1048,12 +1051,12 @@ a.mvs-stat-card:focus {
 	text-decoration: none;
 	color: var(--mvs-text-muted);
 	background: var(--mvs-surface);
-	border-right: 1px solid var(--mvs-border);
+	border-inline-end: 1px solid var(--mvs-border-control);
 	transition: background 0.15s, color 0.15s;
 }
 
 .mvs-range-btn:last-child {
-	border-right: none;
+	border-inline-end: none;
 }
 
 .mvs-range-btn:hover {
@@ -1285,7 +1288,7 @@ a.mvs-stat-card:focus {
 	margin: 12px 0 0;
 	padding: 10px 14px;
 	background: var(--mvs-surface);
-	border-left: 4px solid var(--mvs-success);
+	border-inline-start: 4px solid var(--mvs-success);
 	border-radius: 2px;
 	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
 	flex-basis: 100%;
@@ -1376,7 +1379,7 @@ a.mvs-stat-card:focus {
 	width: 260px;
 	flex-shrink: 0;
 	background: var(--mvs-surface);
-	border-right: 1px solid var(--mvs-border-light);
+	border-inline-end: 1px solid var(--mvs-border-light);
 	padding: 0;
 	position: sticky;
 	top: 62px;
@@ -1450,7 +1453,7 @@ a.mvs-stat-card:focus {
 	text-decoration: none;
 	font-size: 13px;
 	font-weight: 400;
-	border-left: 3px solid transparent;
+	border-inline-start: 3px solid transparent;
 	transition: background 0.1s, color 0.1s;
 	cursor: pointer;
 }
@@ -1473,7 +1476,7 @@ a.mvs-stat-card:focus {
 .mvs-settings-nav-item.is-active {
 	color: var(--mvs-accent);
 	background: var(--mvs-info-bg);
-	border-left-color: var(--mvs-accent);
+	border-inline-start-color: var(--mvs-accent);
 	font-weight: 600;
 }
 
@@ -1490,7 +1493,7 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-settings-nav-item .mvs-pro-badge {
-	margin-left: auto;
+	margin-inline-start: auto;
 	font-size: 9px;
 	padding: 1px 5px;
 }
@@ -1643,7 +1646,7 @@ a.mvs-stat-card:focus {
 		min-width: 0;
 		height: auto;
 		position: static;
-		border-right: none;
+		border-inline-end: none;
 		border-bottom: 1px solid var(--mvs-border-light);
 		display: flex;
 		flex-wrap: wrap;
@@ -1671,13 +1674,13 @@ a.mvs-stat-card:focus {
 
 	.mvs-settings-nav-item {
 		padding: 6px 12px;
-		border-left: none;
+		border-inline-start: none;
 		border-radius: 4px;
 		font-size: 12px;
 	}
 
 	.mvs-settings-nav-item.is-active {
-		border-left: none;
+		border-inline-start: none;
 		background: var(--mvs-accent);
 		color: var(--mvs-surface);
 	}
@@ -1946,7 +1949,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -1982,6 +1985,31 @@ a.mvs-stat-card:focus {
 }
 
 .mvs-btn--danger:hover {
+	background: var(--mvs-danger);
+	color: var(--mvs-surface);
+}
+
+/* Core colours a:hover, a:focus and a:active at (0,1,1), above a one-class
+   button colour, so a pressed or focused link button lost its label (1.55:1
+   on the primary fill). Each link button keeps its own pair in every state. */
+a.mvs-btn:focus,
+a.mvs-btn:active,
+a.mvs-btn:visited {
+	color: var(--mvs-text);
+}
+
+a.mvs-btn--primary:focus,
+a.mvs-btn--primary:active,
+a.mvs-btn--primary:visited {
+	color: var(--mvs-surface);
+}
+
+a.mvs-btn--danger:focus,
+a.mvs-btn--danger:visited {
+	color: var(--mvs-danger);
+}
+
+a.mvs-btn--danger:active {
 	background: var(--mvs-danger);
 	color: var(--mvs-surface);
 }
@@ -2022,7 +2050,7 @@ a.mvs-stat-card:focus {
 	font-size: 13px;
 	font-weight: 500;
 	border-radius: var(--mvs-radius-md);
-	border: 1px solid var(--mvs-border);
+	border: 1px solid var(--mvs-border-control);
 	background: var(--mvs-surface);
 	color: var(--mvs-text);
 	cursor: pointer;
@@ -2157,7 +2185,7 @@ a.mvs-stat-card:focus {
 		 * model globally across 18 admin screens belongs in its own pass with
 		 * per-screen verification.
 		 */
-		border-right: none;
+		border-inline-end: none;
 		border-bottom: 1px solid var(--mvs-admin-border);
 	}
 
@@ -2178,13 +2206,13 @@ a.mvs-stat-card:focus {
 
 	.mvs-settings-nav-item {
 		flex: 0 0 auto;
-		border-left: none;
+		border-inline-start: none;
 		border-radius: 4px;
 		padding: 6px 10px;
 	}
 
 	.mvs-settings-nav-item.is-active {
-		border-left-color: transparent;
+		border-inline-start-color: transparent;
 		background: var(--mvs-accent);
 		color: var(--mvs-surface);
 	}
@@ -2205,7 +2233,7 @@ a.mvs-stat-card:focus {
 .mvs-toast-container {
 	position: fixed;
 	bottom: 24px;
-	right: 24px;
+	inset-inline-end: 24px;
 	z-index: 100100;
 	display: flex;
 	flex-direction: column-reverse;
@@ -2234,6 +2262,13 @@ a.mvs-stat-card:focus {
 .mvs-toast--error { background: var(--mvs-danger); }
 .mvs-toast--info { background: var(--mvs-accent); }
 .mvs-toast--warning { background: var(--mvs-warn); color: var(--mvs-text); }
+
+/* WordPress core draws form fields with a #949494 edge, 2.66:1 against the grey
+   admin page. On MediaVerse screens every field takes the control edge; focus
+   keeps core's blue ring. */
+:is(.toplevel_page_wpmediaverse, [class*="_page_mvs-"]) #wpbody-content :is(input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="hidden"], [type="range"], [type="color"], [type="file"]), select, textarea):not(:focus) {
+	border-color: var(--mvs-border-control);
+}
 
 /* ==========================================================================
    Admin Page Horizontal Tabs
@@ -2271,8 +2306,8 @@ a.mvs-stat-card:focus {
 	cursor: pointer;
 	background: none;
 	border-top: none;
-	border-left: none;
-	border-right: none;
+	border-inline-start: none;
+	border-inline-end: none;
 }
 
 .mvs-admin-tab:hover,
@@ -2302,7 +2337,8 @@ a.mvs-stat-card:focus {
 
 .mvs-tab-count--zero {
 	background: var(--mvs-border);
-	color: var(--mvs-text-muted);
+	/* Full text colour: the muted grey measured 4.04:1 on the grey pill. */
+	color: var(--mvs-text);
 }
 
 .mvs-tab-content {
@@ -2363,7 +2399,7 @@ a.mvs-stat-card:focus {
 }
 .mvs-report-status-form {
 	display: inline-block;
-	margin-right: 4px;
+	margin-inline-end: 4px;
 }
 
 /* ============================================================================
@@ -2516,4 +2552,12 @@ a.mvs-stat-card:focus {
 	align-items: center;
 	min-height: var(--mvs-admin-touch-min);
 	padding-inline: 4px;
+}
+
+/* Tag deletes and merges still running in the background (Tags screen). */
+.mvs-tag-work-notice__spinner.spinner {
+	float: none;
+	margin: 0;
+	margin-inline-end: 8px;
+	vertical-align: middle;
 }

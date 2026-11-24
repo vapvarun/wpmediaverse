@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.6.4
+ * @version 2.7.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -181,6 +181,8 @@ wp_interactivity_state(
 			? 'documents'
 			: \WPMediaVerse\Core\DashboardSections::resolve( get_query_var( 'mvs_section' ) ? (string) get_query_var( 'mvs_section' ) : 'media' ),
 		'i18n'        => array(
+			/* translators: %s: the search the member typed. */
+			'noResultsFor'            => __( 'No results for "%s".', 'wpmediaverse' ),
 			// Rule-builder select options + placeholders.
 			'selectOption'            => __( '-- Select --', 'wpmediaverse' ),
 			'optImage'                => __( 'Image', 'wpmediaverse' ),
@@ -1533,134 +1535,7 @@ wp_interactivity_state(
 		</div>
 	</div>
 
-	<!-- Edit Media Modal -->
-	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.editModal.visible"
-		data-wp-on--click="actions.closeOverlay">
-		<div class="mvs-modal" data-wp-on--click="actions.stopPropagation"
-			role="dialog" aria-modal="true" aria-labelledby="mvs-dashboard-edit-modal-title" data-wp-on--keydown="actions.trapModalFocus" data-wp-watch="callbacks.manageModalFocus"
-			<?php echo wp_interactivity_data_wp_context( array( 'modalKey' => 'editModal' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
-			<div class="mvs-modal-header">
-				<h2 id="mvs-dashboard-edit-modal-title"><?php esc_html_e( 'Edit Media', 'wpmediaverse' ); ?></h2>
-				<button class="mvs-modal-close" type="button" data-wp-on--click="actions.closeEditModal" aria-label="<?php esc_attr_e( 'Close', 'wpmediaverse' ); ?>">&times;</button>
-			</div>
-			<div class="mvs-modal-body">
-				<div class="mvs-field">
-					<label for="mvs-dash-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-					<input id="mvs-dash-edit-title" type="text" data-wp-bind--value="state.editModal.title"
-						data-wp-on--input="actions.setEditTitle"
-						aria-describedby="mvs-edit-title-hint"
-						data-wp-bind--aria-invalid="state.editModalTitleMissing" />
-					<span class="mvs-field-hint" id="mvs-edit-title-hint" role="status"
-						data-wp-bind--hidden="!state.editModalTitleMissing"><?php esc_html_e( 'Title cannot be empty.', 'wpmediaverse' ); ?></span>
-				</div>
-				<div class="mvs-field">
-					<label for="mvs-dash-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-					<textarea id="mvs-dash-edit-description" data-wp-bind--value="state.editModal.description"
-						data-wp-on--input="actions.setEditDesc"></textarea>
-				</div>
-				<!-- Privacy + slug-regenerate share a row to save vertical space.
-					Off by default — keeps inbound URLs stable. -->
-				<div class="mvs-field-row">
-					<?php // Hidden when the owner has locked privacy; the save still sends the current level, which the REST update accepts. Basecamp 10320619418. ?>
-					<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : ?>
-					<div class="mvs-field mvs-field--inline">
-						<label for="mvs-dash-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-						<select id="mvs-dash-edit-privacy" aria-describedby="mvs-dash-edit-privacy-album" data-wp-bind--disabled="state.editPrivacyFollowsAlbum" data-wp-bind--value="state.editModal.privacy" data-wp-on--change="actions.setEditPrivacy">
-							<?php
-							// Options come from STATE, not from privacy_options().
-							//
-							// The server-rendered version passed '' as the selected
-							// level, so its disabled-fallback for an unlisted level
-							// (loggedin, space, group) could never fire - the value is
-							// bound client-side and the server never knows it. A member
-							// whose item was stored at one of those levels opened Edit
-							// and got an empty select: no selection, no way to read the
-							// current setting. Basecamp 10290748981, three bounces.
-							//
-							// state.i18n.privacyLabels already carries every level (it
-							// was added for the badge half of the same card), and the
-							// server renders the offered levels with privacy_options(); the one
-							// extra option below names a stored level it does not offer.
-							// NOT data-wp-each - that is SSR-expanded by PHP, and these
-							// options are derived client-side, so hydration mismatches.
-							?>
-							<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModal.privacy" data-wp-text="state.editModalPrivacyLabel"></option>
-							<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
-						</select>
-						<p id="mvs-dash-edit-privacy-album" class="mvs-field-hint" hidden data-wp-bind--hidden="!state.editPrivacyFollowsAlbum" data-wp-text="state.editPrivacyFollowsText"></p>
-					</div>
-					<?php endif; ?>
-					<div class="mvs-field mvs-field--inline mvs-field--checkbox">
-						<label title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-							<input type="checkbox" class="mvs-edit-regenerate-slug"
-							data-wp-on--change="actions.setEditRegenerateSlug"
-							data-wp-bind--checked="state.editModal.regenerateSlug" />
-							<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
-						</label>
-					</div>
-				</div>
-				<?php // Same switch as the lightbox edit form; it was missing here. ?>
-				<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
-				<div class="mvs-field mvs-field--checkbox">
-					<label>
-						<input type="checkbox" class="mvs-edit-allow-download"
-							data-wp-on--change="actions.setEditAllowDownload"
-							data-wp-bind--checked="state.editModal.allowDownload" />
-						<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
-					</label>
-					<p class="mvs-field-hint"><?php esc_html_e( 'Uncheck to remove the Download button and the player\'s download option for this item. It cannot stop someone who can play or view it from saving or recording it. The site-wide download setting still applies.', 'wpmediaverse' ); ?></p>
-				</div>
-				<?php endif; ?>
-				<div class="mvs-field">
-					<label><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
-					<div class="mvs-tag-input-wrap">
-						<div class="mvs-tag-pills">
-							<template data-wp-each="state.editModal.tags">
-								<span class="mvs-tag-pill">
-									<span data-wp-text="context.item"></span>
-									<button type="button" class="mvs-tag-pill-remove"
-										data-wp-bind--data-tag-name="context.item"
-										data-wp-on--click="actions.removeEditTag"
-										aria-label="<?php esc_attr_e( 'Remove this tag', 'wpmediaverse' ); ?>"><span aria-hidden="true">&times;</span></button>
-								</span>
-							</template>
-							<input type="text" class="mvs-tag-text-input" aria-label="<?php esc_attr_e( 'Add tags', 'wpmediaverse' ); ?>" placeholder="<?php esc_attr_e( 'Add tags...', 'wpmediaverse' ); ?>"
-								data-wp-bind--value="state.editModal.tagInput"
-								data-wp-on--input="actions.updateEditTagInput"
-								data-wp-on--keydown="actions.addEditTag" />
-						</div>
-						<div class="mvs-tag-autocomplete" data-wp-bind--hidden="!state.editModal.tagDropdownVisible">
-							<template data-wp-each="state.editModal.tagResults">
-								<button type="button" class="mvs-tag-autocomplete-item"
-									data-wp-bind--data-tag-name="context.item"
-									data-wp-text="context.item"
-									data-wp-on--click="actions.selectEditTag"></button>
-							</template>
-						</div>
-					</div>
-				</div>
-			</div>
-				<div class="mvs-replace-file-row">
-					<label class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-replace-file-label">
-					<span aria-hidden="true">&#8635;</span> <?php esc_html_e( 'Replace File', 'wpmediaverse' ); ?>
-					<?php // Visually hidden, not `hidden`: a hidden input can't take keyboard focus. ?>
-					<input type="file" class="mvs-sr-only" data-wp-on--change="actions.handleReplaceFile" />
-				</label>
-					<span class="mvs-replace-progress" role="status" aria-live="polite" data-wp-bind--hidden="!state.editModal.replaceProgress" data-wp-text="state.editModal.replaceProgress" hidden></span>
-					<span class="mvs-replace-file-hint"><?php esc_html_e( 'Upload a new file. Metadata is preserved.', 'wpmediaverse' ); ?></span>
-			</div>
-			<div class="mvs-modal-footer">
-				<button class="mvs-btn mvs-btn--secondary" type="button"
-					data-wp-on--click="actions.closeEditModal"><?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?></button>
-				<button class="mvs-btn mvs-btn--primary" type="button"
-					data-wp-on--click="actions.saveEdit"
-					data-wp-bind--disabled="state.editModalSaveDisabled">
-					<span data-wp-bind--hidden="state.editModal.saving"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></span>
-					<span data-wp-bind--hidden="!state.editModal.saving" hidden><?php esc_html_e( 'Saving...', 'wpmediaverse' ); ?></span>
-				</button>
-			</div>
-		</div>
-	</div>
+	<!-- Edit Media: the shared edit modal (partials/media-edit-form.php in the shared frame) opens from the Edit buttons. -->
 
 	<!-- Album Modal (Create/Edit) -->
 	<div class="mvs-modal-overlay" hidden data-wp-bind--hidden="!state.albumModal.visible"

@@ -30,12 +30,25 @@ class Activator {
 	const VERSION_OPTION = 'mvs_installed_version';
 
 	/**
+	 * Set on activation; Jobs::requeue_after_activation() reads it.
+	 *
+	 * @since 2.7.0
+	 */
+	public const REQUEUE_TRANSIENT = 'mvs_requeue_unheard_jobs';
+
+	/**
 	 * Run activation routines.
 	 */
 	public static function activate(): void {
+		// Jobs a runner failed while MediaVerse was off are queued again on the next scheduling request.
+		set_transient( self::REQUEUE_TRANSIENT, 1, WEEK_IN_SECONDS );
+
 		// Run database migrations.
 		$migrator = new Migrator();
 		$migrator->run();
+		// Tables dropped while the version option stayed (the migrator skips then): switching the plugin off and on
+		// is what an owner tries first, so it has to rebuild them.
+		$migrator->repair_missing_tables();
 
 		// Add capabilities to roles.
 		MediaCapabilities::add_caps();

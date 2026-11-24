@@ -310,6 +310,8 @@ class ModerationController extends WP_REST_Controller {
 	 * @return array
 	 */
 	private function prepare_item_from_meta( int $media_id ): array {
+		// A rename queued by this request's moderation change is done before the link is read.
+		\WPMediaVerse\Services\MediaFileRotator::settle( $media_id );
 		return array(
 			'id'                => $media_id,
 			'title'             => \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get( $media_id, 'title' ),

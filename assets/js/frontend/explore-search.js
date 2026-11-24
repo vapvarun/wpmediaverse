@@ -189,4 +189,30 @@
 			}
 		}, 300 );
 	} );
+
+	// Tag row: on a wide screen the chips wrap onto two rows and the rest are clipped, so "More tags" has
+	// to be there whenever a pill is hidden, not only when the site has more tags than the cloud holds.
+	// Delegated to the document and re-run on resize and on a router swap, like the rest of this file.
+	var fitTimer;
+	function fitTagRows() {
+		document.querySelectorAll( '.mvs-tag-cloud:not(.mvs-tag-cloud--all)' ).forEach( function ( cloud ) {
+			var items = cloud.querySelector( '.mvs-tag-cloud-items' );
+			var more = cloud.querySelector( '.mvs-tag-cloud-item--more' );
+			if ( ! items || ! more ) {
+				return;
+			}
+			var clipped = items.scrollHeight > items.clientHeight + 1;
+			more.hidden = ! ( '1' === more.getAttribute( 'data-mvs-more-always' ) || clipped );
+		} );
+	}
+	function queueFit() {
+		clearTimeout( fitTimer );
+		fitTimer = setTimeout( fitTagRows, 80 );
+	}
+	fitTagRows();
+	window.addEventListener( 'resize', queueFit );
+	window.addEventListener( 'pageshow', queueFit );
+	if ( window.MutationObserver ) {
+		new MutationObserver( queueFit ).observe( document.body, { childList: true, subtree: true } );
+	}
 }() );

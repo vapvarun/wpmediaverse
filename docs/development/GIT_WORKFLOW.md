@@ -96,6 +96,12 @@ WPMediaVerse follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PA
 3. `readme.txt` - `Stable tag:` line and changelog entry (WooCommerce action-prefix format). This is the only changelog either plugin keeps; there is no `CHANGELOG.md`, and release history deliberately does not go in `CLAUDE.md`.
 4. `package.json` - `version` field.
 
+While a release branch is in development, the version header, `MVS_VERSION` and `Stable tag:` may still name the last release; they move together in the release commit. Code on the branch already carries the new version in `@since` and in constants such as `MVS_PRO_MIN_FREE`. Do not flag that difference before the release commit.
+
+Release checklist for 2.7.0, open items for the release commit: Pro's `Version:` header and `MVS_PRO_VERSION` move from 2.6.4 to 2.7.0, and Free's `MVS_MIN_PRO` (still 2.6.4, so the branch Pro keeps loading) moves to 2.7.0 in the same commit; both `readme.txt` changelogs get the 2.7.0 entry and `Stable tag:`.
+
+The 2.7.0 release note (readme changelog and GitHub release body) must tell sites on 2.6.1 to 2.6.4 to update to 2.7.0 BEFORE deleting MediaVerse: their shipped `uninstall.php` fatals, so the Delete link on the Plugins screen fails until the update replaces it. Before tagging, run `bin/uninstall-smoke.sh` against the final trees and regenerate both `.pot` files.
+
 **Tagging**
 
 ```bash
@@ -103,4 +109,4 @@ git tag -a v1.3.0 -m "Release v1.3.0"
 git push origin v1.3.0
 ```
 
-Packaging is run locally, not by CI: `npx grunt release` (`ci-check` followed by `dist`; read the `ci-check` task in `Gruntfile.js` for what it verifies) produces `dist/wpmediaverse-{version}.zip`. `bin/build-release.sh` is the fuller path and additionally refuses to package without a fresh green smoke pass in `qa/.last-smoke-pass*.json`.
+Packaging is run locally, not by CI: `npx grunt release` (`ci-check` followed by `dist`; read the `ci-check` task in `Gruntfile.js` for what it verifies) produces `dist/wpmediaverse-{version}.zip`. `bin/build-release.sh` is the fuller path and additionally refuses to package without a fresh green smoke pass in `qa/.last-smoke-pass*.json`. Its step 1b runs both coding-rules scripts and exits 13 on any failure. It runs both with `MVS_RELEASE_BUILD=1`, which makes any rule that could not run a failure: Free Rules 5 and 7 and Pro Rules 7 and 8 without `python3`, the code standard and Rules 10 and 12 without `php`, and Pro's Rule 10 without Free's extension guard checker. A dev run skips such a rule with a warning and ends with one `RULE <n> NOT RUN: <reason>` line per rule. The release build requires Free beside Pro. A Pro-alone checkout cannot run the Pro checks that need Free (the code standard and Rule 10): both are reported, the run ends with `RULE 10 NOT RUN`, and it exits 1 even in a plain dev run, because the missing code-standard checker is a violation.

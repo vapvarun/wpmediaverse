@@ -116,6 +116,21 @@ class MediaCapabilities {
 	 * @return array<string, string[]>
 	 */
 	public static function get_role_caps(): array {
+		$own_media = array(
+			'upload_mvs_media',
+			self::USE_DOCUMENTS_CAP,
+			self::POST_STORIES_CAP,
+			'edit_mvs_media',
+			'delete_mvs_media',
+			'read_mvs_media',
+			'publish_mvs_media',
+			'edit_mvs_medias',
+			'edit_published_mvs_medias',
+			'delete_mvs_medias',
+			'delete_published_mvs_medias',
+			'publish_mvs_medias',
+		);
+
 		return array(
 			'administrator' => array(
 				'upload_mvs_media',
@@ -142,43 +157,11 @@ class MediaCapabilities {
 				'publish_mvs_medias',
 				'read_private_mvs_medias',
 			),
-			'editor'        => array(
-				'upload_mvs_media',
-				self::USE_DOCUMENTS_CAP,
-				self::POST_STORIES_CAP,
-				'edit_mvs_media',
-				'edit_others_mvs_media',
-				'delete_mvs_media',
-				'delete_others_mvs_media',
-				'moderate_mvs_media',
-				'manage_mvs_access',
-				'read_mvs_media',
-				'publish_mvs_media',
-				'edit_mvs_medias',
-				'edit_others_mvs_medias',
-				'edit_published_mvs_medias',
-				'edit_private_mvs_medias',
-				'delete_mvs_medias',
-				'delete_others_mvs_medias',
-				'delete_published_mvs_medias',
-				'delete_private_mvs_medias',
-				'publish_mvs_medias',
-				'read_private_mvs_medias',
-			),
-			'author'        => array(
-				'upload_mvs_media',
-				self::USE_DOCUMENTS_CAP,
-				self::POST_STORIES_CAP,
-				'edit_mvs_media',
-				'delete_mvs_media',
-				'read_mvs_media',
-				'publish_mvs_media',
-				'edit_mvs_medias',
-				'edit_published_mvs_medias',
-				'delete_mvs_medias',
-				'delete_published_mvs_medias',
-				'publish_mvs_medias',
-			),
+			// A blog Editor is a content role, not a community moderator: the same
+			// own-media rights as an Author. Moderation, others' content and private
+			// media are granted to roles in Settings > Permissions.
+			'editor'        => $own_media,
+			'author'        => $own_media,
 			'contributor'   => array(
 				'upload_mvs_media',
 				self::USE_DOCUMENTS_CAP,
@@ -485,6 +468,54 @@ class MediaCapabilities {
 		$caps = array_merge( $caps, array_keys( self::PLURAL_CAP_MAP ), array_values( self::PLURAL_CAP_MAP ) );
 
 		return array_values( array_unique( $caps ) );
+	}
+
+	/**
+	 * Caps a plain WordPress Editor must not hold: moderating, other members' content
+	 * and private media.
+	 *
+	 * @since 2.7.0
+	 */
+	const EDITOR_MODERATION_CAPS = array(
+		'moderate_mvs_media',
+		'manage_mvs_access',
+		'edit_others_mvs_media',
+		'edit_others_mvs_medias',
+		'delete_others_mvs_media',
+		'delete_others_mvs_medias',
+		'edit_private_mvs_medias',
+		'delete_private_mvs_medias',
+		'read_private_mvs_medias',
+	);
+
+	/**
+	 * One-time upgrade: take the moderator powers off the stored Editor role.
+	 *
+	 * Role capabilities live in the database, so changing the default map alone
+	 * changes nothing on a site that is already installed. The saved Permissions
+	 * matrix is cleared of the Editor's entries for these caps too, because it
+	 * records every cell for every role on any save (a deliberate grant and an
+	 * untouched default look the same) and would hand them straight back on the
+	 * next re-apply. An owner who wants Editors to moderate grants it again in
+	 * Settings > Permissions.
+	 *
+	 * @since 2.7.0
+	 */
+	public static function strip_editor_moderation(): void {
+		$role = get_role( 'editor' );
+		if ( $role ) {
+			foreach ( self::EDITOR_MODERATION_CAPS as $cap ) {
+				$role->remove_cap( $cap );
+			}
+		}
+
+		$overrides = get_option( self::OVERRIDES_OPTION, array() );
+		if ( is_array( $overrides ) && isset( $overrides['editor'] ) && is_array( $overrides['editor'] ) ) {
+			foreach ( self::EDITOR_MODERATION_CAPS as $cap ) {
+				unset( $overrides['editor'][ $cap ] );
+			}
+			update_option( self::OVERRIDES_OPTION, $overrides );
+		}
 	}
 
 	/**

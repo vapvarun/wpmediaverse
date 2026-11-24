@@ -82,7 +82,7 @@ class UploadService {
 		// the message rules, not the media library's.
 		$is_dm   = 'dm' === ( $args['privacy'] ?? '' );
 		$allowed = $is_dm ? \WPMediaVerse\Messaging\MessagingController::allowed_attachment_types() : $this->get_allowed_types();
-		$mime    = $this->detect_mime( $file['tmp_name'] );
+		$mime    = $this->detect_mime( $file['tmp_name'], (string) ( $file['name'] ?? '' ) );
 
 		// Hard guard: PDF and unrecognised uploads are refused (owner decision). This is the real enforcement — it fires even
 		// when a legacy site still has `application/pdf` in its stored
@@ -537,15 +537,6 @@ class UploadService {
 			);
 		}
 
-		// Hand the cloud copy to the queue now that the row exists. Deliberately
-		// fire-and-forget: a failure to ENQUEUE must never fail an upload that
-		// has already succeeded — the file is on disk and serving. If Action
-		// Scheduler is absent the media simply stays local, which is a working
-		// state, not a broken one.
-		if ( $defer_cloud ) {
-			self::queue_cloud_sync( $media_id );
-		}
-
 		// Persist optimization outcome on the media row. Done here (after the
 		// media insert) because the meta keys need a media_id. The original
 		// optimization itself already ran on the temp file pre-store().
@@ -626,6 +617,15 @@ class UploadService {
 
 		// Initialize stats row — fresh upload only; replace must NOT reset counts.
 		$this->init_stats( $media_id );
+
+		// Hand the cloud copy to the queue only now: the sizes and WebP/AVIF siblings exist, so the job
+		// moves the whole set. Queued before them, a runner that claimed it straight away (server cron, a
+		// busy site) moved the original alone, flipped file_url to the CDN mid-upload and left the original's
+		// WebP behind. Fire-and-forget: a failure to ENQUEUE never fails an upload that has already
+		// succeeded; if Action Scheduler is absent the media stays local, which is a working state.
+		if ( $defer_cloud ) {
+			self::queue_cloud_sync( $media_id );
+		}
 
 		// Carousel / gallery-post membership, recorded BEFORE mvs_media_uploaded
 		// fires. Written by the REST controller *after* the upload
@@ -899,22 +899,16 @@ class UploadService {
 	 * Detect real MIME type of a file.
 	 *
 	 * @param string $file_path File path.
+	 * @param string $name      Original file name (used when fileinfo is missing).
 	 * @return string MIME type.
 	 */
-	private function detect_mime( string $file_path ): string {
+	private function detect_mime( string $file_path, string $name = '' ): string {
 		$check = wp_check_filetype_and_ext( $file_path, $file_path );
 		if ( ! empty( $check['type'] ) ) {
 			return MediaTypes::canonical_mime( $check['type'] );
 		}
-		// Fallback to finfo.
-		if ( function_exists( 'finfo_open' ) ) {
-			$finfo = finfo_open( FILEINFO_MIME_TYPE );
-			$mime  = finfo_file( $finfo, $file_path );
-			// PHP 8.5 deprecated finfo_close — finfo handle is GC'd when $finfo
-			// goes out of scope.
-			return $mime ? MediaTypes::canonical_mime( $mime ) : '';
-		}
-		return '';
+		$mime = MediaTypes::sniff( $file_path, $name );
+		return '' !== $mime ? MediaTypes::canonical_mime( $mime ) : '';
 	}
 
 	/**
@@ -2426,16 +2420,9 @@ class UploadService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action(
-				'mvs_cloud_sync_media',
-				array( 'media_id' => $media_id ),
-				'wpmediaverse'
-			);
-			return;
+		if ( ! \WPMediaVerse\Core\Jobs::async( 'mvs_cloud_sync_media', array( 'media_id' => $media_id ) ) ) {
+			self::run_cloud_sync( $media_id );
 		}
-
-		self::run_cloud_sync( $media_id );
 	}
 
 	/**
@@ -2456,16 +2443,11 @@ class UploadService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action(
-				'mvs_cloud_repatriate_media',
-				array( 'media_id' => $media_id ),
-				'wpmediaverse'
-			);
-			return;
+		// A privacy flipped twice before the job runs needs one trip home, not two.
+		$args = array( 'media_id' => $media_id );
+		if ( ! \WPMediaVerse\Core\Jobs::async_once( 'mvs_cloud_repatriate_media', $args ) ) {
+			self::run_cloud_repatriation( $media_id );
 		}
-
-		self::run_cloud_repatriation( $media_id );
 	}
 
 	/**

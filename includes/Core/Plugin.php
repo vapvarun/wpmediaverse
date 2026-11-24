@@ -126,6 +126,7 @@ class Plugin {
 	 */
 	private static function card_builders_i18n(): array {
 		return array(
+			'timeZone'     => TemplateHelpers::display_timezone(),
 			'deleteMedia'  => __( 'Delete media', 'wpmediaverse' ),
 			'video'        => __( 'Video', 'wpmediaverse' ),
 			'viewMedia'    => __( 'View media', 'wpmediaverse' ),
@@ -196,9 +197,7 @@ class Plugin {
 	 * Initialize the plugin.
 	 */
 	public static function init(): void {
-		// No load_plugin_textdomain(): WordPress 4.6+ loads it from the language
-		// folders, and calling it on `plugins_loaded` raises the
-		// `_load_textdomain_just_in_time` notice on WP 6.7+.
+		// The textdomain loads on `init` from wpmediaverse.php (bundled languages/ folder).
 
 		// Ensure capabilities are registered. The activation hook can fail
 		// on some hosts (fatal error, WP-CLI without --activate, etc.).
@@ -209,9 +208,8 @@ class Plugin {
 			update_option( 'mvs_caps_version', MVS_VERSION, true );
 		}
 
-		// Run pending DB migrations on every load (cheap version check).
-		$migrator = new Migrator();
-		$migrator->run();
+		// Run pending DB migrations on every load (cheap version check), and recreate missing tables daily.
+		Migrator::boot();
 
 		// v29's drive backfill continues in bounded batches rather than stamping
 		// every row inside the upgrade request — see Migrator::migrate_to_29().
@@ -540,12 +538,52 @@ class Plugin {
 		// Messaging — DM engine.
 		self::init_messaging();
 
-		/**
-		 * Fires after WPMediaVerse has loaded.
-		 *
-		 * @param ServiceContainer $container The service container.
-		 */
-		do_action( 'mvs_loaded', self::$container );
+		self::fire_loaded();
+	}
+
+	/**
+	 * Fire mvs_loaded, so an extension that throws (Pro, an add-on) cannot take the site down with it.
+	 *
+	 * A Throwable from a listener is logged and reported once to admins; Free has finished booting by then, so the
+	 * site keeps working without that extension.
+	 *
+	 * @since 2.7.0
+	 */
+	private static function fire_loaded(): void {
+		try {
+			/**
+			 * Fires after WPMediaVerse has loaded.
+			 *
+			 * @param ServiceContainer $container The service container.
+			 */
+			do_action( 'mvs_loaded', self::$container );
+		} catch ( \Throwable $e ) {
+			\WPMediaVerse\Services\LoggerService::error(
+				'boot',
+				'An mvs_loaded listener failed',
+				array(
+					'error' => $e->getMessage(),
+					'at'    => $e->getFile() . ':' . $e->getLine(),
+				)
+			);
+			add_action(
+				'admin_notices',
+				static function () use ( $e ): void {
+					if ( current_user_can( 'activate_plugins' ) ) {
+						printf(
+							'<div class="notice notice-error"><p>%s</p></div>',
+							esc_html(
+								sprintf(
+									/* translators: %s: file and line that failed. */
+									__( 'A MediaVerse extension failed to start and was skipped, so the rest of the site keeps working. Update or reinstall the extension. Details: %s', 'wpmediaverse' ),
+									basename( $e->getFile() ) . ':' . $e->getLine()
+								)
+							)
+						);
+					}
+				}
+			);
+		}
 	}
 
 	/**
@@ -1083,6 +1121,20 @@ class Plugin {
 				return new \WPMediaVerse\Repository\MessageRepository();
 			}
 		);
+
+		// A deleted item cannot be acted on, so its pending reports stop counting in the moderation queue.
+		add_action( 'mvs_media_deleted', array( new \WPMediaVerse\Repository\ReportRepository(), 'on_media_deleted' ) );
+		add_action( \WPMediaVerse\Repository\ReportRepository::SWEEP_HOOK, array( \WPMediaVerse\Repository\ReportRepository::class, 'sweep_orphans' ) );
+		// Registered on every request: the queue runs from WP-Cron and the async runner, where the Tags
+		// screen (built in admin_menu) never exists, so a hook added there left every large merge "no callbacks".
+		add_action(
+			\WPMediaVerse\Admin\TagManagementPage::MERGE_HOOK,
+			static function ( $source_id, $target_id, $offset = 0 ) {
+				self::$container->get( 'admin.tags' )->process_merge_batch( (int) $source_id, (int) $target_id, (int) $offset );
+			},
+			10,
+			3
+		);
 	}
 
 	/**
@@ -1401,15 +1453,21 @@ class Plugin {
 		}
 
 		// Use Action Scheduler if available, otherwise process synchronously.
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action(
-				'mvs_ai_process_media',
-				array( 'media_id' => $media_id ),
-				'wpmediaverse'
-			);
-		} else {
+		if ( ! self::enqueue_ai( $media_id ) ) {
 			$ai->process( $media_id, true );
 		}
+	}
+
+	/**
+	 * Queue one AI run for a media item, unless one is already waiting (a re-run click or a backfill over a fresh
+	 * upload would otherwise queue a second paid call for the same file). A run in progress does not count: it may
+	 * have read the file before the change that asks for this one.
+	 *
+	 * @param int $media_id Media ID.
+	 * @return bool False when the scheduler is not ready or refused the job, so the caller runs it inline.
+	 */
+	public static function enqueue_ai( int $media_id ): bool {
+		return Jobs::async_once( 'mvs_ai_process_media', array( $media_id ) );
 	}
 
 	/**
@@ -1451,6 +1509,10 @@ class Plugin {
 	 * tracking silently did nothing. One filter here fixes
 	 * every block rather than each render.php remembering to ask.
 	 *
+	 * The main stylesheet has the same limit (it loads only on MediaVerse's own pages), so a Media Grid
+	 * or Explore Feed on a home page rendered as unstyled full-width images with a bare list. Pro's
+	 * stylesheet depends on it, which hid this on sites with Pro and left every Free-only site bare.
+	 *
 	 * @param string $content Rendered block HTML, passed through untouched.
 	 * @param array  $block   Parsed block.
 	 * @return string
@@ -1458,6 +1520,8 @@ class Plugin {
 	public static function enqueue_rest_client_for_block( $content, $block ) {
 		if ( 0 === strpos( (string) ( $block['blockName'] ?? '' ), 'mvs/' ) ) {
 			wp_enqueue_script( 'mvs-rest' );
+			// The handle is registered on every front-end request (register_bp_shared_styles, priority 1).
+			wp_enqueue_style( 'mvs-frontend' );
 		}
 
 		return $content;
@@ -1803,6 +1867,7 @@ class Plugin {
 				'i18n' => array(
 					'following'   => __( 'Following', 'wpmediaverse' ),
 					'follow'      => __( 'Follow', 'wpmediaverse' ),
+					'requested'   => __( 'Requested', 'wpmediaverse' ),
 					'block'       => __( 'Block', 'wpmediaverse' ),
 					'unblock'     => __( 'Unblock', 'wpmediaverse' ),
 					'blockAria'   => __( 'Block this member', 'wpmediaverse' ),
@@ -2518,6 +2583,44 @@ class Plugin {
 		 */
 		$plugin_data = apply_filters( 'mvs_theme_json', $plugin_data );
 
+		// update_with() REPLACES a preset list, it does not append to it. Handing it
+		// only the mvs-* entries swapped WordPress's own default colours, font sizes
+		// and spacing for ours, so black, vivid red and the rest vanished from every
+		// site's global styles and any Cover overlay or button using one lost its
+		// colour. Read what is already there and add ours after it.
+		$current = $theme_json->get_data();
+		foreach ( array(
+			array( 'color', 'palette' ),
+			array( 'typography', 'fontSizes' ),
+			array( 'spacing', 'spacingSizes' ),
+		) as $path ) {
+			list( $group, $key ) = $path;
+			if ( empty( $plugin_data['settings'][ $group ][ $key ] ) || ! is_array( $plugin_data['settings'][ $group ][ $key ] ) ) {
+				continue;
+			}
+
+			// Core hands presets over keyed by origin ( palette.default = [ ... ] ); a plain
+			// list is accepted too. Read whichever it is, and write back the same shape.
+			$present   = isset( $current['settings'][ $group ][ $key ] ) && is_array( $current['settings'][ $group ][ $key ] )
+				? $current['settings'][ $group ][ $key ]
+				: array();
+			$by_origin = isset( $present['default'] ) && is_array( $present['default'] );
+			$existing  = $by_origin ? $present['default'] : $present;
+			$taken     = array_column( $existing, 'slug' );
+			$added     = array_filter(
+				$plugin_data['settings'][ $group ][ $key ],
+				static fn( $entry ) => is_array( $entry ) && ! in_array( $entry['slug'] ?? '', $taken, true )
+			);
+			$merged    = array_values( array_merge( $existing, $added ) );
+
+			$plugin_data['settings'][ $group ][ $key ] = $by_origin ? array( 'default' => $merged ) : $merged;
+		}
+
+		// A plugin does not set the site's content width: themes and core own it. Left
+		// in, it narrowed every constrained block to 720px on a theme with no
+		// theme.json of its own.
+		unset( $plugin_data['settings']['layout'] );
+
 		$theme_json->update_with( $plugin_data );
 
 		return $theme_json;
@@ -2767,6 +2870,7 @@ class Plugin {
 		$user   = wp_get_current_user();
 		$config = array(
 			'restBase'           => esc_url_raw( rest_url( 'mvs/v1' ) ),
+			'timeZone'           => \WPMediaVerse\Core\TemplateHelpers::display_timezone(),
 			// Fluent emoji folder: known reaction characters render as the same
 			// SVGs as media reactions (messaging.js EMOJI_FILES).
 			'emojiBase'          => \WPMediaVerse\Core\TemplateHelpers::emoji_base_url(),
@@ -2798,6 +2902,7 @@ class Plugin {
 			// the store reads these instead.
 			'i18n'               => array(
 				'Request failed'                       => __( 'Request failed', 'wpmediaverse' ),
+				'File too large.'                      => __( 'File too large.', 'wpmediaverse' ),
 				'Could not open conversation.'         => __( 'Could not open conversation.', 'wpmediaverse' ),
 				'Could not share media.'               => __( 'Could not share media.', 'wpmediaverse' ),
 				'Upload failed'                        => __( 'Upload failed', 'wpmediaverse' ),

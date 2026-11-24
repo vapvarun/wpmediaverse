@@ -32,7 +32,6 @@ function run_ux_expectations_tests(): array {
 	$tmp = tempnam( sys_get_temp_dir(), 'mvs_replace_' ) . '.jpg';
 	$img = imagecreatetruecolor( 400, 300 );
 	imagejpeg( $img, $tmp, 80 );
-	imagedestroy( $img );
 
 	$upload_svc  = \WPMediaVerse\Core\Plugin::container()->get( 'upload' );
 	$replace_id  = 0;
@@ -59,7 +58,6 @@ function run_ux_expectations_tests(): array {
 		$tmp2 = tempnam( sys_get_temp_dir(), 'mvs_new_' ) . '.jpg';
 		$img2 = imagecreatetruecolor( 800, 600 );
 		imagejpeg( $img2, $tmp2, 90 );
-		imagedestroy( $img2 );
 
 		// Simulate replace via controller method directly.
 		$controller = new \WPMediaVerse\REST\Controller\MediaController(
@@ -111,7 +109,6 @@ function run_ux_expectations_tests(): array {
 	$avatar_tmp = tempnam( sys_get_temp_dir(), 'mvs_avatar_' ) . '.jpg';
 	$avatar_img = imagecreatetruecolor( 150, 150 );
 	imagejpeg( $avatar_img, $avatar_tmp, 90 );
-	imagedestroy( $avatar_img );
 
 	// Upload avatar via direct REST request with file params.
 	$req = new WP_REST_Request( 'POST', '/mvs/v1/me/avatar' );
@@ -177,7 +174,6 @@ function run_ux_expectations_tests(): array {
 	$ux_tmp = tempnam( sys_get_temp_dir(), 'mvs_ux_' ) . '.jpg';
 	$ux_img = imagecreatetruecolor( 640, 480 );
 	imagejpeg( $ux_img, $ux_tmp, 85 );
-	imagedestroy( $ux_img );
 
 	$ux_title = 'UX Test Image ' . time();
 	$ux_id    = 0;

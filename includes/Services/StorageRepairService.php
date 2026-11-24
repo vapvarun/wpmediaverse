@@ -65,8 +65,10 @@ class StorageRepairService {
 
 	/**
 	 * Action Scheduler group.
+	 *
+	 * @deprecated 2.7.0 Removed in 4.0.0. Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
 	 */
-	const AS_GROUP = 'wpmediaverse';
+	const AS_GROUP = \WPMediaVerse\Core\Jobs::GROUP;
 
 	/**
 	 * State option: { status, cursor, scanned, healed_absolute, healed_stranded, failed }.
@@ -357,18 +359,13 @@ class StorageRepairService {
 	}
 
 	/**
-	 * Schedule the next batch via Action Scheduler (no-op without AS).
+	 * Schedule the next batch.
 	 *
 	 * @param int $cursor Cursor to resume from.
 	 */
 	private function schedule_next( int $cursor ): void {
-		if ( ! function_exists( 'as_enqueue_async_action' ) ) {
-			return; // No Action Scheduler — repair is resumed on the next admin load via WP-CLI / manual run.
-		}
-		if ( function_exists( 'as_has_scheduled_action' ) && as_has_scheduled_action( self::REPAIR_HOOK, array( $cursor ), self::AS_GROUP ) ) {
-			return;
-		}
-		as_enqueue_async_action( self::REPAIR_HOOK, array( $cursor ), self::AS_GROUP );
+		// Pending copies only: this runs inside the batch job, whose own running row must not stop the next one.
+		\WPMediaVerse\Core\Jobs::async_once( self::REPAIR_HOOK, array( $cursor ) );
 	}
 
 	/**

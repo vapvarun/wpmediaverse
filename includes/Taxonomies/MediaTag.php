@@ -14,10 +14,94 @@ defined( 'ABSPATH' ) || exit;
  */
 class MediaTag {
 
+	/** Action Scheduler hook that clears a deleted tag from one batch of media. */
+	public const FORGET_HOOK = 'mvs_tag_forget_batch';
+
+	/** Media per batch; a delete touching no more than this runs inline, like a small merge. */
+	private const FORGET_BATCH = 200;
+
+	/** Per-user transient prefix: tags this admin deleted whose cleanup went to the background (name and total). */
+	public const CLEANUP_TRANSIENT = 'mvs_tag_cleanup_';
+
+	/**
+	 * Drop a deleted tag from each media item's stored tag list.
+	 *
+	 * The media page and the REST item read that list before the term
+	 * relationships, so a tag deleted from Tag management, REST or WP-CLI would
+	 * otherwise keep showing on every media item that carried it.
+	 *
+	 * @param int      $term_id      Deleted term ID.
+	 * @param int      $tt_id        Term taxonomy ID.
+	 * @param \WP_Term $deleted_term Deleted term object.
+	 * @param int[]    $object_ids   Media IDs that carried the term.
+	 */
+	public static function forget_deleted_tag( $term_id, $tt_id, $deleted_term, $object_ids ): void {
+		if ( ! $deleted_term instanceof \WP_Term ) {
+			return;
+		}
+
+		$batches = array_chunk( array_map( 'intval', (array) $object_ids ), self::FORGET_BATCH );
+
+		// Remember the full total for the Tags screen, which otherwise only sees the batches still queued.
+		$user_id = get_current_user_id();
+		if ( count( $batches ) > 1 && $user_id ) {
+			$pending = get_transient( self::CLEANUP_TRANSIENT . $user_id );
+			$pending = is_array( $pending ) ? $pending : array();
+
+			$pending[ strtolower( $deleted_term->name ) ] = array(
+				'name'  => $deleted_term->name,
+				'total' => count( (array) $object_ids ),
+			);
+			set_transient( self::CLEANUP_TRANSIENT . $user_id, $pending, DAY_IN_SECONDS );
+		}
+
+		foreach ( $batches as $i => $ids ) {
+			// A popular tag must not be walked inside the delete request: the first batch is cheap, the rest
+			// go to the background (the same split Tag merge uses).
+			if ( 0 === $i || ! \WPMediaVerse\Core\Jobs::async( self::FORGET_HOOK, array( $deleted_term->name, $ids ) ) ) {
+				self::forget_tag_on_items( $deleted_term->name, $ids );
+			}
+		}
+	}
+
+	/**
+	 * Remove one tag name from the stored tag list of a batch of media.
+	 *
+	 * Action Scheduler callback, also called inline for the first batch.
+	 *
+	 * @param string $name      Deleted tag name.
+	 * @param int[]  $media_ids Media IDs to clean.
+	 */
+	public static function forget_tag_on_items( $name, $media_ids ): void {
+		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
+		$name = strtolower( (string) $name );
+
+		foreach ( (array) $media_ids as $media_id ) {
+			$stored = json_decode( (string) $repo->get( (int) $media_id, 'tags' ), true );
+			if ( ! is_array( $stored ) ) {
+				continue;
+			}
+
+			$kept = array_values(
+				array_filter(
+					$stored,
+					static fn( $tag ) => strtolower( (string) $tag ) !== $name
+				)
+			);
+
+			if ( count( $kept ) !== count( $stored ) ) {
+				$repo->set( (int) $media_id, 'tags', wp_json_encode( $kept ) );
+			}
+		}
+	}
+
 	/**
 	 * Register the mvs_tag taxonomy.
 	 */
 	public static function register(): void {
+		add_action( 'delete_mvs_tag', array( self::class, 'forget_deleted_tag' ), 10, 4 );
+		add_action( self::FORGET_HOOK, array( self::class, 'forget_tag_on_items' ), 10, 2 );
+
 		$labels = array(
 			'name'                       => __( 'Media Tags', 'wpmediaverse' ),
 			'singular_name'              => __( 'Media Tag', 'wpmediaverse' ),

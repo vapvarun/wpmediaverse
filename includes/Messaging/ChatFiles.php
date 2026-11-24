@@ -178,7 +178,7 @@ final class ChatFiles {
 	 * @return void
 	 */
 	public static function maybe_start(): void {
-		if ( ! DirectDelivery::is_scheduling_request() ) {
+		if ( ! \WPMediaVerse\Core\Jobs::is_scheduling_request() ) {
 			return;
 		}
 		$state = self::state();
@@ -193,9 +193,7 @@ final class ChatFiles {
 		if ( $state['done'] ) {
 			return;
 		}
-		$queued = function_exists( 'as_has_scheduled_action' )
-			? as_has_scheduled_action( self::HOOK, null, 'wpmediaverse' )
-			: (bool) wp_next_scheduled( self::HOOK );
+		$queued = \WPMediaVerse\Core\Jobs::is_queued( self::HOOK );
 		if ( ! $queued ) {
 			self::schedule();
 		}
@@ -498,15 +496,11 @@ final class ChatFiles {
 	}
 
 	/**
-	 * Queue one batch (Action Scheduler, else WP-Cron).
+	 * Queue one batch.
 	 *
 	 * @return void
 	 */
 	private static function schedule(): void {
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::HOOK, array(), 'wpmediaverse' );
-		} else {
-			wp_schedule_single_event( time(), self::HOOK );
-		}
+		\WPMediaVerse\Core\Jobs::async( self::HOOK );
 	}
 }

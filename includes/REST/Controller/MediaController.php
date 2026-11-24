@@ -1185,7 +1185,36 @@ class MediaController extends WP_REST_Controller {
 			}
 		}
 
-		return rest_ensure_response( $this->prepare_item_for_response( $media_id, $request ) );
+		return rest_ensure_response( self::with_tag_urls( $this->prepare_item_for_response( $media_id, $request ), $media_id, array_key_exists( 'tags', $json_params ) ) );
+	}
+
+	/**
+	 * Add each tag's term address (keyed by tag name) to an edit response that changed the tags.
+	 *
+	 * Only an edit carries it: the page that saved the tags shows them in place and links them exactly as a
+	 * reload would. Kept out of the shared item shape so lists add no per-item query.
+	 *
+	 * @param mixed $item       Prepared item.
+	 * @param int   $media_id   Media ID.
+	 * @param bool  $tags_saved Whether this request set the tags.
+	 * @return mixed
+	 */
+	private static function with_tag_urls( $item, int $media_id, bool $tags_saved ) {
+		if ( ! $tags_saved || ! is_array( $item ) ) {
+			return $item;
+		}
+
+		$urls = array();
+		foreach ( (array) wp_get_object_terms( $media_id, 'mvs_tag' ) as $term ) {
+			$link = $term instanceof \WP_Term ? get_term_link( $term ) : '';
+			if ( is_string( $link ) && '' !== $link ) {
+				$urls[ $term->name ] = $link;
+			}
+		}
+
+		$item['tag_urls'] = $urls;
+
+		return $item;
 	}
 
 	/**
@@ -1262,9 +1291,7 @@ class MediaController extends WP_REST_Controller {
 		// Validate MIME type using UploadService.
 		$upload_service = Plugin::container()->get( 'upload' );
 		$allowed        = $upload_service->get_allowed_types_public();
-		$finfo          = finfo_open( FILEINFO_MIME_TYPE );
-		$mime           = MediaTypes::canonical_mime( (string) finfo_file( $finfo, $file['tmp_name'] ) );
-		// PHP 8.5 deprecated finfo_close — handle is GC'd at end of scope.
+		$mime           = MediaTypes::canonical_mime( MediaTypes::sniff( $file['tmp_name'], (string) ( $file['name'] ?? '' ) ) );
 
 		// The SAME guard as UploadService::handle(), not a mirror of it: a second
 		// copy would have to be edited in lockstep to stay correct.
@@ -2236,6 +2263,18 @@ class MediaController extends WP_REST_Controller {
 	}
 
 	/**
+	 * An item's stored fields, read after any rename queued earlier in this request is done, so the
+	 * links in a reply never point at files a privacy change has just moved.
+	 *
+	 * @param int $media_id Media id.
+	 * @return array<string, mixed>
+	 */
+	private function get_all_settled( int $media_id ): array {
+		\WPMediaVerse\Services\MediaFileRotator::settle( $media_id );
+		return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
+	}
+
+	/**
 	 * Prepare a media item for REST response.
 	 *
 	 * Builds the response entirely from the mvs_media_index and mvs_media_meta
@@ -2249,7 +2288,7 @@ class MediaController extends WP_REST_Controller {
 		global $wpdb;
 
 		$media_id = (int) $media_id;
-		$all      = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->get_all( $media_id );
+		$all      = $this->get_all_settled( $media_id );
 
 		if ( empty( $all ) ) {
 			return null;
@@ -2520,11 +2559,7 @@ class MediaController extends WP_REST_Controller {
 				ARRAY_A
 			);
 
-		$data['stats'] = array(
-			'views'     => (int) ( $stats_row['views'] ?? 0 ),
-			'reactions' => (int) ( $stats_row['reactions'] ?? 0 ),
-			'comments'  => (int) ( $stats_row['comments'] ?? 0 ),
-		);
+		$data['stats'] = self::item_stats( (array) $stats_row );
 
 		/**
 		 * Filter the media item REST response data.
@@ -2533,6 +2568,24 @@ class MediaController extends WP_REST_Controller {
 		 * @param int   $media_id Media ID.
 		 */
 		return apply_filters( 'mvs_media_response', $data, $media_id );
+	}
+
+	/**
+	 * The stats block of a media item, with a ready-made plural views label for JS-built cards (Load More).
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param array<string, mixed> $row views, reactions, comments.
+	 * @return array{views:int, reactions:int, comments:int, views_label:string}
+	 */
+	private static function item_stats( array $row ): array {
+		$views = (int) ( $row['views'] ?? 0 );
+		return array(
+			'views'       => $views,
+			'reactions'   => (int) ( $row['reactions'] ?? 0 ),
+			'comments'    => (int) ( $row['comments'] ?? 0 ),
+			'views_label' => \WPMediaVerse\Core\TemplateHelpers::count_label( 'views', $views ),
+		);
 	}
 
 	/**

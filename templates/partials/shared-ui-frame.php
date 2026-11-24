@@ -9,7 +9,7 @@
  * - Toast notifications
  *
  * @package WPMediaVerse
- * @version 2.6.4
+ * @version 2.7.0
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -64,8 +64,21 @@ wp_interactivity_state(
 		// URL as the lightbox's 'Log in to comment' link.
 		'exploreUrl'          => \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->explore_url(),
 		'loginUrl'            => \WPMediaVerse\Core\TemplateHelpers::login_url( home_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) ) ) ),
+		'timeZone'            => \WPMediaVerse\Core\TemplateHelpers::display_timezone(),
 		'i18n'                => array(
 			'reportPrompt'         => __( 'Why are you reporting this?', 'wpmediaverse' ),
+			'confirm'              => __( 'Confirm', 'wpmediaverse' ),
+			/* translators: %s: number of views (1). */
+			'viewOne'              => _n( '%s view', '%s views', 1, 'wpmediaverse' ),
+			/* translators: %s: number of views (2 or more). */
+			'viewMany'             => _n( '%s view', '%s views', 2, 'wpmediaverse' ),
+			/* translators: %s: number of downloads (1). */
+			'downloadOne'          => _n( '%s download', '%s downloads', 1, 'wpmediaverse' ),
+			/* translators: %s: number of downloads (2 or more). */
+			'downloadMany'         => _n( '%s download', '%s downloads', 2, 'wpmediaverse' ),
+			'loadMediaFailed'      => __( 'Could not load this media. Try again.', 'wpmediaverse' ),
+			'saveFailedKept'       => __( 'Could not save. Your changes are still here.', 'wpmediaverse' ),
+			'uploadFailed'         => __( 'Upload failed.', 'wpmediaverse' ),
 			'deleteCommentConfirm' => __( 'Delete this comment?', 'wpmediaverse' ),
 			/* translators: used when the comment has exactly one reply. */
 			'deleteCommentReply'   => __( 'Delete this comment and its reply?', 'wpmediaverse' ),
@@ -349,7 +362,7 @@ wp_interactivity_state(
 	<!-- Edit Media modal — opened via window.mvsOpenEditModal( id )
 		when an owner clicks .mvs-media-edit-btn on their own card. -->
 	<?php if ( $mvs_is_logged_in ) : ?>
-	<div class="mvs-modal-overlay mvs-edit-modal-overlay" hidden data-wp-bind--hidden="!state.editModalVisible" data-wp-on--click="actions.closeEditModal" role="dialog" aria-modal="true" aria-labelledby="mvs-edit-modal-title">
+	<div class="mvs-modal-overlay mvs-edit-modal-overlay" hidden data-wp-bind--hidden="!state.editModalOverlayVisible" data-wp-on--click="actions.closeEditModal" role="dialog" aria-modal="true" aria-labelledby="mvs-edit-modal-title">
 		<div class="mvs-modal mvs-edit-modal" data-wp-on--click="actions.handleModalClick">
 			<div class="mvs-modal-header">
 				<h2 class="mvs-modal-title" id="mvs-edit-modal-title">
@@ -363,92 +376,17 @@ wp_interactivity_state(
 			</div>
 
 			<div class="mvs-modal-body">
-				<!-- Loading state while fetching the current media data. -->
-				<div class="mvs-modal-loading" data-wp-bind--hidden="!state.editModalLoading" hidden>
-					<div class="mvs-spinner"></div>
-					<p><?php esc_html_e( 'Loading…', 'wpmediaverse' ); ?></p>
-				</div>
-
-				<!-- Edit form -->
-				<div class="mvs-modal-fields" data-wp-bind--hidden="state.editModalLoading">
-					<div class="mvs-modal-field">
-						<label for="mvs-edit-title"><?php esc_html_e( 'Title', 'wpmediaverse' ); ?></label>
-						<input type="text" id="mvs-edit-title" class="mvs-modal-field-input"
-							data-wp-on--input="actions.updateEditTitle"
-							data-wp-bind--value="state.editModalTitle" />
-					</div>
-					<div class="mvs-modal-field">
-						<label for="mvs-edit-description"><?php esc_html_e( 'Description', 'wpmediaverse' ); ?></label>
-						<textarea id="mvs-edit-description" rows="3" class="mvs-modal-field-input"
-							data-wp-on--input="actions.updateEditDescription"
-							data-wp-bind--value="state.editModalDescription"></textarea>
-					</div>
-					<div class="mvs-modal-field">
-						<label for="mvs-edit-tags"><?php esc_html_e( 'Tags', 'wpmediaverse' ); ?></label>
-						<input type="text" id="mvs-edit-tags" class="mvs-modal-field-input"
-							aria-describedby="mvs-edit-tags-hint"
-							data-wp-on--input="actions.updateEditTags"
-							data-wp-bind--value="state.editModalTags" />
-						<p id="mvs-edit-tags-hint" class="mvs-modal-field-hint"><?php esc_html_e( 'Separate tags with commas.', 'wpmediaverse' ); ?></p>
-					</div>
-					<!-- Privacy + slug-regenerate sit on the same row to save
-						vertical space — pure presentation, no functional pairing. -->
-					<div class="mvs-modal-row">
-						<?php if ( \WPMediaVerse\Services\PrivacyService::user_may_choose_privacy() ) : // Owner lock. Basecamp 10320619418. ?>
-						<div class="mvs-modal-field mvs-modal-field--inline">
-							<label for="mvs-edit-privacy"><?php esc_html_e( 'Privacy', 'wpmediaverse' ); ?></label>
-							<select id="mvs-edit-privacy"
-								aria-describedby="mvs-edit-privacy-album"
-								data-wp-bind--disabled="state.editPrivacyFollowsAlbum"
-								data-wp-on--change="actions.updateEditPrivacy"
-								data-wp-bind--value="state.editModalPrivacy">
-								<?php
-								// A level the picker does not offer (loggedin, space, group,
-								// or anything an import set) shows here as a readable,
-								// disabled option, so the owner can see what their item is
-								// set to. data-wp-each cannot serve this: it is SSR-expanded
-								// by PHP and these options are derived client-side.
-								// Basecamp 10290748981.
-								?>
-								<option data-wp-bind--hidden="!state.editModalPrivacyUnlisted" data-wp-bind--selected="state.editModalPrivacyUnlisted" data-wp-bind--value="state.editModalPrivacy" data-wp-text="state.editModalPrivacyLabel"></option>
-								<?php \WPMediaVerse\Core\TemplateHelpers::privacy_options(); ?>
-							</select>
-							<p id="mvs-edit-privacy-album" class="mvs-modal-note" hidden data-wp-bind--hidden="!state.editPrivacyFollowsAlbum" data-wp-text="state.editPrivacyFollowsText"></p>
-						</div>
-						<?php endif; ?>
-						<div class="mvs-modal-field mvs-modal-field--inline mvs-modal-field--checkbox">
-							<label for="mvs-edit-regenerate-slug" title="<?php esc_attr_e( 'Tick to regenerate the URL slug from the new title. Off by default to keep inbound links stable.', 'wpmediaverse' ); ?>">
-								<input type="checkbox" id="mvs-edit-regenerate-slug"
-									data-wp-on--change="actions.updateEditRegenerateSlug"
-									data-wp-bind--checked="state.editModalRegenerateSlug" />
-								<?php esc_html_e( 'Update URL slug', 'wpmediaverse' ); ?>
-							</label>
-						</div>
-					</div>
-					<?php if ( (bool) get_option( 'mvs_allow_downloads', true ) ) : ?>
-					<div class="mvs-modal-field mvs-modal-field--checkbox">
-						<label for="mvs-edit-allow-download">
-							<input type="checkbox" id="mvs-edit-allow-download"
-								data-wp-on--change="actions.toggleEditAllowDownload"
-								data-wp-bind--checked="state.editModalAllowDownload" />
-							<?php esc_html_e( 'Allow viewers to download this media', 'wpmediaverse' ); ?>
-						</label>
-						<p class="mvs-modal-field-hint">
-							<?php esc_html_e( 'Uncheck to remove the Download button and the player\'s download option for this item. It cannot stop someone who can play or view it from saving or recording it. The site-wide download setting still applies.', 'wpmediaverse' ); ?>
-						</p>
-					</div>
-					<?php endif; ?>
-					<div class="mvs-modal-error" data-wp-bind--hidden="!state.editModalError">
-						<p role="alert" data-wp-text="state.editModalError"></p>
-					</div>
-				</div>
+				<?php
+				$mvs_edit_prefix = 'mvs-edit';
+				include MVS_PLUGIN_DIR . 'templates/partials/media-edit-form.php';
+				?>
 			</div>
 
 			<div class="mvs-modal-footer">
 				<button class="mvs-btn mvs-btn--secondary" data-wp-on--click="actions.closeEditModal" data-wp-bind--disabled="state.editModalSaving">
 					<?php esc_html_e( 'Cancel', 'wpmediaverse' ); ?>
 				</button>
-				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled">
+				<button class="mvs-btn mvs-btn--primary" data-wp-on--click="actions.saveEditModal" data-wp-bind--disabled="state.editModalSaveDisabled" data-wp-bind--aria-disabled="state.editModalSaving">
 					<span data-wp-bind--hidden="state.editModalSaving"><?php esc_html_e( 'Save changes', 'wpmediaverse' ); ?></span>
 					<span data-wp-bind--hidden="!state.editModalSaving" hidden><?php esc_html_e( 'Saving…', 'wpmediaverse' ); ?></span>
 				</button>
@@ -589,14 +527,7 @@ wp_interactivity_state(
 					// visitor's click asks them to log in (lightboxToggleReaction)
 					// instead of the row silently doing nothing. Icons are the
 					// vendored Fluent emoji (TemplateHelpers::emoji_url()).
-					$mvs_reaction_labels = array(
-						'like'  => __( 'Like', 'wpmediaverse' ),
-						'love'  => __( 'Love', 'wpmediaverse' ),
-						'haha'  => __( 'Haha', 'wpmediaverse' ),
-						'wow'   => __( 'Wow', 'wpmediaverse' ),
-						'sad'   => __( 'Sad', 'wpmediaverse' ),
-						'angry' => __( 'Angry', 'wpmediaverse' ),
-					);
+					$mvs_reaction_labels = \WPMediaVerse\Core\TemplateHelpers::reaction_labels();
 					foreach ( \WPMediaVerse\Social\ReactionService::TYPES as $mvs_reaction ) :
 						$mvs_state_key = ucfirst( $mvs_reaction );
 						?>
@@ -750,6 +681,7 @@ wp_interactivity_state(
 											aria-label="<?php esc_attr_e( 'Edit comment', 'wpmediaverse' ); ?>"
 											data-wp-bind--value="context.item.editText"
 											data-wp-on--input="actions.updateLightboxEditText"></textarea>
+										<p class="mvs-lightbox-comment-edit-error" role="alert" tabindex="-1" hidden data-wp-bind--hidden="state.hideLightboxCommentEditError" data-wp-text="context.item.editError"></p>
 										<div class="mvs-lightbox-comment-edit-actions">
 											<button class="mvs-btn mvs-btn--small" type="button"
 												data-wp-on--click="actions.saveEditLightboxComment"><?php esc_html_e( 'Save', 'wpmediaverse' ); ?></button>

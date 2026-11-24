@@ -18,13 +18,20 @@
 	--mvs-chat-border: var(--global-border-color, #dbdbdb);
 	--mvs-chat-text: var(--global-title-color, #262626);
 	--mvs-chat-text-secondary: var(--global-font-color, #6e6e6e);
-	--mvs-chat-bubble-sent: #0095f6;
-	--mvs-chat-bubble-sent-text: #fff;
+	/* Filled controls and the sent bubble carry text, so they take the button pair from
+	 * frontend.css (fill darkened until its text reaches 4.5:1). Without frontend.css the
+	 * fallback #0b6fd0 keeps white at 5.3:1; #0095f6 was 3.2. */
+	--mvs-chat-fill: var(--mvs-btn-primary-bg, #0b6fd0);
+	--mvs-chat-on-fill: var(--mvs-btn-primary-fg, #fff);
+	--mvs-chat-fill-hover: var(--mvs-btn-primary-bg-hover, #0a5fb4);
+	--mvs-chat-on-fill-hover: var(--mvs-btn-primary-fg-hover, #fff);
+	--mvs-chat-bubble-sent: var(--mvs-chat-fill);
+	--mvs-chat-bubble-sent-text: var(--mvs-chat-on-fill);
 	--mvs-chat-bubble-received: #efefef;
 	--mvs-chat-bubble-received-text: #262626;
 	--mvs-chat-bubble-system: transparent;
 	--mvs-chat-online: #44b700;
-	--mvs-chat-danger: #ed4956;
+	--mvs-chat-danger: #d63638; /* white text 4.6:1 (#ed4956 was 3.6) */
 	--mvs-chat-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 	--mvs-chat-radius: 18px;
 	--mvs-chat-panel-width: 360px;
@@ -58,14 +65,14 @@ body.dark-mode {
 .mvs-chat-trigger {
 	position: fixed;
 	bottom: 20px;
-	right: 20px;
-	z-index: 99999;
+	inset-inline-end: 20px;
+	z-index: var(--mvs-z-fab, 9980);
 	width: 56px;
 	height: 56px;
 	padding: 0;
 	border-radius: 50%;
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 	border: none;
 	cursor: pointer;
 	display: flex;
@@ -75,9 +82,28 @@ body.dark-mode {
 	transition: transform 0.2s, background 0.2s;
 }
 
+/* Chat button on the left (setting "Chat Button Position"): the button and its panel mirror to the left edge. */
+.mvs-chat-root--left .mvs-chat-trigger {
+	inset-inline-end: auto;
+	inset-inline-start: 20px;
+}
+
+.mvs-chat-root--left .mvs-chat-panel {
+	inset-inline-end: auto;
+	inset-inline-start: 0;
+	border-inline-start: 0;
+	border-inline-end: 1px solid var(--mvs-chat-border);
+	transform: translateX(-100%);
+}
+
+.mvs-chat-root--left .mvs-chat-panel[data-open="true"] {
+	transform: translateX(0);
+}
+
 .mvs-chat-trigger:hover {
 	transform: scale(1.05);
-	background: var(--mvs-chat-primary-hover);
+	background: var(--mvs-chat-fill-hover);
+	color: var(--mvs-chat-on-fill-hover);
 }
 
 .mvs-chat-trigger svg {
@@ -89,7 +115,7 @@ body.dark-mode {
 .mvs-chat-trigger__badge {
 	position: absolute;
 	top: -4px;
-	right: -4px;
+	inset-inline-end: -4px;
 	min-width: 20px;
 	height: 20px;
 	padding: 0 6px;
@@ -108,17 +134,20 @@ body.dark-mode {
 .mvs-chat-panel {
 	position: fixed;
 	top: 0;
-	right: 0;
+	inset-inline-end: 0;
 	bottom: 0;
 	width: var(--mvs-chat-panel-width);
-	z-index: 100000;
+	z-index: var(--mvs-z-chat-panel, 9986);
 	background: var(--mvs-chat-bg);
-	border-left: 1px solid var(--mvs-chat-border);
+	border-inline-start: 1px solid var(--mvs-chat-border);
 	box-shadow: var(--mvs-chat-shadow);
 	display: flex;
 	flex-direction: column;
 	transform: translateX(100%);
-	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	/* Closed: hidden from the keyboard and assistive tech, not just moved off-screen. The delay lets
+	   the slide-out finish before the panel is hidden; opening shows it at once (see below). */
+	visibility: hidden;
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
 }
 
 /* Account for WP admin bar height */
@@ -144,6 +173,8 @@ body.dark-mode {
 
 .mvs-chat-panel[data-open="true"] {
 	transform: translateX(0);
+	visibility: visible;
+	transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s;
 }
 
 .mvs-chat-panel__view {
@@ -159,7 +190,7 @@ body.dark-mode {
 .mvs-chat-panel__overlay {
 	position: fixed;
 	inset: 0;
-	z-index: 99998;
+	z-index: var(--mvs-z-chat-overlay, 9985);
 	background: rgba(0, 0, 0, 0.3);
 	opacity: 0;
 	pointer-events: none;
@@ -192,6 +223,10 @@ body.dark-mode {
 	cursor: pointer;
 	padding: 4px;
 	color: var(--mvs-chat-text);
+}
+
+[dir="rtl"] .mvs-chat-header__back svg {
+	transform: scaleX(-1);
 }
 
 .mvs-chat-header__back:hover,
@@ -292,7 +327,7 @@ body.dark-mode {
 	border: 2px solid var(--mvs-chat-bg);
 	position: absolute;
 	bottom: 0;
-	right: 0;
+	inset-inline-end: 0;
 }
 
 /* ----------------------------------------------------------------
@@ -365,7 +400,7 @@ body.dark-mode {
 	color: #fff;
 	font-size: 11px;
 	line-height: 18px;
-	margin-left: 4px;
+	margin-inline-start: 4px;
 }
 
 /* ----------------------------------------------------------------
@@ -426,7 +461,7 @@ body.dark-mode {
 	border-radius: 0;
 	background: none;
 	width: 100%;
-	text-align: left;
+	text-align: start;
 }
 
 .mvs-chat-conv-item:hover,
@@ -494,8 +529,8 @@ body.dark-mode {
 	height: 18px;
 	padding: 0 5px;
 	border-radius: 9px;
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 	font-size: 11px;
 	font-weight: 700;
 	line-height: 18px;
@@ -596,13 +631,13 @@ body.dark-mode {
 .mvs-chat-msg--sent .mvs-chat-msg__bubble {
 	background: var(--mvs-chat-bubble-sent);
 	color: var(--mvs-chat-bubble-sent-text);
-	border-bottom-right-radius: 4px;
+	border-end-end-radius: 4px;
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__bubble {
 	background: var(--mvs-chat-bubble-received);
 	color: var(--mvs-chat-bubble-received-text);
-	border-bottom-left-radius: 4px;
+	border-end-start-radius: 4px;
 }
 
 .mvs-chat-msg--system .mvs-chat-msg__bubble {
@@ -629,12 +664,12 @@ body.dark-mode {
 	margin-bottom: 4px;
 	border-radius: 8px;
 	font-size: 12px;
-	opacity: 0.8;
-	border-left: 3px solid currentColor;
+	border-inline-start: 3px solid currentColor;
 }
 
 .mvs-chat-msg--sent .mvs-chat-msg__reply {
-	background: rgba(255, 255, 255, 0.15);
+	/* A darker overlay keeps the quote's text above 4.5:1; a white one lightened the fill. */
+	background: rgba(0, 0, 0, 0.18);
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__reply {
@@ -730,13 +765,13 @@ body.dark-mode {
 
 /* My own reaction — highlighted so it reads as "yours" and tap-to-remove. */
 .mvs-chat-msg__reaction--mine {
-	background: var(--mvs-chat-primary);
-	border-color: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	border-color: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-msg__reaction--mine .mvs-chat-msg__reaction-count {
-	color: #fff;
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-msg__reaction-count {
@@ -788,11 +823,11 @@ body.dark-mode {
 }
 
 .mvs-chat-msg--sent .mvs-chat-msg__context-menu {
-	right: 0;
+	inset-inline-end: 0;
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__context-menu {
-	left: 0;
+	inset-inline-start: 0;
 }
 
 .mvs-chat-msg__context-btn {
@@ -1015,7 +1050,7 @@ body.dark-mode {
 	margin-bottom: 4px;
 	background: var(--mvs-chat-surface);
 	border-radius: 8px;
-	border-left: 3px solid var(--mvs-chat-primary);
+	border-inline-start: 3px solid var(--mvs-chat-primary);
 	font-size: 12px;
 	color: var(--mvs-chat-text-secondary);
 }
@@ -1163,8 +1198,8 @@ body.dark-mode {
 	padding: 0;
 	border-radius: 50%;
 	border: none;
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 	cursor: pointer;
 	display: flex;
 	align-items: center;
@@ -1256,7 +1291,7 @@ body.dark-mode {
 	border: none;
 	background: none;
 	width: 100%;
-	text-align: left;
+	text-align: start;
 }
 
 .mvs-chat-new__user:hover {
@@ -1400,9 +1435,9 @@ body.dark-mode {
 }
 
 .mvs-chat-new__group-create {
-	background: var(--mvs-chat-primary);
-	border-color: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	border-color: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-new__group-create:disabled {
@@ -1447,8 +1482,8 @@ body.dark-mode {
 }
 
 .mvs-chat-request-banner__btn--accept {
-	background: var(--mvs-chat-primary);
-	color: #fff;
+	background: var(--mvs-chat-fill);
+	color: var(--mvs-chat-on-fill);
 }
 
 .mvs-chat-request-banner__btn--decline {
@@ -1480,7 +1515,7 @@ body.dark-mode {
 
 .mvs-messages-page .mvs-messages-sidebar {
 	width: var(--mvs-chat-sidebar-width);
-	border-right: 1px solid var(--mvs-chat-border);
+	border-inline-end: 1px solid var(--mvs-chat-border);
 	display: flex;
 	flex-direction: column;
 	flex-shrink: 0;
@@ -1661,7 +1696,7 @@ body.dark-mode {
 	border: none;
 	background: none;
 	cursor: pointer;
-	text-align: left;
+	text-align: start;
 	color: var(--mvs-chat-text);
 	font-size: 14px;
 }

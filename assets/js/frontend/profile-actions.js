@@ -32,7 +32,8 @@
 		}
 
 		var userId = fbtn.getAttribute( 'data-user-id' );
-		var isFollowing = fbtn.getAttribute( 'data-following' ) === '1';
+		// A pending request is cancelled by the same click that would follow-toggle: it is DELETEd.
+		var isFollowing = fbtn.getAttribute( 'data-following' ) === '1' || fbtn.getAttribute( 'data-requested' ) === '1';
 		var restUrl = fbtn.getAttribute( 'data-rest-url' );
 
 		fbtn.classList.add( 'is-loading' );
@@ -47,12 +48,21 @@
 			.then( function ( data ) {
 				fbtn.classList.remove( 'is-loading' );
 				fbtn.disabled = false;
-				if ( data.following ) {
+				if ( data.requested ) {
+					// A private account turned the follow into a request: waiting, not following.
+					fbtn.setAttribute( 'data-following', '0' );
+					fbtn.setAttribute( 'data-requested', '1' );
+					fbtn.textContent = i18n.requested || '';
+					fbtn.classList.remove( 'mvs-follow-toggle--following' );
+					fbtn.classList.add( 'mvs-btn--primary' );
+				} else if ( data.following ) {
+					fbtn.removeAttribute( 'data-requested' );
 					fbtn.setAttribute( 'data-following', '1' );
 					fbtn.textContent = i18n.following || '';
 					fbtn.classList.add( 'mvs-follow-toggle--following' );
 					fbtn.classList.remove( 'mvs-btn--primary' );
 				} else {
+					fbtn.removeAttribute( 'data-requested' );
 					fbtn.setAttribute( 'data-following', '0' );
 					fbtn.textContent = i18n.follow || '';
 					fbtn.classList.remove( 'mvs-follow-toggle--following' );

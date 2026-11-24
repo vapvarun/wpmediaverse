@@ -22,24 +22,20 @@ class Deactivator {
 	 * Recurring WP-Cron events. The plugin re-schedules each on boot, so
 	 * clearing them on deactivate is safe.
 	 *
-	 * `mvs_story_cleanup` belongs to Pro since 1.8.1; it stays here so a site
-	 * upgraded from before the move does not keep a stray Free-era event.
+	 * Only Free's own: `mvs_story_cleanup` is Pro's (Pro's Lifecycle clears it),
+	 * and listing it here made deactivating or deleting Free stop Pro's sweep.
 	 */
 	public const CRON_HOOKS = array(
 		'mvs_prune_logs',
 		'mvs_purge_old_views',
 		'mvs_process_account_deletions',
-		'mvs_story_cleanup',
 		// A switched-off plugin asks the store nothing; activation re-arms it.
 		PresetActivation::HOOK,
 	);
 
 	/**
-	 * One-off background jobs (WP-Cron single events or Action Scheduler).
-	 *
-	 * Cleared on uninstall only. Cancelling one on a plain deactivate could
-	 * strand work half done - a drive backfill or a file cleanup - that the
-	 * plugin resumes when it is switched back on.
+	 * One-off background jobs (WP-Cron single events or Action Scheduler). Uninstall clears all of them; deactivate
+	 * cancels all but STATE_JOB_HOOKS, whose work can be recomputed or is lost by nature anyway.
 	 */
 	public const JOB_HOOKS = array(
 		'mvs_backfill_drive_columns',
@@ -52,7 +48,33 @@ class Deactivator {
 		'mvs_user_deletion_cascade',
 		'mvs_user_deletion_purge',
 		'mvs_tag_merge_batch',
+		'mvs_close_orphan_reports',
 		\WPMediaVerse\Messaging\ChatFiles::HOOK,
+		\WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK,
+		\WPMediaVerse\Services\MediaFileRotator::HOOK,
+		\WPMediaVerse\Services\MediaFileRotator::LEGACY_HOOK,
+		Jobs::ADOPT_HOOK,
+	);
+
+	/**
+	 * Jobs that finish an action a member or admin already committed, or carry state nothing else holds (file paths
+	 * of deleted media, a deleted user's id, a deleted tag's name). Deactivate leaves them pending, so the routine
+	 * update (deactivate, replace, activate) resumes them. Reasons per hook: docs/standards/background-jobs.md,
+	 * section 6.
+	 */
+	public const STATE_JOB_HOOKS = array(
+		'mvs_backfill_drive_columns',
+		'mvs_close_orphan_reports',
+		'mvs_deliver_webhook',
+		Jobs::ADOPT_HOOK,
+		'mvs_cleanup_media_files',
+		'mvs_cloud_repatriate_media',
+		'mvs_repair_storage_paths',
+		'mvs_tag_merge_batch',
+		'mvs_user_deletion_cascade',
+		'mvs_user_deletion_purge',
+		\WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK,
+		\WPMediaVerse\Services\MediaFileRotator::HOOK,
 	);
 
 	/**
@@ -76,22 +98,23 @@ class Deactivator {
 	}
 
 	/**
-	 * Clear the plugin's scheduled work.
+	 * Clear the plugin's scheduled work, every copy whatever its arguments: WP-Cron events, and pending Action
+	 * Scheduler rows of Free's own hooks (set-based, so 100,000 rows do not time the deactivation out). Never Pro's
+	 * rows, though they share the group. Running, complete and failed rows stay; uninstall.php deletes them.
 	 *
-	 * @param bool $include_jobs Also cancel one-off jobs (uninstall).
+	 * @param bool $include_state_jobs False on deactivate: leave STATE_JOB_HOOKS pending. True on uninstall.
 	 */
-	public static function clear_scheduled( bool $include_jobs ): void {
-		$hooks = $include_jobs ? array_merge( self::CRON_HOOKS, self::JOB_HOOKS ) : self::CRON_HOOKS;
-
-		foreach ( $hooks as $hook ) {
-			wp_clear_scheduled_hook( $hook );
-
-			// ponytail: skipped when no plugin on the site loads Action
-			// Scheduler (uninstall runs with MediaVerse inactive); a pending AS
-			// row for a gone plugin just fails once and is purged by AS itself.
-			if ( $include_jobs && function_exists( 'as_unschedule_all_actions' ) ) {
-				as_unschedule_all_actions( $hook );
+	public static function clear_scheduled( bool $include_state_jobs = true ): void {
+		$hooks = array_merge( self::CRON_HOOKS, self::JOB_HOOKS );
+		if ( ! $include_state_jobs ) {
+			$hooks = array_diff( $hooks, self::STATE_JOB_HOOKS );
+			if ( ! doing_action( 'deactivate_' . MVS_PLUGIN_BASENAME ) ) {
+				_deprecated_argument( __METHOD__, '2.7.0', 'Before 2.7.0 false cleared only the recurring events; it now also cancels every one-off job except STATE_JOB_HOOKS.' );
 			}
 		}
+		foreach ( $hooks as $hook ) {
+			wp_unschedule_hook( $hook );
+		}
+		Jobs::cancel_pending( $hooks );
 	}
 }

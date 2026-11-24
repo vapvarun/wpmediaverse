@@ -48,7 +48,8 @@ const MIN_TOKENS = 30;
 // libs/ put 145 files of other people's code in front of this detector, which
 // reported 14 duplicate clusters — every one of them inside those two packages,
 // and none of them ours to fix. The gate is for OUR copy-paste.
-const EXCLUDED_DIRS = array( 'vendor', 'libs', 'node_modules', 'dist', 'build', 'audit', 'tests' );
+// docs/ holds handoff and plan copies of plugin files, which never ship.
+const EXCLUDED_DIRS = array( 'vendor', 'libs', 'node_modules', 'dist', 'build', 'audit', 'tests', 'docs' );
 
 /**
  * Recursively find PHP files under $dir, excluding library trees.

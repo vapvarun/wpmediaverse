@@ -120,7 +120,7 @@
 
 .mvs-download-btn:hover {
 	background: var(--mvs-primary-hover);
-	color: var(--mvs-surface);
+	color: var(--mvs-on-primary-hover-auto, var(--mvs-on-primary, #fff));
 }
 
 /* Shown instead of a video the browser cannot play (single media page + block). */

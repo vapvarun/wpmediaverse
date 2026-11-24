@@ -22,6 +22,15 @@ import { syncEvents } from '../../../assets/js/frontend/sync-events.js';
  * @param {string} s Date string.
  * @return {number} Epoch ms (returns Date.now() on an unparseable value).
  */
+// Date options in the site timezone PHP passes (Time Standard); an offset zone an older browser rejects falls back to its own.
+const inSiteZone = ( tz, opts = {} ) => {
+	try {
+		return new Intl.DateTimeFormat( undefined, { timeZone: tz || undefined } ) && { ...opts, timeZone: tz || undefined };
+	} catch {
+		return opts;
+	}
+};
+
 function gmtToMs( s ) {
 	s = String( s || '' );
 	const base = /[tT]/.test( s ) ? s : s.replace( ' ', 'T' );
@@ -56,6 +65,7 @@ async function fetchReactions( ctx ) {
 		ctx.userReaction = data.user_reaction || '';
 		ctx.reactions = REACTION_TYPES.map( ( type ) => ( {
 			type,
+			label: state.reactionLabels?.[ type ] || type,
 			icon: ( state.emojiBase || '' ) + type + '.svg',
 			count: data.counts?.[ type ] || 0,
 			active: data.user_reaction === type,
@@ -90,7 +100,7 @@ async function fetchComments( ctx ) {
 					// Keep ISO for the <time datetime> attribute and tooltip; display
 					// the human-readable "2 days ago" coming from the REST payload.
 					date: c.date,
-					date_human: c.date_human || new Date( c.date ).toLocaleDateString(),
+					date_human: c.date_human || new Date( c.date ).toLocaleDateString( document.documentElement.lang || undefined, inSiteZone( store( 'mvs/media-social' ).state.timeZone ) ),
 					content: c.content,
 					// Kept so the delete confirm can say how many replies go with it.
 					replies: Array.isArray( c.replies ) ? c.replies : [],
@@ -118,7 +128,8 @@ async function fetchStats( ctx ) {
 		const res = await window.mvsRest.restFetch( ctx.restUrl + 'media/' + ctx.mediaId + '/stats' );
 		const data = res.data;
 		if ( data?.views !== undefined ) {
-			ctx.viewCount = data.views + ' views';
+			const i = store( 'mvs/media-social' ).state.i18n || {};
+			ctx.viewCount = data.views_label || ( 1 === data.views ? ( i.viewOne || '%s view' ) : ( i.viewMany || '%s views' ) ).replace( '%s', data.views );
 		}
 	} catch {
 		// Ignore.
@@ -136,6 +147,49 @@ async function fetchFavorite( ctx ) {
 	}
 }
 
+// The shared edit form's save event is bound once per page load.
+let mediaUpdatedBound = false;
+
+/**
+ * Show a saved edit on the media page: title, description and the tag links.
+ * A replaced file needs a reload: the page still shows the old file.
+ *
+ * @param {Object} ctx    Page context (archive address, media id).
+ * @param {Object} detail Event detail: { id, item, replaced }.
+ */
+function showUpdatedMedia( ctx, detail ) {
+	if ( detail.id !== ctx.mediaId || ! detail.item ) {
+		return;
+	}
+	const updated = detail.item;
+
+	if ( detail.replaced ) {
+		window.setTimeout( () => window.location.reload(), 1200 );
+		return;
+	}
+
+	const titleEl = document.querySelector( '.mvs-media-title' );
+	if ( titleEl ) titleEl.textContent = updated.title || '';
+	const descEl = document.querySelector( '.mvs-media-description' );
+	if ( descEl ) descEl.textContent = updated.description || '';
+
+	const tagsContainer = document.querySelector( '.mvs-media-tags' );
+	if ( tagsContainer && updated.tags ) {
+		const archiveUrl = ctx.archiveUrl || '/';
+		while ( tagsContainer.firstChild ) tagsContainer.removeChild( tagsContainer.firstChild );
+		updated.tags.forEach( ( t ) => {
+			const a = document.createElement( 'a' );
+			a.className = 'mvs-tag';
+			a.textContent = t;
+			// The term address the server prints on a reload; the filter address is only a fallback.
+			const url = new URL( archiveUrl, window.location.origin );
+			url.searchParams.set( 'mvs_tag', t );
+			a.href = ( updated.tag_urls && updated.tag_urls[ t ] ) || url.toString();
+			tagsContainer.appendChild( a );
+		} );
+	}
+}
+
 const { state } = store( 'mvs/media-social', {
 	state: {
 		reactions: [],
@@ -148,11 +202,6 @@ const { state } = store( 'mvs/media-social', {
 		editTitle: '',
 		editDesc: '',
 		editPrivacy: 'public',
-		editRegenerateSlug: false,
-		editTags: [],
-		tagInput: '',
-		tagResults: [],
-		tagDropdownVisible: false,
 		saving: false,
 		shareLabel: 'Share',
 		/**
@@ -453,6 +502,16 @@ const { state } = store( 'mvs/media-social', {
 		/* --- Owner Edit --- */
 		toggleEdit() {
 			const ctx = getContext();
+			// A media item edits through the one shared form, shown inline here.
+			// Albums are a different record and keep their own small form.
+			if ( 'album' !== ctx.type ) {
+				if ( sharedUI.state.editInlineVisible ) {
+					sharedUI.actions.closeEditModal();
+				} else {
+					sharedUI.actions.openEditModal( ctx.mediaId, { inline: true } );
+				}
+				return;
+			}
 			ctx.editVisible = ! ctx.editVisible;
 		},
 
@@ -472,99 +531,18 @@ const { state } = store( 'mvs/media-social', {
 			getContext().editPrivacy = event.target.value;
 		},
 
-		updateEditRegenerateSlug( event ) {
-			// Off by default — title edits leave the URL slug alone. Tick
-			// to opt into regenerating the slug from the title (will break
-			// inbound links to the old URL).
-			getContext().editRegenerateSlug = !! event.target.checked;
-		},
-
-		updateEditAllowDownload( event ) {
-			getContext().editAllowDownload = !! event.target.checked;
-		},
-
-		/* --- Owner Tag Input --- */
-		async updateTagInput( event ) {
-			const ctx = getContext();
-			ctx.tagInput = event.target.value;
-			await sharedUI.actions.searchTags( ctx.tagInput, ctx.restUrl );
-			const uiState = store( 'mvs/shared-ui' ).state;
-			ctx.tagResults = ( uiState.tagResults || [] )
-				.filter( ( t ) => ! ctx.editTags.includes( t ) );
-			ctx.tagDropdownVisible = ctx.tagResults.length > 0;
-		},
-
-		addTagFromInput( event ) {
-			if ( event.key !== 'Enter' ) return;
-			event.preventDefault();
-			const ctx = getContext();
-			const val = ctx.tagInput.trim();
-			if ( val && ! ctx.editTags.includes( val ) ) {
-				ctx.editTags = [ ...ctx.editTags, val ];
-			}
-			ctx.tagInput = '';
-			ctx.tagDropdownVisible = false;
-		},
-
-		selectTag( event ) {
-			const ctx = getContext();
-			const tag = event.target.dataset.tagName;
-			if ( tag && ! ctx.editTags.includes( tag ) ) {
-				ctx.editTags = [ ...ctx.editTags, tag ];
-			}
-			ctx.tagInput = '';
-			ctx.tagDropdownVisible = false;
-		},
-
-		removeTag( event ) {
-			const ctx = getContext();
-			const tag = event.target.closest( '[data-tag-name]' )?.dataset.tagName;
-			if ( tag ) {
-				ctx.editTags = ctx.editTags.filter( ( t ) => t !== tag );
-			}
-		},
-
+		// Albums only: a media item saves through the shared edit form.
 		async saveEdit() {
 			const ctx = getContext();
 			ctx.saving = true;
-			const ep = endpoint( ctx );
-			// A tag typed but not yet confirmed with Enter is still the member's
-			// intent when they press Save.
-			const pendingTag = ( ctx.tagInput || '' ).trim();
-			if ( pendingTag && ctx.type !== 'album' && ! ctx.editTags.includes( pendingTag ) ) {
-				ctx.editTags = [ ...ctx.editTags, pendingTag ];
-				ctx.tagInput = '';
-			}
 			const payload = {
 				title: ctx.editTitle,
 				description: ctx.editDesc,
 				privacy: ctx.editPrivacy,
 			};
-			if ( ctx.type !== 'album' ) {
-				payload.tags = ctx.editTags;
-			}
-			// Only sent when the field is on the page (site-wide downloads on).
-			if ( document.querySelector( '.mvs-inline-edit .mvs-edit-allow-download' ) ) {
-				payload.allow_download = !! ctx.editAllowDownload;
-			}
-			// Slug stays put unless the user explicitly opted in via the
-			// "Update URL slug" checkbox. Read the DOM directly so the
-			// IA reactive context isn't on the critical path — keeps the
-			// checkbox state authoritative regardless of any hydration
-			// timing quirks. The server still runs sanitize_title +
-			// collision check.
-			const slugCheckbox = document.querySelector( '.mvs-inline-edit .mvs-edit-regenerate-slug' );
-			if ( slugCheckbox && slugCheckbox.checked ) {
-				payload.slug = ( ctx.editTitle || '' )
-					.toLowerCase()
-					.replace( /[^\w\s-]/g, '' )
-					.trim()
-					.replace( /\s+/g, '-' )
-					.replace( /-+/g, '-' );
-			}
 
 			try {
-				const res = await window.mvsRest.restFetch( ctx.restUrl + ep + ctx.mediaId, {
+				const res = await window.mvsRest.restFetch( ctx.restUrl + endpoint( ctx ) + ctx.mediaId, {
 					method: 'PUT',
 					body: payload,
 				} );
@@ -572,41 +550,12 @@ const { state } = store( 'mvs/media-social', {
 				ctx.saving = false;
 				ctx.editVisible = false;
 
-				// If the slug changed (admin opted into the regenerate-slug
-				// checkbox), the URL the user is currently on is now stale
-				// and would 404 on reload. Redirect to the new permalink so
-				// the address bar reflects reality. `replace` (vs `assign`)
-				// so the back-button doesn't bounce them back to the dead URL.
-				if (
-					updated.link &&
-					typeof window !== 'undefined' &&
-					window.location.pathname !== new URL( updated.link ).pathname
-				) {
-					sharedUI.actions.showToast( ( state.i18n?.savedRedirecting || 'Saved! Redirecting to the new URL…' ), 'success' );
-					window.location.replace( updated.link );
-					return;
-				}
-
-				const titleEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-title' : '.mvs-media-title' );
+				const titleEl = document.querySelector( '.mvs-album-title' );
 				if ( titleEl ) titleEl.textContent = updated.title || '';
-				const descEl = document.querySelector( ctx.type === 'album' ? '.mvs-album-description' : '.mvs-media-description' );
+				const descEl = document.querySelector( '.mvs-album-description' );
 				if ( descEl ) descEl.textContent = updated.description || '';
 
-				if ( ctx.type !== 'album' && updated.tags ) {
-					const tagsContainer = document.querySelector( '.mvs-media-tags' );
-					if ( tagsContainer ) {
-						while ( tagsContainer.firstChild ) tagsContainer.removeChild( tagsContainer.firstChild );
-						updated.tags.forEach( ( t ) => {
-							const a = document.createElement( 'a' );
-							a.className = 'mvs-tag';
-							a.textContent = t;
-							a.href = '#';
-							tagsContainer.appendChild( a );
-						} );
-					}
-				}
-
-				sharedUI.actions.showToast( ctx.type === 'album' ? ( state.i18n?.albumSaved || 'Album saved!' ) : ( state.i18n?.saved || 'Saved!' ), 'success' );
+				sharedUI.actions.showToast( ( state.i18n?.albumSaved || 'Album saved!' ), 'success' );
 			} catch {
 				ctx.saving = false;
 				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
@@ -664,7 +613,13 @@ const { state } = store( 'mvs/media-social', {
 			ctx.editTitle = ctx.initialTitle || '';
 			ctx.editDesc = ctx.initialDesc || '';
 			ctx.editPrivacy = ctx.initialPrivacy || 'public';
-			ctx.editTags = ctx.initialTags || [];
+
+			// A media item edited in the shared form (inline here, or the lightbox's
+			// modal): show what was saved without a reload.
+			if ( 'album' !== ctx.type && ! mediaUpdatedBound ) {
+				mediaUpdatedBound = true;
+				document.addEventListener( 'mvs:media-updated', ( event ) => showUpdatedMedia( ctx, event.detail || {} ) );
+			}
 
 			// Load all data in parallel using helpers (ctx passed explicitly).
 			const promises = [];

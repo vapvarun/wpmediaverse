@@ -102,6 +102,23 @@ final class MediaFileRotator {
 	}
 
 	/**
+	 * Rotate one item now if it is waiting for the end of the request.
+	 *
+	 * Anything that builds an item's links for a response calls this first, so a reply to a privacy
+	 * change carries the new link rather than the one that is about to stop working.
+	 *
+	 * @param int $media_id Media id.
+	 * @return void
+	 */
+	public static function settle( int $media_id ): void {
+		if ( ! isset( self::$pending[ $media_id ] ) ) {
+			return;
+		}
+		unset( self::$pending[ $media_id ] );
+		self::rotate_many( array( $media_id ) );
+	}
+
+	/**
 	 * Rotate what was queued: a few inline, the rest in background chunks
 	 * (Action Scheduler when present, else a single WP-Cron event per chunk).
 	 *
@@ -115,11 +132,7 @@ final class MediaFileRotator {
 			return;
 		}
 		foreach ( array_chunk( $ids, 100 ) as $chunk ) {
-			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::HOOK, array( 'ids' => $chunk ), 'wpmediaverse' );
-			} else {
-				wp_schedule_single_event( time(), self::HOOK, array( $chunk ) );
-			}
+			\WPMediaVerse\Core\Jobs::async( self::HOOK, array( 'ids' => $chunk ) );
 		}
 	}
 
@@ -271,12 +284,10 @@ final class MediaFileRotator {
 	 */
 	public static function maybe_start_legacy(): void {
 		$state = get_option( self::LEGACY_OPTION, array() );
-		if ( ! empty( $state['done'] ) || ! DirectDelivery::is_scheduling_request() ) {
+		if ( ! empty( $state['done'] ) || ! \WPMediaVerse\Core\Jobs::is_scheduling_request() ) {
 			return;
 		}
-		$queued = function_exists( 'as_has_scheduled_action' )
-			? as_has_scheduled_action( self::LEGACY_HOOK, null, 'wpmediaverse' )
-			: (bool) wp_next_scheduled( self::LEGACY_HOOK );
+		$queued = \WPMediaVerse\Core\Jobs::is_queued( self::LEGACY_HOOK );
 		if ( ! $queued ) {
 			self::schedule_legacy_batch();
 		}
@@ -317,16 +328,12 @@ final class MediaFileRotator {
 	}
 
 	/**
-	 * Queue one conversion batch (Action Scheduler, else WP-Cron).
+	 * Queue one conversion batch.
 	 *
 	 * @return void
 	 */
 	private static function schedule_legacy_batch(): void {
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::LEGACY_HOOK, array(), 'wpmediaverse' );
-		} else {
-			wp_schedule_single_event( time(), self::LEGACY_HOOK );
-		}
+		\WPMediaVerse\Core\Jobs::async( self::LEGACY_HOOK );
 	}
 
 	/**

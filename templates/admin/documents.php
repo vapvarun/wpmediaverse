@@ -307,7 +307,7 @@ $mvs_sort_link = static function ( string $column, string $label, string $active
 								<td class="column-filesize" data-colname="<?php esc_attr_e( 'Size', 'wpmediaverse' ); ?>"><?php echo esc_html( $mvs_row['file_size'] ? size_format( (int) $mvs_row['file_size'] ) : '—' ); ?></td>
 								<td class="column-author" data-colname="<?php esc_attr_e( 'Author', 'wpmediaverse' ); ?>"><?php echo esc_html( $mvs_authors[ (int) $mvs_row['post_author'] ] ?? __( 'Unknown', 'wpmediaverse' ) ); ?></td>
 								<td class="column-privacy" data-colname="<?php esc_attr_e( 'Privacy', 'wpmediaverse' ); ?>"><?php echo esc_html( ucfirst( (string) $mvs_row['privacy'] ) ); ?></td>
-								<td class="column-uploaded" data-colname="<?php esc_attr_e( 'Uploaded', 'wpmediaverse' ); ?>"><?php echo esc_html( mysql2date( get_option( 'date_format' ), (string) $mvs_row['created_at'] ) ); ?></td>
+								<td class="column-uploaded" data-colname="<?php esc_attr_e( 'Uploaded', 'wpmediaverse' ); ?>"><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( (string) $mvs_row['created_at'] ) ); ?></td>
 							</tr>
 						<?php endforeach; ?>
 					</tbody>

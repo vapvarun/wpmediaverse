@@ -39,14 +39,21 @@ class StorageCleanupService {
 	const CLEANUP_HOOK = 'mvs_cleanup_media_files';
 
 	/**
-	 * Action Scheduler group for queued cleanup actions.
+	 * Action Scheduler group.
+	 *
+	 * @deprecated 2.7.0 Removed in 4.0.0. Every MediaVerse job uses \WPMediaVerse\Core\Jobs::GROUP.
 	 */
-	const AS_GROUP = 'wpmediaverse';
+	const AS_GROUP = \WPMediaVerse\Core\Jobs::GROUP;
 
 	/**
-	 * Maximum delete attempts per path batch before giving up with an error log.
+	 * Seconds added per failed attempt before the next retry (5 minutes, then 10).
 	 */
-	const MAX_ATTEMPTS = 5;
+	const RETRY_STEP_SECONDS = 5 * MINUTE_IN_SECONDS;
+
+	/**
+	 * Maximum delete attempts per path batch (the first try plus two retries) before giving up with an error log.
+	 */
+	const MAX_ATTEMPTS = 3;
 
 	/**
 	 * Storage service (driver factory).
@@ -54,6 +61,19 @@ class StorageCleanupService {
 	 * @var StorageService
 	 */
 	private $storage;
+
+	/**
+	 * Paths orphaned during this request, queued together at shutdown.
+	 *
+	 * @var string[]
+	 */
+	private $pending = array();
+
+	/**
+	 * Encoded size cap per queued action's paths. Action Scheduler refuses args over 8,000 JSON characters (and the
+	 * refused paths would be orphaned for good), so a bulk delete is packed into as few actions as fit under it.
+	 */
+	const ARGS_BUDGET = 7000;
 
 	/**
 	 * Constructor.
@@ -90,13 +110,45 @@ class StorageCleanupService {
 			return;
 		}
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::CLEANUP_HOOK, array( $paths, 1 ), self::AS_GROUP );
-			return;
+		if ( ! $this->pending ) {
+			// WordPress fires `shutdown` from a registered shutdown function, so the flush runs after a fatal too.
+			add_action( 'shutdown', array( $this, 'flush' ) );
 		}
+		array_push( $this->pending, ...$paths );
+	}
 
-		// No Action Scheduler — delete inline so nothing is left orphaned.
-		$this->process( $paths );
+	/**
+	 * Queue this request's orphaned paths, packed into actions of at most ARGS_BUDGET encoded characters.
+	 */
+	public function flush(): void {
+		$paths         = array_values( array_unique( $this->pending ) );
+		$this->pending = array();
+		$chunk         = array();
+		$size          = 0;
+		foreach ( $paths as $path ) {
+			$len = strlen( (string) wp_json_encode( $path ) ) + 1;
+			if ( $chunk && $size + $len > self::ARGS_BUDGET ) {
+				$this->queue_chunk( $chunk );
+				$chunk = array();
+				$size  = 0;
+			}
+			$chunk[] = $path;
+			$size   += $len;
+		}
+		if ( $chunk ) {
+			$this->queue_chunk( $chunk );
+		}
+	}
+
+	/**
+	 * Queue one chunk of paths, or delete it now when the scheduler refuses it, so no file is left orphaned.
+	 *
+	 * @param string[] $chunk Relative file paths.
+	 */
+	private function queue_chunk( array $chunk ): void {
+		if ( ! \WPMediaVerse\Core\Jobs::async( self::CLEANUP_HOOK, array( $chunk, 1 ) ) ) {
+			$this->process( $chunk );
+		}
 	}
 
 	/**
@@ -124,17 +176,25 @@ class StorageCleanupService {
 			return;
 		}
 
-		if ( $attempt < self::MAX_ATTEMPTS && function_exists( 'as_schedule_single_action' ) ) {
-			as_schedule_single_action(
-				time() + ( 5 * MINUTE_IN_SECONDS * $attempt ),
-				self::CLEANUP_HOOK,
-				array( $failed, $attempt + 1 ),
-				self::AS_GROUP
-			);
+		/**
+		 * Delete attempts for a batch of files whose deletion failed (a cloud outage, a locked file). Each retry
+		 * waits RETRY_STEP_SECONDS times the attempt number longer. After the last one the paths are logged as an
+		 * error in MediaVerse > Logs for manual deletion.
+		 *
+		 * @since 2.7.0
+		 *
+		 * @param int $max At least 1. Default 3.
+		 */
+		$max = max( 1, (int) apply_filters( 'mvs_storage_cleanup_max_attempts', self::MAX_ATTEMPTS ) );
 
+		if ( $attempt < $max && \WPMediaVerse\Core\Jobs::at(
+			time() + ( self::RETRY_STEP_SECONDS * $attempt ),
+			self::CLEANUP_HOOK,
+			array( $failed, $attempt + 1 )
+		) ) {
 			LoggerService::warning(
 				'storage_cleanup',
-				sprintf( 'Failed to delete %d orphaned file(s) (attempt %d/%d) — retry scheduled.', count( $failed ), $attempt, self::MAX_ATTEMPTS ),
+				sprintf( 'Failed to delete %d orphaned file(s) (attempt %d/%d) - retry scheduled.', count( $failed ), $attempt, $max ),
 				array( 'paths' => $failed )
 			);
 
@@ -143,7 +203,7 @@ class StorageCleanupService {
 
 		LoggerService::error(
 			'storage_cleanup',
-			sprintf( 'Giving up on %d orphaned file(s) after %d attempts — manual cleanup needed.', count( $failed ), $attempt ),
+			sprintf( 'Giving up on %d orphaned file(s) after %d attempt(s) - delete these paths by hand.', count( $failed ), $attempt ),
 			array( 'paths' => $failed )
 		);
 	}

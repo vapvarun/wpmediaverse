@@ -246,7 +246,7 @@ class LogViewerPage {
 									<tr>
 										<td>
 											<time datetime="<?php echo esc_attr( $log->created_at ); ?>">
-												<?php echo esc_html( wp_date( 'M j, Y g:i A', strtotime( $log->created_at ) ) ); ?>
+												<?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( $log->created_at, 'M j, Y g:i A' ) ); ?>
 											</time>
 										</td>
 										<td>

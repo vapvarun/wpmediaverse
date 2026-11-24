@@ -7,7 +7,7 @@
  * the Services\TransactionService — never raw $wpdb.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.7.0
  *
  * @var int $mvs_uh_user_id  Optional member ID (defaults to current user).
  * @var int $mvs_uh_limit    Optional row cap (default 20).
@@ -60,7 +60,7 @@ $mvs_uh_type_labels = array(
 					$mvs_uh_delta = (int) $mvs_uh_row['delta'];
 					?>
 					<tr>
-						<td><?php echo esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $mvs_uh_row['created_at'] ) ); ?></td>
+						<td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( $mvs_uh_row['created_at'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td>
 						<td>
 							<span class="mvs-usage-history__type mvs-usage-history__type--<?php echo esc_attr( $mvs_uh_type ); ?>">
 								<?php echo esc_html( $mvs_uh_type_labels[ $mvs_uh_type ] ?? ucfirst( $mvs_uh_type ) ); ?>

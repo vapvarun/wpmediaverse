@@ -1572,7 +1572,7 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		echo '<div class="mvs-grid-item-details">';
 		echo '<span class="mvs-grid-item-name">' . esc_html( $name ) . '</span>';
 		if ( '' !== $created ) {
-			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( mysql2date( 'c', $created ) ) . '">' . esc_html( date_i18n( get_option( 'date_format' ), strtotime( $created ) ) ) . '</time>';
+			echo '<time class="mvs-grid-item-date" datetime="' . esc_attr( gmdate( 'c', (int) strtotime( $created . ' UTC' ) ) ) . '">' . esc_html( self::date_label( $created ) ) . '</time>';
 		}
 		$this->render_grid_stats( (int) ( $stats['views'] ?? 0 ), (int) ( $stats['reactions'] ?? 0 ), (int) ( $stats['comments'] ?? 0 ) );
 		echo '</div>';
@@ -2477,6 +2477,93 @@ class TemplateHelpers implements TemplateHelpersInterface {
 	}
 
 	/**
+	 * Timezone that browser-side dates and times display in (Time Standard: never the visitor's browser zone).
+	 *
+	 * The site timezone by default; a site can return a member's own zone through the filter.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @return string IANA name, or a "+05:30" style offset on sites set to a UTC offset.
+	 */
+	public static function display_timezone(): string {
+		/**
+		 * Filters the timezone JavaScript formats dates and times in.
+		 *
+		 * @since 2.7.0
+		 *
+		 * @param string $timezone IANA name or UTC offset; defaults to the site timezone.
+		 */
+		return (string) apply_filters( 'mvs_display_timezone', wp_timezone_string() );
+	}
+
+	/**
+	 * "N views" / "N downloads" with the plural form for the real count, for REST payloads JS prints as-is.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param string $kind  'views' or 'downloads'.
+	 * @param int    $count Count.
+	 * @return string
+	 */
+	public static function count_label( string $kind, int $count ): string {
+		$label = 'downloads' === $kind
+			/* translators: %s: number of downloads. */
+			? _n( '%s download', '%s downloads', $count, 'wpmediaverse' )
+			/* translators: %s: number of views. */
+			: _n( '%s view', '%s views', $count, 'wpmediaverse' );
+		return sprintf( $label, number_format_i18n( $count ) );
+	}
+
+	/**
+	 * A stored time shown in the display timezone (Time Standard: one formatter for every PHP surface).
+	 *
+	 * The core date_i18n() and mysql2date() print a UTC value as if it were local time, so a media item uploaded at
+	 * 10:30 UTC showed the previous day on a UTC+14 site while the JS-built cards showed the right one.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param int|string $when   Unix time, or a UTC MySQL datetime as stored in our tables.
+	 * @param string     $format PHP date format; defaults to the site date format.
+	 * @return string Empty for an empty or unreadable time.
+	 */
+	public static function date_label( $when, string $format = '' ): string {
+		$when = trim( (string) $when );
+		if ( '' === $when || str_starts_with( $when, '0000-00-00' ) ) {
+			return '';
+		}
+		$ts = is_numeric( $when ) ? (int) $when : strtotime( $when . ' UTC' );
+		if ( ! $ts ) {
+			return '';
+		}
+		try {
+			$zone = new \DateTimeZone( self::display_timezone() );
+		} catch ( \Exception $e ) {
+			$zone = wp_timezone();
+		}
+		return (string) wp_date( '' !== $format ? $format : (string) get_option( 'date_format' ), $ts, $zone );
+	}
+
+	/**
+	 * Accessible names for the reaction buttons, keyed by reaction type.
+	 *
+	 * One list for the lightbox row and the media page's social bar (the page bound the raw slug before).
+	 *
+	 * @since 2.7.0
+	 *
+	 * @return array<string,string>
+	 */
+	public static function reaction_labels(): array {
+		return array(
+			'like'  => __( 'Like', 'wpmediaverse' ),
+			'love'  => __( 'Love', 'wpmediaverse' ),
+			'haha'  => __( 'Haha', 'wpmediaverse' ),
+			'wow'   => __( 'Wow', 'wpmediaverse' ),
+			'sad'   => __( 'Sad', 'wpmediaverse' ),
+			'angry' => __( 'Angry', 'wpmediaverse' ),
+		);
+	}
+
+	/**
 	 * Seed PHP-translated strings for the mvs/media-social Interactivity store.
 	 *
 	 * The store (src/blocks/media-social/view.js) is a script MODULE, so
@@ -2492,8 +2579,14 @@ class TemplateHelpers implements TemplateHelpersInterface {
 		wp_interactivity_state(
 			'mvs/media-social',
 			array(
-				'emojiBase' => self::emoji_base_url(),
-				'i18n'      => array(
+				'emojiBase'      => self::emoji_base_url(),
+				'reactionLabels' => self::reaction_labels(),
+				'timeZone'       => self::display_timezone(),
+				'i18n'           => array(
+					/* translators: %s: number of views (1). */
+					'viewOne'              => _n( '%s view', '%s views', 1, 'wpmediaverse' ),
+					/* translators: %s: number of views (2 or more). */
+					'viewMany'             => _n( '%s view', '%s views', 2, 'wpmediaverse' ),
 					// Reactions.
 					'loginToReact'         => __( 'Please log in to react.', 'wpmediaverse' ),
 					'reactionSaveFailed'   => __( 'Could not save reaction.', 'wpmediaverse' ),
@@ -2528,6 +2621,8 @@ class TemplateHelpers implements TemplateHelpersInterface {
 					'albumSaved'           => __( 'Album saved!', 'wpmediaverse' ),
 					'saved'                => __( 'Saved!', 'wpmediaverse' ),
 					'saveFailed'           => __( 'Save failed.', 'wpmediaverse' ),
+					'fileReplaced'         => __( 'File replaced!', 'wpmediaverse' ),
+					'replaceFailed'        => __( 'Replace failed.', 'wpmediaverse' ),
 					// Owner delete.
 					'deleteAlbumConfirm'   => __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ),
 					'deleteMediaConfirm'   => __( 'Delete this media item? This cannot be undone.', 'wpmediaverse' ),

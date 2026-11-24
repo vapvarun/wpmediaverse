@@ -389,8 +389,28 @@ class GeneralSettingsRegistrar {
 			array(
 				'option'      => self::DELETE_DATA_OPTION,
 				'label'       => __( 'Delete all MediaVerse data when the plugin is deleted.', 'wpmediaverse' ),
-				'description' => __( 'Removes media records, albums, messages, settings and permissions. Uploaded files and the pages MediaVerse created are kept. Leave this off if you might reinstall.', 'wpmediaverse' ),
+				'description' => self::delete_data_hint(),
 			)
+		);
+	}
+
+	/**
+	 * What deleting the plugin removes, what it keeps and where the kept files live.
+	 *
+	 * Uploaded files are never deleted (owner decision): the hint names their folders, read from the site's real
+	 * uploads path, so an owner who wants them gone knows where to look.
+	 *
+	 * @return string Description with <strong>/<code> markup (FieldRenderer runs it through wp_kses).
+	 */
+	private static function delete_data_hint(): string {
+		$base = trailingslashit( (string) wp_upload_dir( null, false )['basedir'] );
+		$base = 0 === strpos( $base, ABSPATH ) ? substr( $base, strlen( ABSPATH ) ) : $base;
+
+		return sprintf(
+			/* translators: 1: uploads folder for media, e.g. wp-content/uploads/wpmediaverse, 2: uploads folder for Pro documents. */
+			__( '<strong>This cannot be undone.</strong> When you delete MediaVerse it removes media records, albums and collections, comments, reactions and favorites, messages, settings, member preferences and permissions. Uploaded files are never deleted: they stay in %1$s, MediaVerse Pro private documents (PDFs and other files) stay in %2$s, files on a cloud bucket stay there, and the pages MediaVerse created stay. While MediaVerse Pro is installed, WordPress does not let you delete MediaVerse from the Plugins screen (only with WP-CLI or FTP); if it is removed that way, this choice stays saved so deleting Pro later removes its data too. Leave this off if you might reinstall.', 'wpmediaverse' ),
+			'<code>' . esc_html( $base . 'wpmediaverse/' ) . '</code>',
+			'<code>' . esc_html( $base . 'wpmediaverse-documents/' ) . '</code>'
 		);
 	}
 }

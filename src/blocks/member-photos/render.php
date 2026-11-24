@@ -162,7 +162,7 @@ if ( $mvs_member_actions && is_user_logged_in() && get_current_user_id() !== $mv
 $mvs_member_initials = '';
 if ( $mvs_member_user_obj ) {
 	$parts                = preg_split( '/\s+/', trim( (string) $mvs_member_user_obj->display_name ) );
-	$mvs_member_initials  = mb_strtoupper(
+	$mvs_member_initials  = \WPMediaVerse\Core\Text::upper(
 		mb_substr( $parts[0] ?? '', 0, 1 ) . mb_substr( $parts[1] ?? '', 0, 1 )
 	);
 }

@@ -83,7 +83,8 @@ class TemplateVersionsTest extends WP_UnitTestCase {
 	}
 
 	public function test_old_and_unversioned_copies_are_outdated_and_current_ones_are_not(): void {
-		$current = TemplateVersions::version_of( MVS_PLUGIN_DIR . 'templates/explore.php' );
+		// The copy is current against its OWN template's version; templates are bumped one by one.
+		$current = TemplateVersions::version_of( MVS_PLUGIN_DIR . 'templates/partials/explore-tag-cloud.php' );
 		$dir     = $this->theme(
 			array(
 				'explore.php'                    => $this->header( '1.0.0' ),

@@ -72,6 +72,8 @@ class CollectionController extends WP_REST_Controller {
 				array(
 					'methods'             => WP_REST_Server::CREATABLE,
 					'callback'            => array( $this, 'create_item' ),
+					// Collections are open to any signed-in member on purpose (owner decision, 2.7.0): they curate
+					// other people's public media and hold no uploads, unlike an album, which needs upload rights.
 					'permission_callback' => function () {
 						return is_user_logged_in();
 					},
@@ -560,7 +562,8 @@ class CollectionController extends WP_REST_Controller {
 
 		$viewer   = get_current_user_id();
 		$is_owner = $viewer > 0 && (int) $post->post_author === $viewer;
-		// Mirrors get_item_permissions_check: owner or a moderator may edit.
+		// The owner or a site manager (manage_mvs_settings) may edit. Moderators may view a collection
+		// (see get_item_permissions_check) but not edit it.
 		$can_edit = $is_owner || ( $viewer > 0 && current_user_can( 'manage_mvs_settings' ) );
 
 		// Resolve a smart collection's matches ONCE — they drive both the cover

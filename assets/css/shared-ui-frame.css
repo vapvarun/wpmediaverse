@@ -70,7 +70,7 @@
 .mvs-fab-container {
 	position: fixed;
 	bottom: var(--mvs-fab-bottom);
-	right: 24px;
+	inset-inline-end: 24px;
 	z-index: 99999;
 }
 
@@ -115,8 +115,10 @@
  * (printed in the dashboard footer) toggles an inline display instead, hence
  * the two style exclusions — without them the FAB would vanish for good on
  * that page. visibility also drops the FAB from the tab order and the
- * accessibility tree. Basecamp 10320784115. */
-body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container {
+ * accessibility tree. The open chat panel is a dialog too: the FAB sat on its
+ * Send button. */
+body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container,
+body:has(.mvs-chat-panel[data-open="true"]) .mvs-fab-container {
 	visibility: hidden;
 }
 
@@ -139,7 +141,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 .mvs-modal {
 	background: var(--mvs-surface);
-	border-radius: 16px;
+	border-radius: calc(var(--mvs-radius-lg, 12px) * 4 / 3);
 	width: 90vw;
 	max-width: 560px;
 	max-height: 90vh;
@@ -263,8 +265,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 /* ─── Dropzone ─── */
 .mvs-modal-dropzone {
-	border: 2px dashed var(--mvs-border);
-	border-radius: 12px;
+	border: 2px dashed var(--mvs-border-control);
+	border-radius: var(--mvs-radius-lg, 12px);
 	padding: 32px;
 	text-align: center;
 	cursor: pointer;
@@ -326,7 +328,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	width: 80px;
 	height: 80px;
 	object-fit: cover;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	border: 2px solid var(--mvs-border-light);
 }
 
@@ -350,7 +352,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-preview-icon {
 	width: 80px;
 	height: 80px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	border: 2px dashed var(--mvs-border-light);
 	background: var(--mvs-surface-2, #f6f7f7);
 	display: flex;
@@ -376,7 +378,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-preview-remove {
 	position: absolute;
 	top: -6px;
-	right: -6px;
+	inset-inline-end: -6px;
 	width: 22px;
 	height: 22px;
 	border-radius: 50%;
@@ -461,8 +463,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-field select {
 	width: 100%;
 	padding: 10px 12px;
-	border: 1px solid var(--mvs-border);
-	border-radius: 8px;
+	border: 1px solid var(--mvs-border-control);
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	transition: border-color 0.15s;
 	box-sizing: border-box;
@@ -553,8 +555,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	padding: 10px 12px;
     background: var(--mvs-bg, #fff);
     color: var(--mvs-text, #1d2327);
-	border: 1px solid var(--mvs-border, #c3c4c7);
-	border-radius: 8px;
+	border: 1px solid var(--mvs-border-control);
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 }
 
@@ -564,8 +566,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	padding: 10px 12px;
 	background: var(--mvs-bg, #fff);
     color: var(--mvs-text, #1d2327);
-	border: 1px solid var(--mvs-border, #c3c4c7);
-	border-radius: 8px;
+	border: 1px solid var(--mvs-border-control);
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 }
 
@@ -604,7 +606,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	color: var(--mvs-btn-primary-fg, var(--mvs-on-primary, #ffffff));
 	border: none;
 	padding: 10px 24px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
@@ -620,7 +622,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	color: var(--mvs-text);
 	border: none;
 	padding: 10px 24px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
@@ -665,9 +667,9 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	position: fixed;
 	/* Above the + button, never on it - see the FAB tokens at the top. */
 	bottom: calc(var(--mvs-fab-bottom) + var(--mvs-fab-diameter) + 12px + env(safe-area-inset-bottom, 0px));
-	right: 24px;
+	inset-inline-end: 24px;
 	padding: 12px 20px;
-	border-radius: 8px;
+	border-radius: var(--mvs-radius-md, 8px);
 	font-size: 14px;
 	/* One above the chat panel (messaging.css, also 100000). Both are fixed
 	   children of the root stacking context and both print on wp_footer, so at
@@ -690,8 +692,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
    and the toast sat 16px from one edge and 24px from the other. */
 @media (max-width: 767px) {
 	.mvs-toast {
-		right: 16px;
-		left: 16px;
+		inset-inline-end: 16px;
+		inset-inline-start: 16px;
 		justify-content: center;
 		text-align: center;
 	}
@@ -746,6 +748,14 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
+}
+
+/* The ring takes the toast's own label colour, picked against its fill; the
+   theme's blue ring measured 1.27:1 on the success green. */
+.mvs-toast-close:focus-visible {
+	opacity: 1;
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
 }
 
 .mvs-toast-close:hover {
@@ -876,8 +886,8 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	width: 100%;
 	padding: 8px 12px;
 	font-size: 14px;
-	border: 1px solid var( --mvs-border, #c3c4c7 );
-	border-radius: 6px;
+	border: 1px solid var(--mvs-border-control);
+	border-radius: var(--mvs-radius-sm, 6px);
 	background: var( --mvs-bg, #fff );
 	color: var( --mvs-text, #1d2327 );
 	transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -912,7 +922,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	margin: 0;
 	font-size: 12px;
 	color: var( --mvs-text-muted, #757575 );
-	padding-left: 24px;
+	padding-inline-start: 24px;
 }
 
 /* Access rules panel — repeatable role / group-membership / capability
@@ -969,7 +979,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	height: 32px;
 	padding: 0;
 	border: 1px solid var( --mvs-border );
-	border-radius: 6px;
+	border-radius: var(--mvs-radius-sm, 6px);
 	background: transparent;
 	color: var( --mvs-text-muted, #757575 );
 	cursor: pointer;
@@ -1019,9 +1029,10 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-modal-error {
 	background: rgba( 214, 54, 56, 0.08 );
 	border: 1px solid rgba( 214, 54, 56, 0.2 );
-	border-radius: 6px;
+	border-radius: var(--mvs-radius-sm, 6px);
 	padding: 8px 12px;
-	color: var( --mvs-danger, #d63638 );
+	/* Text token: darker red on light, lighter red on dark (frontend.css), so the message stays readable in both. */
+	color: var( --mvs-danger-text, var( --mvs-danger, #d63638 ) );
 	font-size: 13px;
 }
 
@@ -1033,6 +1044,49 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	margin: 0;
 }
 
+.mvs-modal-error p:focus {
+	outline: none;
+}
+
+.mvs-modal-error p:focus-visible {
+	outline: 2px solid var( --mvs-primary, #2271b1 );
+	outline-offset: 2px;
+}
+
+/* Retry after a failed save: a link-style button with a full tap target. */
+.mvs-modal-error__retry {
+	min-height: 44px;
+	min-width: 44px;
+	padding: 0 4px;
+	margin-inline-start: 4px;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	font-weight: 600;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+.mvs-modal-error__retry[hidden] {
+	display: none !important;
+}
+
+.mvs-modal-error__retry:focus-visible {
+	outline: 2px solid var( --mvs-primary, #2271b1 );
+	outline-offset: 2px;
+}
+
+.mvs-lightbox-comment-edit-error {
+	margin: 6px 0 0;
+	color: var( --mvs-danger-text, var( --mvs-danger, #d63638 ) );
+	font-size: 13px;
+}
+
+.mvs-lightbox-comment-edit-error[hidden] {
+	display: none !important;
+}
+
 /* Footer matches existing modal footer */
 .mvs-edit-modal .mvs-modal-footer {
 	display: flex;
@@ -1040,6 +1094,18 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	justify-content: flex-end;
 	padding: 16px 24px;
 	border-top: 1px solid var( --mvs-border-light, #e5e5e5 );
+}
+
+/* In the dialog, Save stays in view while the form scrolls (an error line can push it below the fold). */
+.mvs-edit-modal-overlay .mvs-modal-footer {
+	position: sticky;
+	bottom: 0;
+	background: var( --mvs-surface );
+}
+
+/* Focusing the error scrolls it clear of that sticky footer. */
+.mvs-edit-modal-overlay .mvs-modal-error p {
+	scroll-margin-bottom: 96px;
 }
 
 /* Mobile sizing — full-screen on small viewports for premium feel. */
@@ -1091,7 +1157,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 .mvs-tag-pills__label {
 	font-size: 12px;
 	color: var( --mvs-text-muted, #757575 );
-	margin-right: 4px;
+	margin-inline-end: 4px;
 }
 
 .mvs-tag-pill {
@@ -1099,7 +1165,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 	align-items: center;
 	padding: 4px 10px;
 	border-radius: 999px;
-	border: 1px solid var( --mvs-border, #c3c4c7 );
+	border: 1px solid var(--mvs-border-control);
 	background: var( --mvs-bg, #fff );
 	font-size: 12px;
 	color: var( --mvs-text, #1d2327 );
@@ -1108,9 +1174,9 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 }
 
 .mvs-tag-pill:hover {
-	background: var( --mvs-primary, #2271b1 );
-	border-color: var( --mvs-primary, #2271b1 );
-	color: #fff;
+	background: var(--mvs-btn-primary-bg, var(--mvs-primary, #2271b1));
+	border-color: var(--mvs-btn-primary-bg, var(--mvs-primary, #2271b1));
+	color: var(--mvs-btn-primary-fg, #fff);
 }
 
 .mvs-tag-pill:focus-visible {
@@ -1120,7 +1186,7 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 .mvs-tag-pill::before {
 	content: '#';
-	margin-right: 2px;
+	margin-inline-end: 2px;
 	opacity: 0.6;
 }
 
@@ -1169,4 +1235,24 @@ body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):no
 
 .mvs-lightbox-media-error a {
 	text-decoration: none;
+}
+
+/* On a phone the modal scrolls as one block; keep Cancel and Save in view at
+   the bottom instead of after the last field. */
+@media ( max-width: 640px ) {
+	.mvs-edit-modal .mvs-modal-footer {
+		position: sticky;
+		bottom: 0;
+		background: var(--mvs-surface);
+		z-index: 1;
+	}
+}
+
+/* The shared media edit form (modal and inline): text fields clear the touch
+   floor in both looks. */
+.mvs-edit-form input[type="text"],
+.mvs-edit-form select,
+.mvs-edit-form .mvs-tag-text-input {
+    min-height: var(--mvs-touch-min, 44px);
+    box-sizing: border-box;
 }

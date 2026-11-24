@@ -1,13 +1,182 @@
-{"release_version":"2.6.4","mode":"combo","ran_at":"2026-11-11T19:54:58Z","free_version":"2.6.4","pro_version":"2.6.4",
-"sections":{
-"A_fresh_install":{"pass":0,"fail":0,"skipped":1},
-"B_upgrade":{"pass":0,"fail":0,"skipped":1},
-"C_core_flows":{"pass":24,"fail":2,"skipped":9},
-"D_regression_guards":{"pass":12,"fail":0,"skipped":14},
-"E_pro_smoke":{"pass":2,"fail":0,"skipped":22},
-"F_cross_browser":{"pass":0,"fail":0,"skipped":3}},
-"failures":[
-{"id":"C.anon.tag-unknown-slug","origin":"pre-existing","triage_note":"Tag/search code untouched in v2.6.3..HEAD","expected":"Clean empty state with browse affordances","actual":"Theme 404 page","url":"http://mediaverse.local/?mvs_tag=zzz-bogus","screenshot":""},
-{"id":"C.member.albums-reorder-ui","origin":"pre-existing","triage_note":"No reorder JS ever shipped; REST PUT /albums/{id}/reorder works (AlbumController.php:134)","expected":"Drag-to-reorder in album UI (MV-ALB-007)","actual":"No front-end reorder control","url":"http://mediaverse.local/my-media/albums","screenshot":""}],
-"debug_log_issues":[{"section":"cleanup","level":"database error","origin":"qa-harness (own cleanup SQL guessed wrong table names)","line":"19:54:20","file":"debug.log"}],
-"manual_required":["F.firefox","F.safari","A fresh install and B upgrade (docker-smoke stack off limits)","390px mobile pass not walked","Trash hooks (mvs_media_trashed/mvs_document_trashed) via admin paths not walked","Search FULLTEXT inconsistency: edited items not matched, fresh ones are (likely InnoDB FTS cache, unconfirmed)"]}
+{
+ "mode": "combo",
+ "release_version": "2.7.0",
+ "free_version": "2.7.0",
+ "pro_version": "2.7.0",
+ "ran_at": "2026-11-24T03:54:29Z",
+ "env": "mv-agent Docker :8911, Reign 8.1.2 (+BuddyX 5.1.3 pass), BuddyPress 14.5.6, PHP 8.2",
+ "sections": {
+  "A_fresh_install": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  },
+  "B_upgrade": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  },
+  "C_core_flows": {
+   "pass": 17,
+   "fail": 7,
+   "skipped": 0
+  },
+  "D_regression_guards": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  },
+  "E_pro_smoke": {
+   "pass": 5,
+   "fail": 1,
+   "skipped": 0
+  },
+  "F_cross_browser": {
+   "pass": 0,
+   "fail": 0,
+   "skipped": 1
+  }
+ },
+ "hard_fails": [],
+ "failures": [
+  {
+   "id": "C.css.upload-focus",
+   "origin": "deferred-2.7.1",
+   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
+   "expected": "Visible focus ring after keyboard Tab on Upload and Cancel",
+   "actual": "computed outline none 0px, box-shadow none, :focus-visible true (1440+390, light+dark)",
+   "url": "/upload-media/"
+  },
+  {
+   "id": "C.css.chat-focus",
+   "origin": "deferred-2.7.1",
+   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
+   "expected": "Visible focus ring on every chat control",
+   "actual": "outline none 0px, no shadow",
+   "url": "chat panel on /explore-media/ (Reign)"
+  },
+  {
+   "id": "C.chat.fab-covers-send",
+   "origin": "fixed",
+   "triage_note": "Fixed in cd715dcb, re-verified in the browser on Reign after the walk.",
+   "expected": "Send button hit-testable",
+   "actual": "elementFromPoint at send centre = BUTTON.mvs-fab (1440: 1410,785; 390: 356,734)",
+   "url": "chat panel with a conversation open, Reign"
+  },
+  {
+   "id": "C.css.chat-composer-edge",
+   "origin": "deferred-2.7.1",
+   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
+   "expected": "field edge >=3:1",
+   "actual": "1.28:1 (light), 1.53:1 (dark)",
+   "url": "chat panel composer"
+  },
+  {
+   "id": "C.css.profile-prompt-contrast",
+   "origin": "deferred-2.7.1",
+   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
+   "expected": "text >=4.5:1; ring on close",
+   "actual": "2.93:1; outline none",
+   "url": "/my-media/ (also /my-media/media/, /my-media/albums/)"
+  },
+  {
+   "id": "C.css.collect-btn-focus",
+   "origin": "deferred-2.7.1",
+   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
+   "expected": "ring on :focus-visible",
+   "actual": "outline none 0px, no shadow",
+   "url": "/media/<slug>/ as non-author"
+  },
+  {
+   "id": "MV35.load-more-unstyled",
+   "origin": "fixed",
+   "triage_note": "Fixed in cd715dcb, re-verified in the browser on Reign after the walk.",
+   "expected": "Styled Load more button (border, radius, 44px min height, centred)",
+   "actual": "bg rgb(239,239,239), border 2px outset, radius 0, padding 24px 0",
+   "url": "/qa270-explore-block/ and /qa270-explore-sc/ (deleted)"
+  },
+  {
+   "id": "E.documents-text-search",
+   "origin": "for",
+   "triage_note": "Body-text search returns 0 for freshly indexed documents (search table row exists, status indexed; AS extract job complete). Raw SQL MATCH AGAINST on the table also returns 0 until OPTIMIZE TABLE flushes the InnoDB FTS cache; then /documents/search finds them. MySQL 8.0.46 in Docker; code path is correct. Verify on a production-like DB before dismissing; title search works.",
+   "expected": "Search on a word inside the document returns it",
+   "actual": "total 0 for zebracrossing/quokka until FTS sync",
+   "url": "/my-media/documents/ search, GET /mvs-pro/v1/documents/search?q="
+  }
+ ],
+ "untested": [
+  {
+   "id": "A_fresh_install",
+   "reason": "deferred: branch mode",
+   "needs": "branch-mode smoke"
+  },
+  {
+   "id": "B_upgrade",
+   "reason": "deferred: branch mode",
+   "needs": "branch-mode smoke"
+  },
+  {
+   "id": "D_regression_guards",
+   "reason": "deferred: branch mode",
+   "needs": "branch-mode smoke"
+  },
+  {
+   "id": "F_cross_browser",
+   "reason": "deferred: branch mode",
+   "needs": "branch-mode smoke"
+  },
+  {
+   "id": "C.css.keyboard-trap-esc",
+   "reason": "Esc does not close chat panel; focus does leave the panel so no trap",
+   "needs": "owner call on Esc behaviour"
+  },
+  {
+   "id": "C.css.dark-mode-prefers-color-scheme",
+   "reason": "Plugin dark mode keys on html[data-theme|data-bx-mode=dark|.dark-mode], not prefers-color-scheme; dark pass applied those attributes plus colorScheme emulation",
+   "needs": "none, by design per frontend.css comment"
+  }
+ ],
+ "debug_log_issues": [],
+ "coverage": {
+  "css_surfaces": "13 surfaces x 1440/390 x light/dark on Reign; 3 on BuddyX",
+  "note": "debug.log grew 105596 -> ~146k bytes, all entries from my own wp eval/eval-file calls; no plugin errors"
+ },
+ "walked": [
+  "C.css.explore: pass (Reign 1440/390 light+dark; fields/selects have edges, rings present)",
+  "C.css.explore-search: pass",
+  "C.css.explore-tag: pass",
+  "C.css.single-media: pass (follow button toggles Following/Follow)",
+  "C.css.lightbox: pass (opens from grid, rings present)",
+  "C.css.upload: FAIL confirm/cancel no focus ring",
+  "C.css.my-media: FAIL profile banner 2.93:1 + close no ring",
+  "C.css.my-media-albums: FAIL same banner",
+  "C.css.follow-btn: FAIL only Pro Save (collect) button lacks ring; follow button itself passes and toggles",
+  "C.css.follow-profile: pass (BP profile select edge is theme-owned: for-theme)",
+  "C.css.chat: FAIL header/composer rings, FAB covers Send, composer edge; sent bubble 5.38:1 light/9:1 dark, reply quote ok, unread pill 5.38:1, trigger badge 4.73:1 (badge updates async; 0 shown right after reload in 3 of 4 combos though list showed unread 1)",
+  "C.css.guest-prompt: pass (login prompt styled, ring present)",
+  "C.theme.buddyx-explore: pass (1 false-positive logged-out-banner close 1.07 in one combo, transparent button)",
+  "C.theme.buddyx-single-media: pass",
+  "C.theme.buddyx-chat: pass (BuddyX supplies rings; Send not covered)",
+  "MV35.explore-feed-block: FAIL button unstyled (css loads, ring ok)",
+  "MV35.explore-feed-shortcode: FAIL same",
+  "MV35.gamification-challenges: pass (mvs-pro-gamification-css loads 413 rules; .mvs-competition-tab ring 2px)",
+  "MV35.gamification-battles: pass",
+  "MV35.compete-hub: pass (renders; seed has no tabs so ring n/a). gamification css also loads on explore pages (global enqueue, note)",
+  "C.member.activity-composer-attach: pass (Attach media 18px icon, privacy+tags rings 2px, post persisted with privacy=members, tag qa270comp, media linked; 64px tile)",
+  "C.member.activity-preview: pass (single image 64px tile)",
+  "C.cron: pass (mvs_cleanup_media_files queued group mvs on delete, ran to complete; Pro deactivate/reactivate no error, recurring cron events back; debug.log clean apart from my own wp eval noise). Observations: stale failed AS rows mvs_competitions_tick [mvs] (callback unregistered while competitions option off) and mvs_tag_merge_batch [wpmediaverse] from 11-22; legacy group wpmediaverse rows pre-date 2.7.0",
+  "C.cron.cleanup-media-job: pass",
+  "E.member.documents-drive: FAIL text search; ok: create folder, duplicate refused by name, upload lands in folder, rename, trash then restore to same folder. Untested: move, download button, bulk move, breadcrumbs, filter persistence",
+  "E.member.documents-privacy-and-sharing: pass (default private, dropdown exactly Only me/All site members/Anyone, unlisted+restricted -> 400 mvs_document_privacy_invalid, share to user, appears in Shared with me, opens 200, revoke removes, grantee reshare 403 mvs_document_share_forbidden). Untested: role grant, edit-grantee",
+  "E.member.documents-role-gate: pass (untick subscriber via Settings: documents/folders/me/shared all 403 mvs_documents_unavailable, rail link gone, config.enabled false; re-tick restores, doc intact)",
+  "E.member.documents-single-and-public: pass (guest opens public text doc 200 with server-rendered text, /explore-document/ rows not tiles, refused doc 404 for editor and guest). Untested: PDF/word tiers, missing file message, paging",
+  "E.admin.documents-screen: pass (list, doc_type/privacy filters, search, 3 sortable cols, Edit|View|Download|Trash|Delete, title opens editor, slug not regenerated on rename). Untested: photo-id refusal text",
+  "E.admin.documents-settings: pass (all 7 controls render with real values, anon links off matches config false). Untested: per-setting enforcement changes"
+ ],
+ "manual_required": [
+  "Human check of chat Send tap target at 390 on Reign (FAB overlap)",
+  "Confirm InnoDB FTS visibility on production-like MySQL"
+ ],
+ "walked_at": "2026-11-24T03:48:03Z",
+ "coverage_note": "Walked on Free 174347d2 / Pro 1a9ae97c (later commits up to the package are release prep, comment-only Plugin Check fixes, and the fixes above, each re-verified in the browser). Sections A, B, D, F: deferred: branch mode; QA covered them in MV33-MV35 and MV36 (no blockers). A fresh install and B upgrade 2.6.4 to 2.7.0 ran separately on a pristine Docker stack (WordPress 7.1.5, PHP 8.5), all green."
+}

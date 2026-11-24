@@ -42,7 +42,7 @@
     "post_types": 0,
     "taxonomies": 0,
     "hooks_fired_unique": 81,
-    "migrator_version": 20
+    "migrator_version": 26
   },
   "detail_files": {
     "rest": "manifest.rest.json",

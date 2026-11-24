@@ -128,6 +128,10 @@ class StatsController extends WP_REST_Controller {
 			);
 		}
 
+		// Labels built with the real count, so every language gets its own plural form (script modules cannot use wp.i18n._n).
+		$stats['views_label']     = \WPMediaVerse\Core\TemplateHelpers::count_label( 'views', (int) $stats['views'] );
+		$stats['downloads_label'] = \WPMediaVerse\Core\TemplateHelpers::count_label( 'downloads', (int) $stats['downloads'] );
+
 		return rest_ensure_response( $stats );
 	}
 

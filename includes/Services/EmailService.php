@@ -42,7 +42,7 @@ class EmailService {
 	 * Hook the channel.
 	 */
 	public function init(): void {
-		add_action( 'mvs_notification_created', array( $this, 'on_notification' ), 20, 7 );
+		add_action( 'mvs_notification_created', array( $this, 'on_notification' ), 20, 8 );
 		add_action( 'mvs_account_deletion_requested', array( $this, 'on_deletion_requested' ), 10, 2 );
 		add_action( 'template_redirect', array( $this, 'maybe_unsubscribe' ), 1 );
 	}
@@ -218,17 +218,44 @@ class EmailService {
 	 * @param string $type            Type.
 	 * @param int    $actor_id        Who caused it.
 	 * @param int    $media_id        Related item.
-	 * @param string $message         Rendered notification text.
+	 * @param string $message         Rendered notification text (in the actor's language; re-rendered for the recipient).
 	 * @param string $link            Where it points.
+	 * @param int    $object_id       The row's comment_id slot.
 	 */
-	public function on_notification( $notification_id, $user_id, $type, $actor_id = 0, $media_id = 0, $message = '', $link = '' ): void {
-		unset( $notification_id, $actor_id, $media_id );
+	public function on_notification( $notification_id, $user_id, $type, $actor_id = 0, $media_id = 0, $message = '', $link = '', $object_id = 0 ): void {
+		unset( $notification_id );
 		$user_id = (int) $user_id;
 		$type    = (string) $type;
 
 		if ( self::host_owns( $type ) || ! $this->type_enabled( $type ) || ! $this->member_wants( $user_id ) ) {
 			return;
 		}
+
+		// The text arrived in the language of whoever caused it; the recipient reads theirs.
+		$switched = switch_to_user_locale( $user_id );
+		try {
+			$notifications = \WPMediaVerse\Core\Plugin::container()->get( 'notifications' );
+			if ( is_object( $notifications ) && method_exists( $notifications, 'build_message_and_link' ) ) {
+				$rendered = $notifications->build_message_and_link( $type, (int) $actor_id, (int) $media_id, (int) $object_id, $user_id );
+				$message  = '' !== $rendered['message'] ? $rendered['message'] : $message;
+			}
+			$this->notification_email( $user_id, $type, (string) $message, (string) $link );
+		} finally {
+			if ( $switched ) {
+				restore_previous_locale();
+			}
+		}
+	}
+
+	/**
+	 * Build and send one notification email (runs in the recipient's locale).
+	 *
+	 * @param int    $user_id Recipient.
+	 * @param string $type    Type.
+	 * @param string $message Notification text.
+	 * @param string $link    Where it points.
+	 */
+	private function notification_email( int $user_id, string $type, string $message, string $link ): void {
 
 		$site = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
 		switch ( $type ) {
@@ -253,9 +280,9 @@ class EmailService {
 				$subject = sprintf( __( 'Your report on %s was reviewed', 'wpmediaverse' ), $site );
 		}
 
-		$body = wp_strip_all_tags( (string) $message );
-		if ( '' !== (string) $link ) {
-			$body .= "\n\n" . esc_url_raw( (string) $link );
+		$body = wp_strip_all_tags( $message );
+		if ( '' !== $link ) {
+			$body .= "\n\n" . esc_url_raw( $link );
 		}
 
 		$this->send( $user_id, $type, $subject, $body, true );
@@ -269,9 +296,26 @@ class EmailService {
 	 * @param int $scheduled_at When deletion runs (Unix time).
 	 */
 	public function on_deletion_requested( $user_id, $scheduled_at ): void {
-		$user_id = (int) $user_id;
+		$user_id  = (int) $user_id;
+		$switched = switch_to_user_locale( $user_id );
+		try {
+			$this->deletion_email( $user_id, (int) $scheduled_at );
+		} finally {
+			if ( $switched ) {
+				restore_previous_locale();
+			}
+		}
+	}
+
+	/**
+	 * Build and send the deletion confirmation (runs in the recipient's locale).
+	 *
+	 * @param int $user_id      Member.
+	 * @param int $scheduled_at When deletion runs (Unix time).
+	 */
+	private function deletion_email( int $user_id, int $scheduled_at ): void {
 		$site    = wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES );
-		$date    = date_i18n( get_option( 'date_format' ), (int) $scheduled_at );
+		$date    = \WPMediaVerse\Core\TemplateHelpers::date_label( (int) $scheduled_at );
 
 		/* translators: %s: site name. */
 		$subject = sprintf( __( 'Your %s account is scheduled for deletion', 'wpmediaverse' ), $site );

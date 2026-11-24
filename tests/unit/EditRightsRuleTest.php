@@ -17,11 +17,20 @@ use WPMediaVerse\Core\Plugin;
 class EditRightsRuleTest extends WP_UnitTestCase {
 
 	public function test_owner_needs_the_edit_right_and_others_need_edit_others(): void {
-		$owner  = self::factory()->user->create( array( 'role' => 'author' ) );
-		$other  = self::factory()->user->create( array( 'role' => 'author' ) );
-		$editor = self::factory()->user->create( array( 'role' => 'editor' ) );
+		$owner = self::factory()->user->create( array( 'role' => 'author' ) );
+		$other = self::factory()->user->create( array( 'role' => 'author' ) );
+		// A role that holds "edit others' media". A plain Editor no longer does (2.7.0).
+		$editor = self::factory()->user->create( array( 'role' => 'administrator' ) );
 		MediaCapabilities::add_caps();
-		$media = Plugin::container()->get( 'media_repository' )->insert( array( 'title' => 'Mine', 'post_author' => $owner, 'status' => 'publish', 'media_type' => 'video', 'privacy' => 'public' ) );
+		$media = Plugin::container()->get( 'media_repository' )->insert(
+			array(
+				'title'       => 'Mine',
+				'post_author' => $owner,
+				'status'      => 'publish',
+				'media_type'  => 'video',
+				'privacy'     => 'public',
+			)
+		);
 
 		$this->assertTrue( MediaCapabilities::can_edit_media( $media, $owner ) );
 		$this->assertFalse( MediaCapabilities::can_edit_media( $media, $other ), 'Another member may not edit it.' );

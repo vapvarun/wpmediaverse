@@ -3,7 +3,7 @@
  * Chat panel — slide-out container rendered in wp_footer.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.7.0
  * @since   1.1.0
  */
 
@@ -15,6 +15,7 @@ if ( ! $user_id ) {
 }
 ?>
 <div
+	class="mvs-chat-root<?php echo 'left' === get_option( 'mvs_chat_position', 'right' ) ? ' mvs-chat-root--left' : ''; ?>"
 	data-wp-interactive="mvs/messaging"
 	data-wp-init="callbacks.onInit"
 	<?php
@@ -26,6 +27,9 @@ if ( ! $user_id ) {
 	<button
 		class="mvs-chat-trigger"
 		data-wp-on--click="actions.toggleChatPanel"
+		data-wp-bind--aria-expanded="state.chatPanelOpen"
+		aria-expanded="false"
+		aria-controls="mvs-chat-panel"
 		type="button"
 		aria-label="<?php esc_attr_e( 'Open messages', 'wpmediaverse' ); ?>"
 	>
@@ -46,6 +50,7 @@ if ( ! $user_id ) {
 
 	<!-- Panel -->
 	<div
+		id="mvs-chat-panel"
 		class="mvs-chat-panel"
 		data-wp-bind--data-open="state.chatPanelOpen"
 		role="dialog"

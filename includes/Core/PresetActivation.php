@@ -304,7 +304,7 @@ final class PresetActivation {
 			return;
 		}
 
-		if ( get_option( self::OPT_ACTIVATED ) ) {
+		if ( get_option( self::OPT_ACTIVATED ) || ! \WPMediaVerse\Admin\OverviewPage::is_housekeeping_screen() ) {
 			return;
 		}
 

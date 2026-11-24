@@ -31,7 +31,7 @@ picking a winner. It is also the pattern BuddyNext and Learnomy already use.
 
 | Directory | Package | Loaded from | Why bundled |
 |---|---|---|---|
-| `action-scheduler/` | `woocommerce/action-scheduler` ^3.7 | `wpmediaverse.php`, at plugin load | Async background work has to run on a standalone install. It was declared in `composer.json` and never loaded, so `WebhookService`, `StorageCleanupService` and `StorageRepairService` sat behind `function_exists( 'as_*' )` guards that were always false unless Pro or WooCommerce happened to be active. |
+| `action-scheduler/` | `woocommerce/action-scheduler` 4.0.0 (the same copy BuddyNext ships) | `wpmediaverse.php`, at plugin load | Async background work has to run on a standalone install. It was declared in `composer.json` and never loaded, so `WebhookService`, `StorageCleanupService` and `StorageRepairService` sat behind `function_exists( 'as_*' )` guards that were always false unless Pro or WooCommerce happened to be active. |
 | `edd-sl-sdk/` | `easy-digital-downloads/edd-sl-sdk` (from `github.com/vapvarun/edd-sl-sdk`) | `wpmediaverse.php`, guarded on completeness | Plugin updates. Loaded only when `src/Versions.php` is also present — a partial extract that keeps the entry file but drops `src/` fatals inside the SDK. Licensing gates updates only, never features, so an incomplete SDK degrades to "updates off". |
 
 Action Scheduler is bundled **unscoped**, deliberately: the global `as_*()` API

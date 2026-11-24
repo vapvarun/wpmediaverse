@@ -317,3 +317,58 @@ added in 2.4.1 was given a background twice — a surface token and a currentCol
 mix — and both computed to `rgb(250,251,253)`, exactly the card behind them. The
 fill was dropped and the glyph carries the tile. If you cannot show the computed
 value differs from its parent, do not ship the declaration.
+
+## Edges: frames and controls
+
+Two border tokens, two jobs.
+
+- `--mvs-border` is the FRAME colour: cards, panels, list dividers, table rules.
+  It is meant to be faint (about 1.4:1 on Reign light, 1.1:1 dark) and stays so.
+- `--mvs-border-control` is the CONTROL edge: inputs, selects, textareas, search
+  pills, outlined buttons, chips and pills, anything a member clicks or types in.
+  It is `color-mix(in oklab, var(--mvs-text) 65%, transparent)`, which clears
+  WCAG 1.4.11's 3:1 on light and dark surfaces (half the text colour measured
+  2.5:1 on Reign's mid-grey text, hence 65%). It is declared in `frontend.css`
+  `:root`, again in the dark block (a dark wrapper below `<html>` redefines
+  `--mvs-text`), in an `@supports not (color: color-mix(...))` block with hex
+  values, and in `admin.css`.
+
+Pick by element, not by look: if it is a control, its edge is
+`--mvs-border-control`. A control that draws no edge today (the Instagram
+layout's comment field) stays borderless; its identity comes from its context,
+and the crawler lists it as an exemption.
+
+Phones (480px and below): the search bar's pill drops its edge and the field
+inside draws its own `--mvs-border-control` edge. The field gains 4px of top
+margin and a 1.5px edge, so the bar grows from 42px to 45px and the content
+below it moves down 7px (measured by QA on the 2.7.0 pass). That shift is
+expected, not a layout bug.
+
+Text on a brand fill reads the paired token (`--mvs-btn-primary-fg`,
+`--mvs-btn-primary-fg-hover`, `--mvs-on-accent`), never a literal `#fff`: on a
+light brand colour, white fails 4.5:1. Hover has its own fill, so it has its own
+text token. The label flips only where white fails on that fill. On stock Reign
+the hover fill is #1662b8 and white stays (6.05:1), so nothing changes there; a
+site whose hover is a lighter step (#3c8ce6, white 3.45:1) gets a dark hover
+label (6.09:1). The fill stays the theme's own colour.
+
+A label on a plain `--mvs-primary` fill (count badges, active chips, Follow,
+Download, the drive's current page) reads `--mvs-on-primary-solid`: white while
+white still reaches 4.5:1 on that fill, else black, from the fill's real
+luminance. It keeps a passing white label, which `contrast-color()` would not
+(on Reign's #1d76da it prefers black 4.65 over a passing white 4.51). On Twenty
+Twenty-Five's #1d7cd5 white is 4.29:1, so the label is black (4.90).
+
+A link button pins its label in every state (`:focus`, `:active`, `:visited`),
+in wp-admin and on the front: core's and themes' `a:active` / `a:focus` (0,1,1)
+outrank a one-class button colour, and wp-admin's `a:active` painted #183ad6 on
+the primary fill (1.55:1).
+
+Text over a photo sits on `--mvs-overlay` (0.72 black) and reads
+`--mvs-on-overlay`. The grid tile's hover stats used a 0.4 scrim: over a white
+photo that measured 2.85:1 in light and 1.7:1 in dark (where the text took the
+light `--mvs-text`); on the overlay pair it is 9.29:1 in both.
+
+Check with `bin/control-contrast-crawler.js` (run instructions in CLAUDE.md,
+Local CI section); `tests/unit/ControlBorderTokenTest.php` pins the token and the
+controls QA measured.

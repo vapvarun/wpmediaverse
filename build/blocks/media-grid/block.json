@@ -67,6 +67,10 @@
       "type": "boolean",
       "default": true
     },
+    "showPagination": {
+      "type": "boolean",
+      "default": true
+    },
     "gap": {
       "type": "number",
       "default": 8

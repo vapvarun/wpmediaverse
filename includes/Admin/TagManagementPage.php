@@ -51,7 +51,8 @@ class TagManagementPage {
 		add_action( 'admin_init', array( $this, 'handle_create' ) );
 		add_action( 'admin_init', array( $this, 'handle_merge' ) );
 		add_action( 'admin_notices', array( $this, 'show_admin_notices' ) );
-		add_action( self::MERGE_HOOK, array( $this, 'process_merge_batch' ), 10, 3 );
+		// WordPress strips these from the address bar after load, so a reload does not repeat the notice.
+		add_filter( 'removable_query_args', static fn( $args ) => array_merge( $args, array( 'deleted', 'updated', 'created', 'merged' ) ) );
 	}
 
 	/**
@@ -612,9 +613,7 @@ class TagManagementPage {
 
 		$large = (int) $source->count > self::MERGE_LARGE_THRESHOLD;
 
-		if ( $large && function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, 0 ), 'wpmediaverse' );
-		} else {
+		if ( ! $large || ! \WPMediaVerse\Core\Jobs::async( self::MERGE_HOOK, array( $source_id, $target_id, 0 ) ) ) {
 			$this->process_merge_batch( $source_id, $target_id, 0 );
 		}
 
@@ -684,9 +683,7 @@ class TagManagementPage {
 			// More rows remain. Each batch detaches the items it moved, so the
 			// next batch starts from the top again (offset 0) rather than
 			// paging, which would skip items as the set shrinks.
-			if ( function_exists( 'as_enqueue_async_action' ) ) {
-				as_enqueue_async_action( self::MERGE_HOOK, array( $source_id, $target_id, 0 ), 'wpmediaverse' );
-			} else {
+			if ( ! \WPMediaVerse\Core\Jobs::async( self::MERGE_HOOK, array( $source_id, $target_id, 0 ) ) ) {
 				$this->process_merge_batch( $source_id, $target_id, 0 );
 			}
 			return;
@@ -797,7 +794,7 @@ class TagManagementPage {
 		$media_offset   = ( $media_paged - 1 ) * $media_per_page;
 
 		global $wpdb;
-		$media_total = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$media_total       = (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 			$wpdb->prepare(
 				"SELECT COUNT(*) FROM {$wpdb->term_relationships} tr
 				INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
@@ -1051,12 +1048,109 @@ class TagManagementPage {
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tag created successfully.', 'wpmediaverse' ) . '</p></div>';
 		}
 
-		if ( isset( $_GET['merged'] ) ) {
-			$message = 'queued' === $_GET['merged']
-				? __( 'Merge started in the background — this is a large tag, so it will finish over the next few minutes.', 'wpmediaverse' )
-				: __( 'Tags merged successfully.', 'wpmediaverse' );
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+		$running = $this->background_tag_work();
+
+		if ( isset( $_GET['merged'] ) && ( '1' === $_GET['merged'] || ! $running['merges'] ) ) {
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Tags merged successfully.', 'wpmediaverse' ) . '</p></div>';
 		}
+
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		// Tags this admin deleted in the background: the full total while running, then one success line, once.
+		$key     = \WPMediaVerse\Taxonomies\MediaTag::CLEANUP_TRANSIENT . get_current_user_id();
+		$tracked = get_transient( $key );
+		$tracked = is_array( $tracked ) ? $tracked : array();
+		foreach ( $tracked as $lower => $tag ) {
+			if ( isset( $running['removals'][ $lower ] ) ) {
+				$running['removals'][ $lower ]['items'] = (int) $tag['total'];
+				continue;
+			}
+			unset( $tracked[ $lower ] );
+			printf(
+				'<div class="notice notice-success is-dismissible" role="status"><p>%s</p></div>',
+				wp_kses(
+					/* translators: %s: tag name. */
+					sprintf( __( 'Tag %s removed from all media.', 'wpmediaverse' ), '<strong>' . esc_html( (string) $tag['name'] ) . '</strong>' ),
+					array( 'strong' => array() )
+				)
+			);
+		}
+		if ( $tracked ) {
+			set_transient( $key, $tracked, DAY_IN_SECONDS );
+		} else {
+			delete_transient( $key );
+		}
+
+		foreach ( $running['removals'] as $removal ) {
+			$this->print_running_notice(
+				sprintf(
+					/* translators: 1: tag name, 2: number of media items. */
+					_n( 'Removing the tag %1$s from %2$s media item in the background. Items may still show it for a minute.', 'Removing the tag %1$s from %2$s media items in the background. Items may still show it for a minute.', $removal['items'], 'wpmediaverse' ),
+					'<strong>' . esc_html( $removal['name'] ) . '</strong>',
+					esc_html( number_format_i18n( $removal['items'] ) )
+				)
+			);
+		}
+		foreach ( $running['merges'] as $merge ) {
+			$this->print_running_notice(
+				sprintf(
+					/* translators: 1: number of media items, 2: source tag, 3: target tag. */
+					_n( 'Moving %1$s media item from %2$s to %3$s in the background.', 'Moving %1$s media items from %2$s to %3$s in the background.', $merge['items'], 'wpmediaverse' ),
+					esc_html( number_format_i18n( $merge['items'] ) ),
+					'<strong>' . esc_html( $merge['source'] ) . '</strong>',
+					'<strong>' . esc_html( $merge['target'] ) . '</strong>'
+				)
+			);
+		}
+	}
+
+	/**
+	 * Tag deletes and merges still queued in Action Scheduler, read from the queue itself (nothing is stored).
+	 *
+	 * @since 2.7.0
+	 *
+	 * @return array{removals: array<string, array{name:string, items:int}>, merges: array<int, array{source:string, target:string, items:int}>}
+	 */
+	private function background_tag_work(): array {
+		$work = array(
+			'removals' => array(),
+			'merges'   => array(),
+		);
+		// ponytail: counts the first PENDING_READ_LIMIT queued batches per hook; beyond that the number undercounts.
+		foreach ( \WPMediaVerse\Core\Jobs::pending_args( \WPMediaVerse\Taxonomies\MediaTag::FORGET_HOOK ) as $args ) {
+			$name = (string) ( $args[0] ?? '' );
+			$key  = strtolower( $name );
+			if ( '' === $name ) {
+				continue;
+			}
+			$work['removals'][ $key ]['name']  = $name;
+			$work['removals'][ $key ]['items'] = ( $work['removals'][ $key ]['items'] ?? 0 ) + count( (array) ( $args[1] ?? array() ) );
+		}
+
+		foreach ( \WPMediaVerse\Core\Jobs::pending_args( self::MERGE_HOOK ) as $args ) {
+			$source = get_term( (int) ( $args[0] ?? 0 ), 'mvs_tag' );
+			$target = get_term( (int) ( $args[1] ?? 0 ), 'mvs_tag' );
+			if ( $source instanceof WP_Term && $target instanceof WP_Term ) {
+				$work['merges'][ $source->term_id ] = array(
+					'source' => $source->name,
+					'target' => $target->name,
+					'items'  => (int) $source->count,
+				);
+			}
+		}
+
+		return $work;
+	}
+
+	/**
+	 * Print one "running in the background" notice.
+	 *
+	 * @param string $html Message, already escaped.
+	 */
+	private function print_running_notice( string $html ): void {
+		printf(
+			'<div class="notice notice-info mvs-tag-work-notice" role="status"><p><span class="spinner is-active mvs-tag-work-notice__spinner" aria-hidden="true"></span>%s</p></div>',
+			wp_kses( $html, array( 'strong' => array() ) )
+		);
 	}
 }

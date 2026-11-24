@@ -1,0 +1,3 @@
+# Gate exceptions. Format: ID  path-fragment  [ceiling in KB gzipped]   # reason
+# A number holds that file at an agreed size (the gate still fails if it grows); no number skips the check.
+P2 assets/css/frontend.css 80   # Owner 2026-11-21: ceiling held at today's 73 KB plus ~10% until the per-surface CSS split is planned as its own release task (default is 35 KB).

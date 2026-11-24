@@ -1,0 +1,337 @@
+# Background jobs (Free + Pro)
+
+The portfolio rule set is the Wbcom background-jobs standard (`~/.claude/workflows/wp-background-jobs.md`
+for maintainers). This page is MediaVerse's copy: the rules as we apply them, and the real job list. Update
+the job list in the same commit as any change to a job.
+
+## 1. One entry point for the family
+
+Every MediaVerse job, Free and Pro, is queued, found and cancelled through Free's `WPMediaVerse\Core\Jobs`.
+Pro requires Free 2.7.0 (`MVS_PRO_MIN_FREE`) and calls it directly, as it calls Free's other static helpers.
+
+Methods:
+
+```
+has_as(): bool
+when_ready( callable $callback ): void
+async( string $hook, array $args = [], bool $cron_fallback = true, int $cron_delay = 0 ): bool
+async_once( string $hook, array $args = [] ): bool
+at( int $timestamp, string $hook, array $args = [], bool $unique = false ): bool
+is_queued( string $hook, ?array $args = null ): bool
+is_pending( string $hook, ?array $args = null ): bool
+next( string $hook ): int
+ensure_recurring( string $hook, int $first, int|string $schedule, bool $cron = false ): void
+is_scheduling_request(): bool
+cancel( string $hook, array $args = [] ): void
+cancel_pending( array $hooks ): int
+requeue_after_activation( string $transient, array $hooks ): void
+requeue_unheard( array $hooks ): int
+pending_args( string $hook ): array
+prune_history(): int
+adopt_pending( array $hooks ): int
+```
+
+- `when_ready()` runs the callback now when Action Scheduler's store is ready or Action Scheduler is not loaded
+  at all, else on `action_scheduler_init`.
+- `async()` / `at()` use Action Scheduler (Free's bundled copy, `libs/action-scheduler`) once its store is
+  ready, and WP-Cron before that (for example an upgrade routine running early in a request). `async()` also
+  falls back to WP-Cron when Action Scheduler refuses the job, and answers `true` when a WP-Cron copy with the
+  same arguments already waits. They return `false` when no scheduler holds the job. A caller whose work must
+  not be lost does the work inline on `false`, and that is the only fallback code a caller carries. On WP-Cron
+  the arguments are stored as a list, so the listener receives them positionally on both schedulers (PHP 8
+  would read string keys as named parameters).
+- `is_queued()` counts a pending **or running** copy: use it to avoid starting the same work twice, typically
+  as the start guard of an argument-less chain whose continuations queue unguarded.
+  `is_pending()` counts only a copy waiting to start: use it when the question is whether a later run is still
+  coming (a reaper, a follow-up pass, a continuation queued from inside the running job). `async_once()` queues
+  unless a copy with the same arguments is waiting. On Action Scheduler it tries a unique insert first, so two
+  requests cannot both add a copy; when that is refused only because a copy is running, it adds a plain copy
+  unless one is pending.
+  A continuation queued from inside its own running job must never use `is_queued()` with its own arguments:
+  the running row matches and the chain stops after one batch.
+- `next()` answers the soonest pending run time, falling back to WP-Cron; 0 when none is pending, one runs now,
+  or the soonest is an async copy.
+- `cancel( $hook, [] )` cancels every copy whatever its arguments, while `is_queued( $hook, null )` is the "any
+  arguments" lookup: an empty array means "any" only for cancel, because cancelling just the argument-less copy
+  is never what a caller wants.
+- `cancel_pending( $hooks )` marks the pending Action Scheduler rows of exactly these hooks cancelled with
+  set-based UPDATEs of 10,000 rows. It is the deactivation path (section 3, rule 9).
+- `requeue_unheard( $hooks )` queues again, with the same arguments, the failed rows of these hooks that failed
+  only because no listener was registered in the last 7 days (`REQUEUE_DAYS`), for hooks that have a listener
+  now, and deletes them with their logs (200 per call). Several requests over the same rows are safe: each row
+  is claimed first (failed to cancelled in one UPDATE, `JobRepository::claim_failed()`), so it is queued once and
+  runs once; a row whose copy no scheduler takes goes back to failed. `requeue_after_activation( $transient, $hooks )` runs it
+  on scheduling requests while the activation or update note is set (section 6).
+
+Same job, different name in Jetonomy's `\Jetonomy\Queue`:
+
+| MediaVerse `Jobs` | Jetonomy `Queue` |
+|---|---|
+| `requeue_after_activation()` | `flag_recovery()` |
+| `requeue_unheard()` | `recover_kept_jobs()` |
+| `REQUEUE_BATCH` | `RECOVER_BATCH` |
+| `STATE_JOB_HOOKS` (Free `Deactivator`, Pro `Lifecycle`) | `KEEP_ON_DEACTIVATE` |
+| `cancel_pending()` | `cancel_on_deactivate()` |
+
+Other differences from Jetonomy's `\Jetonomy\Queue` (shared names behave the same):
+
+- `ensure_recurring()` also takes a cron expression (`$cron = true`, used by the streak check); Jetonomy takes
+  only an interval. Both clamp an interval to at least 60 seconds.
+- No `recurring()` registry: each MediaVerse recurring job arms itself on
+  `action_scheduler_ensure_recurring_actions`.
+- No `delete_rows()`: uninstall deletes rows by hook list directly, since `Jobs` is not loaded there.
+- `adopt_pending()` exists only here: Jetonomy never used another group. It runs only on scheduling requests;
+  on any other request it queues `mvs_adopt_pending_jobs` and returns.
+- Lookups and cancels match by hook and arguments in **any** group. Every MediaVerse hook starts with `mvs_`
+  and belongs to us alone, and a row queued before 2.7.0 may still sit in an old group.
+- `ensure_recurring()` keeps exactly one argument-less recurring row (a continuation of the same hook carries a
+  cursor and does not count) and runs only on scheduling requests.
+- Pro's `WPMediaVersePro\Core\Jobs` keeps only its two 2.6.4 methods (`ensure_recurring()` with its old
+  five-argument signature, `is_scheduling_request()`), deprecated, handing off to Free's.
+- Direct Action Scheduler calls outside `Jobs` are limited to these, each commented in place:
+  `CompetitionsScheduler::arm()` reads `as_next_scheduled_action()` because it answers `true` while a tick
+  runs; `TranscriptionService::retire_recurring_reaper()` checks and cancels only the argument-less row in the
+  legacy `mvs-pro` group (one-time retirement); Pro `Lifecycle::clear_scheduled()`, which cancels row by row
+  only when Free's `Jobs` is not loaded (Free inactive); both `uninstall.php` files, which run when the plugins
+  may not be loaded; and `Repository\JobRepository`, the set-based UPDATE behind `Jobs::cancel_pending()` and
+  the failed-row SELECT behind `Jobs::requeue_unheard()`.
+- Direct `wp_schedule_*()` calls are limited to the WP-Cron housekeeping set in section 4 (recurring events
+  armed on boot, and the preset licence retry, which reads `DISABLE_WP_CRON` to decide whether to retry).
+- `is_scheduling_request()` is the one rule for "may this request do upkeep": cron, WP-CLI, an admin page load,
+  or Action Scheduler's daily `action_scheduler_ensure_recurring_actions` run (its async runner may execute it
+  inside admin-ajax). `DirectDelivery::is_scheduling_request()` is a deprecated alias.
+
+## 2. One group: `mvs`
+
+Every MediaVerse job, Free and Pro, is queued in the Action Scheduler group `mvs`
+(`Jobs::GROUP`). Before 2.7.0 jobs were spread over `wpmediaverse`, `wpmediaverse-pro`, `mvs-pro` and
+`mvs-connectors` (`Jobs::LEGACY_GROUPS`).
+
+Upgrade: Free migration v47 and Pro migration v26 call `Jobs::adopt_pending()` with their own hook lists
+(`Core\Deactivator::JOB_HOOKS`, Pro `Core\Lifecycle::RECURRING_HOOKS` + `JOB_HOOKS`). Each pending row is
+re-saved in `mvs` with the same hook, arguments, schedule and priority. Only rows no runner has claimed move;
+the old row is cancelled before its copy is saved, then deleted, so it cannot run twice. One call moves at most
+2,000 rows in at most 10 seconds and queues an `mvs_adopt_pending_jobs` job with the same hook list for the
+rest. Each plugin moves only its own hooks, so a newer Free never moves rows an older Pro still reads. Finished rows are not moved;
+Action Scheduler's own cleaner ages them out. A row the move misses still runs and is still found, because
+lookups are group-agnostic.
+
+## 3. Rules we follow
+
+1. **Lightest mechanism first.** Event-driven jobs are single actions armed by the event. No sub-hourly poll
+   exists: 2.7.0 retired the five-minute competitions poll and the recurring captions reaper. Pro's upgrade
+   (migration v24-v26, `Migrator::upgrade_jobs_270()`) cancels both and arms the single run that replaces each,
+   on the upgrade request itself.
+2. **Arguments are ids, under 191 characters.** Action Scheduler stores longer arguments in `extended_args`,
+   which its lookups do not index. Exceptions, all deliberate:
+   - `mvs_cleanup_media_files` carries file paths, because the media row is already gone when cleanup runs.
+     Paths are chunked to `StorageCleanupService::ARGS_BUDGET` (7,000 bytes, under Action Scheduler's 8,000
+     limit) and each chunk is never looked up, only run.
+   - `mvs_deliver_webhook` carries the event body, because the body must be what was true when the event
+     happened, not when the job runs.
+   - `mvs_tag_forget_batch` carries the tag name (the term is already deleted) and up to `MediaTag::FORGET_BATCH` ids.
+   - `mvs_rotate_media_files` carries `{ ids }`, up to 100 media ids per job.
+   - `mvs_user_deletion_cascade` jobs queued before 2.6.2 carry `[ user_id, ids ]`; they still run. Jobs queued
+     since carry only `[ user_id ]` and re-read the member's media each batch.
+   - `mvs_pro_push_send` carries `[ user_id, message, data ]`, the push as it was when the notification fired.
+   - `mvs_document_folder_subtree_rewrite` carries the old and new folder paths, which no longer exist on the
+     folder rows once the move is saved.
+   - `mvs_adopt_pending_jobs` carries the hook list it is moving (about 900 characters for Pro's), so the follow-up
+     moves the same hooks; it is never looked up by arguments.
+3. **Chained jobs.** A sweep processes one bounded batch and queues its own continuation. Cursor chains carry
+   the last id (report sweep, story cleanup, streak check, document extraction backfill, storage repair, captions
+   reaper). Shrinking-set chains carry the same arguments every pass and re-read from the top, because each pass
+   removes what it handled (user-deletion cascade, tag merge, space-drive trash, folder trash, restore and purge);
+   each re-queues only when a pass changed something, so rows it cannot handle cannot keep it alive. Each run
+   handles one bounded batch (the sizes are in section 4: 20 to 500 rows) and queues at most one continuation,
+   so a sweep is one job at a time, never one job per row. A continuation is queued from inside the running job,
+   so its guard counts pending copies only (`async_once()` or `is_pending()`), never `is_queued()`.
+4. **Duplicate guards go through `Jobs`.** Action Scheduler's `$unique` (4.0.0) refuses a job when a pending or
+   running row with the same hook, group and arguments exists. `Jobs::async_once()` uses it and then allows a
+   copy behind a running one; `Jobs::at( ..., true )` passes it through. For "is this work already under way"
+   use `Jobs::is_queued()`; see section 1.
+5. **Never skip.** A job is never dropped because the queue is busy or stalled; at most an identical pending
+   copy is reused.
+6. **Retries are capped at 3** (`StorageCleanupService::MAX_ATTEMPTS`, `WebhookService::MAX_ATTEMPTS`), with a
+   5-minute step (`RETRY_STEP_SECONDS`). The storage cleanup cap is filterable
+   (`mvs_storage_cleanup_max_attempts`); after the last attempt the paths are logged as an error in MediaVerse >
+   Logs for deletion by hand (`wp mvs repair-storage` does not delete files). A retry that no scheduler accepts
+   is logged as given up straight away.
+7. **Recurring rows are armed only on scheduling requests**: cron, WP-CLI, an admin page load or Action
+   Scheduler's daily housekeeping run, never a visitor's request (`Jobs::is_scheduling_request()`). The streak
+   check and the competitions tick also re-arm on `action_scheduler_ensure_recurring_actions`, and on the first
+   scheduling request after Pro is activated (`Lifecycle::rearm_after_activation()`, read from the
+   `mvs_pro_rearm_jobs` transient the activation hook sets); autopilot re-arms on its next scheduling request.
+8. **Own rows only, one retention rule for the family.** The daily `mvs_prune_logs` event calls
+   `Jobs::prune_history()`: in group `mvs`, completed actions that finished more than
+   `mvs_finished_action_retention_days` ago (default 7), cancelled actions scheduled that long ago, and failed
+   actions last attempted more than `mvs_failed_action_retention_days` ago (default 90,
+   `Jobs::FAILED_RETENTION_DAYS`, the same rule Jetonomy applies)
+   are deleted with their log rows, 200 per batch, at most 50 batches of each and 10 seconds a run, checked
+   before each row; a row another request deleted first is skipped. Rows in the pre-2.7.0 groups are not
+   touched, so a year-old failed row there stays until uninstall. Pending and
+   running rows, and every other plugin's rows, are never touched. We never change Action Scheduler's
+   site-wide retention filters.
+9. **Deactivation cancels recomputable jobs and leaves state jobs; uninstall deletes them all.** Each plugin
+   clears its own lists from WP-Cron and cancels the pending Action Scheduler rows of its own hooks (Free
+   `Deactivator::CRON_HOOKS` + `JOB_HOOKS`; Pro `Lifecycle::RECURRING_HOOKS` + `JOB_HOOKS`) with set-based
+   UPDATEs of 10,000 rows (`Jobs::cancel_pending()`). The scope is the exact hook, never the group, because `mvs`
+   is shared. Running, complete and failed rows, and every other plugin's rows, are never touched. **Except
+   `STATE_JOB_HOOKS`** (one constant per plugin): jobs that finish an action a member or owner already committed,
+   or carry state nothing else holds, stay pending, so the supported update (deactivate, replace, activate)
+   resumes them. A recomputable job is cancelled, because its work comes back by itself or is lost by nature.
+   Uninstall clears every hook, state jobs included: it deletes each plugin's own rows by its own hook list in
+   batches of 1,000 (a batch that deletes nothing stops the loop), then the group rows once nothing uses them.
+   Free never deletes a Pro row, and neither drops a table. Section 6 has the hook-by-hook list.
+
+## 4. Job list
+
+All Action Scheduler jobs are in group `mvs`. Retention is the rule in 3.8.
+
+### Free
+
+| Hook | Trigger | Rows per event | Arguments |
+|---|---|---|---|
+| `mvs_cleanup_media_files` | media deleted (paths buffered, queued at shutdown) | one per 7,000-byte chunk of paths; retry rows up to 3 | `[ paths, attempt ]` (exception 3.2) |
+| `mvs_ai_process_media` | upload with AI moderation on | 1 per media, deduped | `[ media_id ]` |
+| `mvs_deliver_webhook` | a subscribed event | 1 per endpoint; retries up to 3 | event body (exception 3.2) |
+| `mvs_cloud_sync_media` | upload with a cloud driver | 1 per media | `{ media_id }` |
+| `mvs_cloud_repatriate_media` | media made non-public while its bytes sit on the cloud driver | 1 per media, deduped (pending only) | `{ media_id }` |
+| `mvs_user_deletion_cascade` | member deleted | 1, continues per 100 media | `[ user_id ]` or `[ user_id, rest ]` |
+| `mvs_user_deletion_purge` | member deleted | 1 | `[ user_id ]` |
+| `mvs_tag_merge_batch` | large tag merge in admin | 1, continues per batch | `[ source, target, offset ]` |
+| `mvs_tag_forget_batch` | tag deleted | 1 per `FORGET_BATCH` items (first runs inline) | `[ name, ids ]` (exception 3.2) |
+| `mvs_close_orphan_reports` | migration v46 | 1, continues per 500 reports | `[ cursor ]` |
+| `mvs_move_chat_attachments` | upgrade / chat-files repair | 1, continues per 25 | none |
+| `mvs_repair_storage_paths` | post-update storage repair | 1, continues per 25 | `[ cursor ]` |
+| `mvs_rotate_media_files` | file-name rotation | 1 per 100 ids | `{ ids }` |
+| `mvs_convert_legacy_media_names` | upgrade | 1, continues | none |
+| `mvs_backfill_drive_columns` | an old migration | 1, continues per batch | none |
+| `mvs_adopt_pending_jobs` | upgrade moved its row cap | 1, continues per 2,000 rows | `[ hooks ]` |
+
+WP-Cron housekeeping (direct `wp_schedule_*()`, not moved to Action Scheduler because that would change when they
+run): `mvs_prune_logs` (daily, also runs `prune_history()`), `mvs_purge_old_views` (daily),
+`mvs_process_account_deletions` (daily), `wpmediaverse_activate_preset_key` (licence preset, one-off retry that
+reads `DISABLE_WP_CRON`).
+
+### Pro
+
+| Hook | Trigger | Rows per event | Arguments |
+|---|---|---|---|
+| `mvs_competitions_tick` | next competition deadline | at most 1 pending, single action at the deadline | none |
+| `mvs_autopilot_create_weekly_challenge` | autopilot on | 1 recurring weekly | none |
+| `mvs_daily_streak_check` | streaks on | 1 recurring (cron `0 2 * * *`); continuation per batch | none, or `[ cursor ]` |
+| `mvs_story_cleanup` | hourly WP-Cron sweep; continuation | 1 continuation per batch | `[ cursor ]` |
+| `mvs_pro_transcribe_media` | captions requested | 1 per media, deduped | `[ media_id ]` |
+| `mvs_pro_captions_reap_stale` | a transcription starts (armed even while a reaper runs) | at most 1 waiting reaper; continuation | `[ 0 ]` or `[ last_id ]` |
+| `mvs_pro_push_send` | Free's `mvs_push_send` | 1 per notification | `[ user_id, message, data ]` (exception 3.2) |
+| `mvs_connector_auto_export` | upload with auto-export | 1 per connector | `[ connector, media_id, author ]` |
+| `mvs_pro_connector_delta_sync_continue` | connector sync | 1, continues | sync cursor |
+| `mvs_pro_extract_document` | document uploaded or its file replaced | 1 per document, deduped | `[ media_id ]` |
+| `mvs_pro_extract_documents` | extraction backfill; started or resumed (lost after a 15-minute lease) on a scheduling request, re-marked when extraction is switched on | 1, continues per 20 | `[ cursor ]` |
+| `mvs_document_folder_subtree_rewrite` | folder move over 5,000 descendants | 1 | `[ folder, old_path, new_path, depth_delta ]` (exception 3.2) |
+| `mvs_document_folder_privacy_cascade` | privacy change over 5,000 items | 1 | `[ folder, privacy ]` |
+| `mvs_document_folder_trash_contents` / `_restore_contents` | folder trashed / restored | 1 per folder, deduped | `[ folder ]` |
+| `mvs_document_folder_purge` | trash expiry | 1 per trashed folder at its expiry | `[ folder ]` |
+| `mvs_document_space_drive_trash` | space deleted, drive over 200 docs | 1 continuation per run | `[ space_id ]` |
+
+WP-Cron housekeeping (direct `wp_schedule_event()`, light hourly or daily): `mvs_expire_boosts`,
+`mvs_pro_flush_boost_impressions`, `mvs_story_cleanup` (hourly start), `mvs_pro_sweep_replaced_documents`,
+`mvs_pro_prune_play_events`.
+
+## 4a. Defaults changed in 2.7.0
+
+Each default an owner can feel has a filter:
+
+| Default | Was | Now | Filter |
+|---|---|---|---|
+| Completed and cancelled job retention | Action Scheduler's site-wide 31 days | 7 days | `mvs_finished_action_retention_days` |
+| Failed job retention | 31 days | 90 days | `mvs_failed_action_retention_days` |
+| Storage cleanup delete attempts | 5 | 3 | `mvs_storage_cleanup_max_attempts` |
+
+No filter, on purpose:
+
+- Prune and requeue batch sizes and the 10-second budget (`PRUNE_BATCH`, `PRUNE_MAX_BATCHES`, `TIME_BUDGET`,
+  `REQUEUE_BATCH`, `ADOPT_*`): they set how much work one request does, not what happens, and nothing an owner
+  sees changes with them.
+- The 7-day requeue window (`REQUEUE_DAYS`): new in 2.7.0 (before it, nothing was ever queued again), so it
+  changes no default. A failed row older than that stays in Tools > Scheduled Actions, where it can be run by
+  hand.
+- Which jobs deactivation keeps (`STATE_JOB_HOOKS`): a filter could make a site cancel jobs whose data exists
+  nowhere else; the list is a code contract, documented in section 6.
+
+## 5. Adding a job
+
+1. Look in this list and the manifest (`audit/manifests/manifest.json`, `cron`) for a job that already does it.
+2. Queue it through Free's `\WPMediaVerse\Core\Jobs`; never call `as_*()` or `wp_schedule_*()` directly
+   (the only exceptions are listed in section 1).
+3. Add the hook to `Deactivator::JOB_HOOKS` (Free) or `Lifecycle::JOB_HOOKS` / `RECURRING_HOOKS` (Pro), so
+   deactivation and uninstall clear it.
+4. Add a row to section 4.
+
+## 6. Deactivation, hook by hook
+
+**Left pending** (`STATE_JOB_HOOKS`). These stay pending while the plugin is off, and the supported update
+(deactivate, replace the files, activate) loses none of them. If the plugin stays off while Action Scheduler keeps
+running for another plugin (about a minute), the runner takes those rows, finds no listener and marks them
+**failed**, logging "Scheduled action for <hook> will not be executed as no callbacks are registered."
+(`ActionScheduler_Action::execute()`). Action Scheduler never retries a failed row by itself.
+
+**Recovery after reactivation or an update.** Activation sets a note for a week (Free
+`Activator::REQUEUE_TRANSIENT`, Pro `Lifecycle::ACTIVATED_TRANSIENT`). A one-click update fires no activation
+hook, so each plugin's migration runner sets the same note whenever its schema version moves. On the next
+scheduling requests, `Jobs::requeue_after_activation()` queues again every failed row of the plugin's state hooks
+whose log carries that message, with the same arguments, 200 per request until none are left. It keeps one pending
+copy per hook and arguments and deletes the failed row with its logs. A row that ran and errored keeps its own
+message and stays failed. Pro's activation also marks the document text backfill pending, so a document uploaded
+just before deactivation is indexed. If the backfill was touched less than 15 minutes before Pro was deactivated,
+the restart waits until that 15-minute lease (`ExtractionService::LEASE`) runs out. Still lost:
+
+- rows that failed more than 7 days before the reactivation (`Jobs::REQUEUE_DAYS`): the plugin was off long
+  enough that the work may no longer be wanted; they stay failed until `prune_history()` deletes them;
+- rows whose message was logged in another language than the site's language at reactivation (the site
+  language changed between deactivating and reactivating): the match is on Action Scheduler's message, in
+  English and in the current language only;
+- state jobs queued on WP-Cron (only before Action Scheduler is ready in a request): WP-Cron keeps the event while
+  the plugin is off and runs it with no listener, which drops it without a trace.
+
+The last column says what repairs a job if it is lost anyway.
+
+| Hook | Why it is left | Repair if it is lost anyway |
+|---|---|---|
+| `mvs_cleanup_media_files` | file paths of media rows already deleted live only here | **none**: files stay on disk or CDN |
+| `mvs_deliver_webhook` | the event body as it was when the event happened lives only here | **none** |
+| `mvs_backfill_drive_columns` | a cancelled run leaves the backfill half done and nothing queues it again | **none**: the drive listing keeps its slower path |
+| `mvs_close_orphan_reports` | a cancelled sweep stops at its cursor and nothing queues it again | close by hand; the reports stay visible to moderators |
+| `mvs_adopt_pending_jobs` | carries the hook list of an upgrade move; cancelled, the rest stays in the old group | **none**: those rows still run, lookups are group-agnostic |
+| `mvs_pro_transcribe_media` (Pro) | a member asked for captions | delete the captions, then generate again |
+| `mvs_cloud_repatriate_media` | finishes a privacy change already made | manual `wp mvs migrate-storage --from=<cloud> --to=local --include-non-public --media-id=<id>`; nothing finds which |
+| `mvs_rotate_media_files` | finishes a privacy tightening, trash or rejection; old direct URLs stay valid until it runs | **none** |
+| `mvs_user_deletion_cascade`, `mvs_user_deletion_purge` | finishes a member deletion; the user id lives only here | **none** (the eraser needs the user to exist) |
+| `mvs_tag_forget_batch` | finishes a tag deletion; the name lives only here | **none** |
+| `mvs_tag_merge_batch` | finishes a merge an admin committed | merge again in Tags |
+| `mvs_repair_storage_paths` | a cancelled run leaves the state at `running` | `wp mvs repair-storage` |
+| `mvs_document_folder_subtree_rewrite` (Pro) | finishes a folder move; the folder stays `moving` and hidden until it runs | **none** |
+| `mvs_document_folder_privacy_cascade` (Pro) | finishes a folder privacy tightening | loosen and tighten the folder again |
+| `mvs_document_folder_trash_contents`, `mvs_document_folder_restore_contents` (Pro) | finish a folder trash or restore | trash or restore the folder again |
+| `mvs_document_folder_purge` (Pro) | finishes a purge; also the trashed folder's expiry | Delete permanently; a `purging` folder only through REST `DELETE ?force=1` |
+| `mvs_document_space_drive_trash` (Pro) | finishes a space deletion | **none** |
+
+How many pile up: a few rows per event. A bulk delete of 2,000 images leaves about 67 cleanup rows (measured: six
+files per image, packed under the 7,000-character argument budget). Rotation queues one row per 100 media; a tag
+or member deletion one per 200 or 100 items. Deactivation over 100,000 recomputable rows plus these stays under
+10 s (`DeactivationCancelsJobsTest`).
+
+**Cancelled** (recomputed, re-armed, or lost by nature):
+
+| Hook | What brings it back |
+|---|---|
+| `mvs_move_chat_attachments`, `mvs_convert_legacy_media_names` | re-queued on the next scheduling request |
+| `mvs_competitions_tick`, `mvs_daily_streak_check`, recurring rows (Pro) | re-armed on the first scheduling request after activation, or on boot |
+| `mvs_pro_captions_reap_stale` (Pro) | the next transcription arms it |
+| `mvs_pro_extract_documents` (Pro) | the backfill resumes from its cursor on the next scheduling request once its 15-minute lease runs out; documents added while extraction was off are caught up when it is switched on |
+| `mvs_pro_extract_document` (Pro) | the backfill picks up any document with no index row |
+| `mvs_ai_process_media` | `wp mvs backfill_ai`, or Re-run AI per item |
+| `mvs_cloud_sync_media` | `wp mvs migrate-storage --from=local --to=<cloud>` |
+| `mvs_pro_connector_delta_sync_continue`, `mvs_connector_auto_export` (Pro) | sync again; export per item |
+| `mvs_pro_push_send` (Pro) | **none** (by nature: the push is not sent) |

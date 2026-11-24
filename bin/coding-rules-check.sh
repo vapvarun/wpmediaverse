@@ -38,6 +38,43 @@ known_gap() {
 }
 violations_count() { wc -l < "$VIOLATIONS_FILE" | tr -d ' '; }
 
+# A rule that could not run is never a pass. not_run RULE REASON warns in a dev
+# run and is a violation when MVS_RELEASE_BUILD=1 (set by Free's
+# bin/build-release.sh step 1b); either way the run ends with a
+# "RULE <n> NOT RUN: <reason>" line, so a skip cannot hide behind a green total.
+NOT_RUN=()
+not_run() {
+    NOT_RUN+=("RULE $1 NOT RUN: $2")
+    if [ "${MVS_RELEASE_BUILD:-0}" = "1" ]; then
+        violation "Rule $1 NOT RUN in a release build — $2"
+    else
+        known_gap "Rule $1 SKIPPED — $2"
+    fi
+}
+# need TOOL RULE: true when TOOL is on PATH, otherwise the rule is not run.
+need() {
+    command -v "$1" >/dev/null 2>&1 && return 0
+    not_run "$2" "$1 not found on PATH"
+    return 1
+}
+# py RULE ARGS...: run python3 ARGS, stdout into PY_OUT. Returns 1 when python3
+# is missing (not run) or the checker exits non-zero (a violation): a crashed
+# checker prints nothing, which would otherwise read as "no findings".
+PY_OUT=""
+py() {
+    local rule="$1" err
+    shift
+    PY_OUT=""
+    need python3 "$rule" || return 1
+    err="$(mktemp)"
+    if ! PY_OUT="$(python3 "$@" 2>"$err")"; then
+        violation "Rule $rule — its python3 checker failed: $(cat "$err")"
+        rm -f "$err"
+        return 1
+    fi
+    rm -f "$err"
+}
+
 # ------------------------------------------------------------------------------
 
 # Rule 1: never use current_user_can() with a custom-ability slug.
@@ -186,7 +223,7 @@ check_no_per_entity_transients() {
 # raw source so that nested arrays don't confuse a regex.
 check_rest_per_page_has_maximum() {
     local hits
-    hits=$(python3 - "$PLUGIN_DIR" <<'PY'
+    py 5 - "$PLUGIN_DIR" <<'PY' || return
 import os, re, sys
 plugin_dir = sys.argv[1]
 controller_dir = os.path.join(plugin_dir, 'includes', 'REST', 'Controller')
@@ -204,7 +241,7 @@ if os.path.isdir(controller_dir):
                 violations.append(f"{path}:{line_no} 'per_page' missing 'maximum'")
 print('\n'.join(violations))
 PY
-2>/dev/null)
+    hits="$PY_OUT"
     if [ -n "$hits" ]; then
         violation "Rule 5 — REST per_page param without 'maximum' cap:"
         echo "$hits" | sed 's/^/    /'
@@ -277,7 +314,8 @@ check_no_refusal_reported_as_success() {
 #                                          relocate the SQL, not remove a leak
 check_no_direct_media_index_query_outside_repository() {
     local hits
-    hits=$(python3 "$SCRIPT_DIR/lib/detect-media-index-leaks.py" "$PLUGIN_DIR" 2>/dev/null)
+    py 7 "$SCRIPT_DIR/lib/detect-media-index-leaks.py" "$PLUGIN_DIR" || return
+    hits="$PY_OUT"
     if [ -n "$hits" ]; then
         # violation(), promoted from known_gap() on 2026-08-15 when the last of
         # the 32 tracked call sites was migrated. It was a known_gap() while the
@@ -367,6 +405,7 @@ check_no_exec_family_calls() {
 # new code fails at once. The checker is bin/lib/code-standard-check.php.
 check_code_standard() {
     local out
+    need php 9-11 || return
     out="$(php "$SCRIPT_DIR/lib/code-standard-check.php" "$PLUGIN_DIR" 2>/dev/null)"
     if [ -n "$out" ]; then
         while IFS= read -r line; do
@@ -374,6 +413,32 @@ check_code_standard() {
         done <<< "$out"
     else
         ok "Rules 9-11 — code standard holds (ids, method length, \$wpdb outside repositories)"
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Rule 12: every call into an optional PHP extension (mbstring beyond WordPress's
+# polyfills, ctype, fileinfo, SimpleXML/libxml/dom, iconv, zip) has a guard for
+# THAT extension in code (not a comment or string) in the 12 lines before it in the same function, and
+# every finfo_* call on a handle checks the handle for false first. The gate and
+# its self-test are bin/lib/extension-guard-check{,.test}.php (the family gate; a
+# copy also lives in ~/.claude/skills/wp-plugin-development/scripts/, diff first).
+# The header of the checker lists what it scans, what it skips and why, and its
+# blind spot (calls through a variable).
+check_extension_guards() {
+    local out
+    need php 12 || return
+    if ! out="$(php "$SCRIPT_DIR/lib/extension-guard-check.test.php" 2>&1)"; then
+        violation "Rule 12 — the extension guard gate's own self-test failed: $out"
+        return
+    fi
+    out="$(php "$SCRIPT_DIR/lib/extension-guard-check.php" "$PLUGIN_DIR" 2>&1)"
+    if [ -n "$out" ]; then
+        while IFS= read -r line; do
+            [ -n "$line" ] && violation "Rule 12 — $line"
+        done <<< "$out"
+    else
+        ok "Rule 12 — every optional-extension call is guarded (gate self-test passes)"
     fi
 }
 
@@ -390,13 +455,17 @@ check_no_refusal_reported_as_success
 check_no_direct_media_index_query_outside_repository
 check_no_exec_family_calls
 check_code_standard
+check_extension_guards
 
 echo ""
 COUNT=$(violations_count)
 if [ "$COUNT" -eq 0 ]; then
     echo "All coding rules pass."
-    exit 0
 else
     echo "$COUNT violation(s) found. See CLAUDE.md \"Important patterns\"."
-    exit 1
 fi
+if [ ${#NOT_RUN[@]} -gt 0 ]; then
+    echo ""
+    printf '%s\n' "${NOT_RUN[@]}"
+fi
+[ "$COUNT" -eq 0 ] && exit 0 || exit 1

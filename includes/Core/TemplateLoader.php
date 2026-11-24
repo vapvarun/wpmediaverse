@@ -214,6 +214,7 @@ class TemplateLoader {
 		add_filter( 'single_template', array( $this, 'load_single_template' ) );
 		add_filter( 'archive_template', array( $this, 'load_archive_template' ) );
 		add_filter( 'taxonomy_template', array( $this, 'load_taxonomy_template' ) );
+		add_filter( '404_template', array( $this, 'load_unknown_term_template' ) );
 
 		// Own the page layout for the pages THIS plugin created, so a member's
 		// media library is not rendered beside the theme's blog sidebar. Each of
@@ -825,7 +826,7 @@ class TemplateLoader {
 		$repo = Plugin::container()->get( 'media_repository' );
 
 		// Look up by slug first, then by numeric ID.
-		if ( ctype_digit( $slug ) ) {
+		if ( Text::is_digits( $slug ) ) {
 			$media = $repo->get_batch( array( (int) $slug ) )[ (int) $slug ] ?? null;
 
 			// `get_batch()` does not filter status, and this route must not serve
@@ -1321,6 +1322,25 @@ class TemplateLoader {
 	}
 
 	/**
+	 * An unknown tag or category (/media-tag/<slug>/, ?mvs_tag=<slug>) shows the explore empty state, which offers
+	 * the way back, instead of the theme's 404 page. The status stays 404: the term does not exist, and a 200 would
+	 * let any made-up slug become an indexable page.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param string $template Current template path.
+	 * @return string
+	 */
+	public function load_unknown_term_template( string $template ): string {
+		if ( '' === (string) get_query_var( 'mvs_tag' ) && '' === (string) get_query_var( 'mvs_category' ) ) {
+			return $template;
+		}
+		$found = self::locate( 'explore.php' );
+
+		return $found ? $found : $template;
+	}
+
+	/**
 	 * Add mvs-page body class on all WPMediaVerse frontend pages.
 	 */
 	public function maybe_add_mvs_body_class(): void {
@@ -1330,6 +1350,8 @@ class TemplateLoader {
 			|| is_post_type_archive( 'mvs_collection' )
 			|| is_tax( 'mvs_tag' )
 			|| is_tax( 'mvs_category' )
+			|| '' !== (string) get_query_var( 'mvs_tag' )
+			|| '' !== (string) get_query_var( 'mvs_category' )
 			|| (bool) get_query_var( 'mvs_edit_profile' )
 			|| (bool) get_query_var( 'mvs_profile_user' )
 			|| (bool) get_query_var( 'mvs_media_archive' )

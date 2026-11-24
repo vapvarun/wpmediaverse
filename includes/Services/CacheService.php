@@ -23,6 +23,28 @@ class CacheService {
 	const TTL_LONG   = 3600;     // 1 hour.
 
 	/**
+	 * Whether the tag cloud keys are already cleared in this request.
+	 *
+	 * Moving 200 photos into an album fires mvs_media_privacy_changed 200 times, and each clear
+	 * deletes six transients, so 1,200 queries for the same result. A read (tag_cloud(),
+	 * tag_cloud_total()) can store the keys again, so it resets the flag.
+	 *
+	 * @var bool
+	 */
+	private $tag_cloud_cleared = false;
+
+	/**
+	 * A key tied to the group's last-changed token, so flush_all() can retire every cached read at
+	 * once by moving the token, on any object-cache backend (core's own pattern for a family of reads).
+	 *
+	 * @param string $key Cache key.
+	 * @return string Key carrying the current token.
+	 */
+	private function versioned( string $key ): string {
+		return $key . ':' . wp_cache_get_last_changed( self::GROUP );
+	}
+
+	/**
 	 * Get a cached value.
 	 *
 	 * @param string $key   Cache key.
@@ -30,7 +52,7 @@ class CacheService {
 	 * @return mixed Cached value or false.
 	 */
 	public function get( string $key, bool &$found = false ) {
-		return wp_cache_get( $key, self::GROUP, false, $found );
+		return wp_cache_get( $this->versioned( $key ), self::GROUP, false, $found );
 	}
 
 	/**
@@ -42,7 +64,7 @@ class CacheService {
 	 * @return bool True on success.
 	 */
 	public function set( string $key, $value, int $ttl = self::TTL_MEDIUM ): bool {
-		return wp_cache_set( $key, $value, self::GROUP, $ttl );
+		return wp_cache_set( $this->versioned( $key ), $value, self::GROUP, $ttl );
 	}
 
 	/**
@@ -52,7 +74,7 @@ class CacheService {
 	 * @return bool True on success.
 	 */
 	public function delete( string $key ): bool {
-		return wp_cache_delete( $key, self::GROUP );
+		return wp_cache_delete( $this->versioned( $key ), self::GROUP );
 	}
 
 	/**
@@ -289,7 +311,8 @@ class CacheService {
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
-		$key = 'tagcloud3_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
+		$key                     = 'tagcloud3_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
+		$this->tag_cloud_cleared = false;
 		return $this->remember_persistent(
 			$key,
 			static function () use ( $limit, $types ) {
@@ -308,7 +331,8 @@ class CacheService {
 	 * @return int
 	 */
 	public function tag_cloud_total( ?array $types = null ): int {
-		$key = 'tagcloudtotal3_' . ( $types ? implode( ',', $types ) : 'default' );
+		$key                     = 'tagcloudtotal3_' . ( $types ? implode( ',', $types ) : 'default' );
+		$this->tag_cloud_cleared = false;
 		return (int) $this->remember_persistent(
 			$key,
 			static function () use ( $types ) {
@@ -355,6 +379,11 @@ class CacheService {
 	 * below.
 	 */
 	public function invalidate_tag_cloud(): void {
+		if ( $this->tag_cloud_cleared ) {
+			return;
+		}
+		$this->tag_cloud_cleared = true;
+
 		// Legacy keys (deprecated get_tag_cloud()).
 		foreach ( array( 20, 50, 100 ) as $limit ) {
 			$this->delete( "tag_cloud_{$limit}" );
@@ -376,17 +405,18 @@ class CacheService {
 	/**
 	 * Flush all MVS caches.
 	 *
-	 * Uses wp_cache_flush_group if available (WP 6.1+), otherwise individual deletes.
+	 * Moves the group's last-changed token, which retires every in-memory / external-cache value at
+	 * once without asking the backend to flush a group or emptying the site's cache. The two-tier
+	 * "persistent" values also keep a transient copy on a site with no external object cache, and
+	 * that copy would be read back under the new token, so those keys are dropped explicitly. They
+	 * are the admin aggregates and the tag cloud, the only users of remember_persistent().
 	 *
 	 * @return bool True on success.
 	 */
 	public function flush_all(): bool {
-		if ( function_exists( 'wp_cache_flush_group' ) ) {
-			return wp_cache_flush_group( self::GROUP );
-		}
-
-		// Fallback: can't flush unknown keys, but we clear known patterns.
-		$this->delete( 'moderation_counts' );
+		wp_cache_set_last_changed( self::GROUP );
+		$this->on_admin_aggregate_change();
+		$this->invalidate_tag_cloud();
 		return true;
 	}
 
@@ -403,6 +433,8 @@ class CacheService {
 		// Invalidate moderation cache.
 		add_action( 'mvs_moderation_changed', array( $this, 'on_moderation_change' ) );
 		add_action( 'mvs_media_uploaded', array( $this, 'on_moderation_change' ) );
+		// Runs after the report close above (priority 20), so the count is read from the closed rows.
+		add_action( 'mvs_media_deleted', array( $this, 'on_moderation_change' ), 20 );
 
 		// Invalidate follow counts on follow/unfollow.
 		add_action( 'mvs_user_followed', array( $this, 'on_follow_change' ), 10, 2 );
@@ -412,6 +444,14 @@ class CacheService {
 		add_action( 'created_mvs_tag', array( $this, 'on_tag_change' ) );
 		add_action( 'edited_mvs_tag', array( $this, 'on_tag_change' ) );
 		add_action( 'delete_mvs_tag', array( $this, 'on_tag_change' ) );
+
+		// The tag cloud counts visible media per tag, so it also moves when an item is tagged or untagged
+		// (a PUT with tags=[] fires none of the term hooks above) and when an item stops being visible.
+		add_action( 'set_object_terms', array( $this, 'on_object_terms' ), 10, 4 );
+		add_action( 'mvs_media_deleted', array( $this, 'on_tag_change' ) );
+		add_action( 'mvs_media_trashed', array( $this, 'on_tag_change' ) );
+		add_action( 'mvs_media_privacy_changed', array( $this, 'on_tag_change' ) );
+		add_action( 'mvs_moderation_changed', array( $this, 'on_tag_change' ) );
 
 		// Invalidate media meta cache on upload (media is custom table, not CPT).
 		add_action( 'mvs_media_uploaded', array( $this, 'on_media_save' ) );
@@ -469,6 +509,20 @@ class CacheService {
 	 */
 	public function on_tag_change(): void {
 		$this->invalidate_tag_cloud();
+	}
+
+	/**
+	 * An object's terms were set: refresh the tag cloud when they were media tags.
+	 *
+	 * @param int                      $object_id Object id.
+	 * @param array<int|string, mixed> $terms     Terms.
+	 * @param array<int, int|string>   $tt_ids    Term taxonomy ids.
+	 * @param string                   $taxonomy  Taxonomy slug.
+	 */
+	public function on_object_terms( $object_id, $terms, $tt_ids, $taxonomy ): void {
+		if ( 'mvs_tag' === $taxonomy ) {
+			$this->invalidate_tag_cloud();
+		}
 	}
 
 	/**

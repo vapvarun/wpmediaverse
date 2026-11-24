@@ -19,7 +19,7 @@ class Migrator {
 	 */
 	const LOCK_NAME = 'mvs_migrator';
 
-	const CURRENT_VERSION = 44;
+	const CURRENT_VERSION = 47;
 
 	/**
 	 * Tables older versions created that no current version does. Uninstall
@@ -49,6 +49,21 @@ class Migrator {
 	 * @var string
 	 */
 	const DRIVE_BACKFILL_HOOK = 'mvs_backfill_drive_columns';
+
+	/**
+	 * Seconds from the upgrade to the first drive backfill batch.
+	 */
+	private const DRIVE_BACKFILL_FIRST_DELAY = 30;
+
+	/**
+	 * Seconds between drive backfill batches.
+	 */
+	private const DRIVE_BACKFILL_NEXT_DELAY = 60;
+
+	/**
+	 * Seconds a migration lock holds before another request may take it over.
+	 */
+	private const LOCK_TTL = 10 * MINUTE_IN_SECONDS;
 
 	/**
 	 * Rows stamped per backfill batch.
@@ -108,9 +123,75 @@ class Migrator {
 	}
 
 	/**
-	 * Run pending migrations.
+	 * Transient that spaces the admin-side table check to once a day.
 	 */
-	public function run(): void {
+	const SCHEMA_RECHECK_TRANSIENT = 'mvs_schema_recheck';
+
+	/**
+	 * One-time steps that apply an owner-facing choice, skipped when a repair
+	 * re-runs the migrations: v45 takes the moderator caps off Editors, and a
+	 * repair must not take back a re-grant the owner made since.
+	 */
+	const NOT_ON_REPAIR = array( 45 );
+
+	/**
+	 * Run pending migrations on this request, and check for missing tables once a day on an admin request.
+	 *
+	 * @since 2.7.0
+	 */
+	public static function boot(): void {
+		( new self() )->run();
+		add_action( 'admin_init', array( self::class, 'maybe_repair' ) );
+	}
+
+	/**
+	 * At most once a day, on an admin request: recreate any table that has gone missing.
+	 *
+	 * The version option alone cannot see a table dropped after it was written (a partial restore, a host
+	 * clean-up, a data wipe that kept the options): the migrator then skips, and every upload fails.
+	 *
+	 * @since 2.7.0
+	 */
+	public static function maybe_repair(): void {
+		if ( get_transient( self::SCHEMA_RECHECK_TRANSIENT ) ) {
+			return;
+		}
+		set_transient( self::SCHEMA_RECHECK_TRANSIENT, 1, DAY_IN_SECONDS );
+		( new self() )->repair_missing_tables();
+	}
+
+	/**
+	 * Recreate missing tables by re-running the migrations from the start.
+	 *
+	 * The migrations are idempotent (each table is created, then altered, by the steps it is listed in), so
+	 * running them again rebuilds a dropped table with every later column and index, and leaves the rest as they
+	 * are. One query when nothing is missing.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @return string[] The tables that were missing (unprefixed).
+	 */
+	public function repair_missing_tables(): array {
+		global $wpdb;
+
+		$have = (array) $wpdb->get_col( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $wpdb->prefix . 'mvs_' ) . '%' ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery
+		$have = array_map( static fn( $t ) => substr( (string) $t, strlen( $wpdb->prefix ) ), $have );
+
+		$missing = array_values( array_diff( self::tables(), $have ) );
+		if ( $missing ) {
+			update_option( self::VERSION_OPTION, 0 );
+			$this->run( true );
+		}
+
+		return $missing;
+	}
+
+	/**
+	 * Run pending migrations.
+	 *
+	 * @param bool $repair True when re-running every step to rebuild missing tables (skips NOT_ON_REPAIR).
+	 */
+	public function run( bool $repair = false ): void {
 		$installed_version = (int) get_option( self::VERSION_OPTION, 0 );
 
 		if ( $installed_version >= self::CURRENT_VERSION ) {
@@ -125,9 +206,11 @@ class Migrator {
 		}
 
 		try {
+			// A one-click update fires no activation hook; rows a runner failed while files were swapped come back too.
+			set_transient( Activator::REQUEUE_TRANSIENT, 1, WEEK_IN_SECONDS );
 			for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
 				$method = "migrate_to_{$v}";
-				if ( method_exists( $this, $method ) ) {
+				if ( method_exists( $this, $method ) && ! ( $repair && in_array( $v, self::NOT_ON_REPAIR, true ) ) ) {
 					$this->$method();
 				}
 				// Saved per step, so a timeout resumes at the next one instead of
@@ -151,7 +234,44 @@ class Migrator {
 		if ( ! class_exists( 'WP_Upgrader' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		}
-		return \WP_Upgrader::create_lock( $name, 10 * MINUTE_IN_SECONDS );
+		return \WP_Upgrader::create_lock( $name, self::LOCK_TTL );
+	}
+
+	/**
+	 * Migration v45 - a plain WordPress Editor stops being a media moderator.
+	 *
+	 * @since 2.7.0
+	 */
+	private function migrate_to_45(): void {
+		\WPMediaVerse\Capabilities\MediaCapabilities::strip_editor_moderation();
+	}
+
+	/**
+	 * Migration v46 - close pending reports whose media was deleted before reports closed on delete.
+	 *
+	 * Data only, batched in the background (ReportRepository::sweep_orphans); a re-run finds nothing to close.
+	 *
+	 * @since 2.7.0
+	 */
+	private function migrate_to_46(): void {
+		Jobs::when_ready( array( \WPMediaVerse\Repository\ReportRepository::class, 'queue_sweep' ) );
+	}
+
+	/**
+	 * Migration v47 - move Free's pending background jobs into the one 'mvs' group.
+	 *
+	 * Before 2.7.0 Free queued into 'wpmediaverse'. Only Free's own hooks move (Deactivator::JOB_HOOKS), so an older
+	 * Pro that still looks up its jobs by group keeps finding them. Finished rows stay where they are and age out
+	 * through Action Scheduler's own retention.
+	 *
+	 * @since 2.7.0
+	 */
+	private function migrate_to_47(): void {
+		Jobs::when_ready(
+			static function (): void {
+				Jobs::adopt_pending( Deactivator::JOB_HOOKS );
+			}
+		);
 	}
 
 	/**
@@ -2147,8 +2267,8 @@ class Migrator {
 			update_option( self::DRIVE_BACKFILL_OPTION, 0, false );
 		}
 
-		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
-			wp_schedule_single_event( time() + 30, self::DRIVE_BACKFILL_HOOK );
+		if ( ! Jobs::is_pending( self::DRIVE_BACKFILL_HOOK ) ) {
+			Jobs::at( time() + self::DRIVE_BACKFILL_FIRST_DELAY, self::DRIVE_BACKFILL_HOOK );
 		}
 	}
 
@@ -2259,8 +2379,8 @@ class Migrator {
 		update_option( self::DRIVE_BACKFILL_OPTION, $highest, false );
 
 		// More to do — come back for it.
-		if ( ! wp_next_scheduled( self::DRIVE_BACKFILL_HOOK ) ) {
-			wp_schedule_single_event( time() + 60, self::DRIVE_BACKFILL_HOOK );
+		if ( ! Jobs::is_pending( self::DRIVE_BACKFILL_HOOK ) ) {
+			Jobs::at( time() + self::DRIVE_BACKFILL_NEXT_DELAY, self::DRIVE_BACKFILL_HOOK );
 		}
 
 		return $stamped;

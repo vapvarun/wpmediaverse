@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "2.5.1",
+    "version": "2.7.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -1904,42 +1904,6 @@
   ],
   "cron": [
     {
-      "hook": "mvs_resolve_expired_battles",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Battles\\BattleService::resolve_expired",
-      "file": "wpmediaverse-pro.php:166 (schedule); includes/Core/Plugin.php:449 (handler)"
-    },
-    {
-      "hook": "mvs_activate_scheduled_challenges",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Challenges\\ChallengeService::activate_scheduled",
-      "file": "wpmediaverse-pro.php:167; includes/Core/Plugin.php:470"
-    },
-    {
-      "hook": "mvs_close_challenge_entries",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Challenges\\ChallengeService::close_entries",
-      "file": "wpmediaverse-pro.php:168; includes/Core/Plugin.php:471"
-    },
-    {
-      "hook": "mvs_finalize_expired_challenges",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Challenges\\ChallengeService::finalize_expired",
-      "file": "wpmediaverse-pro.php:169; includes/Core/Plugin.php:472"
-    },
-    {
-      "hook": "mvs_start_registered_tournaments",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Tournaments\\TournamentService::start_registered",
-      "file": "wpmediaverse-pro.php:170; includes/Core/Plugin.php:491"
-    },
-    {
-      "hook": "mvs_resolve_expired_matches",
-      "interval": "HOUR (AS recurring)",
-      "handler": "Tournaments\\TournamentService::resolve_expired_matches",
-      "file": "wpmediaverse-pro.php:171; includes/Core/Plugin.php:492"
-    },
-    {
       "hook": "mvs_expire_boosts",
       "interval": "HOUR (AS recurring + wp_schedule_event fallback)",
       "handler": "Boosts\\BoostService::expire_boosts",
@@ -1947,9 +1911,9 @@
     },
     {
       "hook": "mvs_competitions_tick",
-      "interval": "300s (AS recurring)",
+      "interval": "single AS action at the next competition deadline (at most one pending, at least 300s apart)",
       "handler": "Competitions\\CompetitionsScheduler::tick",
-      "file": "includes/Competitions/CompetitionsScheduler.php:64 (schedule); :39 (handler)"
+      "file": "includes/Competitions/CompetitionsScheduler.php:120 (arm); :210 (handler)"
     },
     {
       "hook": "mvs_autopilot_create_weekly_challenge",
@@ -1983,9 +1947,9 @@
     },
     {
       "hook": "mvs_pro_captions_reap_stale",
-      "interval": "recurring (Action Scheduler)",
+      "interval": "single AS action armed when a transcription starts (PROCESSING_TIMEOUT + 60s)",
       "handler": "TranscriptionService::reap_stale_jobs",
-      "where": "includes/Captions/TranscriptionService.php:325"
+      "where": "includes/Captions/TranscriptionService.php:148 (arm); :389 (handler)"
     },
     {
       "hook": "mvs_pro_transcribe_media",
@@ -1995,7 +1959,7 @@
     },
     {
       "hook": "mvs_pro_push_send",
-      "interval": "async (Action Scheduler, group mvs-pro)",
+      "interval": "async (Action Scheduler, group mvs)",
       "handler": "Push\\PushService::deliver",
       "file": "includes/Push/PushService.php:159 (schedule); :41 (handler)"
     },
@@ -2034,6 +1998,31 @@
       "interval": "scheduled export run",
       "handler": "Connectors\\ConnectorManager::auto_export",
       "file": "includes/Connectors/ConnectorManager.php:186 (schedule); includes/Core/Plugin.php:275 (handler)"
+    },
+    {
+      "hook": "mvs_document_folder_purge",
+      "interval": "single (Jobs::at) at trash expiry, 1 per folder",
+      "file": "includes/Documents/FolderService.php:1796"
+    },
+    {
+      "hook": "mvs_document_folder_trash_contents",
+      "interval": "async (Jobs), 1 per folder, deduped",
+      "file": "includes/Core/Migrator.php:415"
+    },
+    {
+      "hook": "mvs_document_folder_restore_contents",
+      "interval": "async (Jobs), 1 per folder, deduped",
+      "file": "includes/Documents/FolderService.php:1735"
+    },
+    {
+      "hook": "mvs_document_space_drive_trash",
+      "interval": "async (Jobs), 1 continuation per run of 200",
+      "file": "includes/Documents/SpaceDriveCleanup.php:155"
+    },
+    {
+      "hook": "mvs_pro_flush_boost_impressions",
+      "interval": "hourly (wp_schedule_event)",
+      "file": "includes/Core/Plugin.php:822"
     }
   ],
   "wp_cli": [
@@ -2252,7 +2241,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.1",
+    "branch": "2.7.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -2603,7 +2592,8 @@
         "gamification.css: no-cover challenge/tournament placeholder tinted from --mvs-primary with a trophy",
         "Instagram layout players follow Allow downloads"
       ]
-    }
+    },
+    "delta_2026_11_24_v270": "2.7.0 targeted delta, code-verified against v2.6.4..HEAD (deterministic generator not run). MVS_PRO_MIN_FREE 2.7.0. Consumes Free filter mvs_story_keep_item (manifest.hooks.json). Documents: no TypeError when finfo_open fails, a .docx without the zip extension is reported. Flickr upload reply: no fatal without SimpleXML. Five templates re-versioned (battles-body, challenges-body, instagram/pinterest layout assets). audit/tables.lock baselined (9 CREATE TABLE statements, none added). src/ excluded from the zip. No new REST route, AJAX action, admin page, table, option, block, shortcode or CLI command. CSS: focus-visible rings and unfaded reply/close controls only."
   },
   "category_sources": {
     "rest": [
@@ -4163,5 +4153,34 @@
       "mvs_battle_resolved": "fires only with a winner"
     },
     "unchanged": "REST routes, tables, settings, cron"
+  },
+  "jobs_entry_point": {
+    "class": "WPMediaVerse\\Core\\Jobs (Free) for Free and Pro; Pro requires Free 2.7.0 and calls it directly. WPMediaVersePro\\Core\\Jobs is a deprecated shim for its two 2.6.4 methods.",
+    "group": "mvs",
+    "legacy_groups": [
+      "wpmediaverse",
+      "wpmediaverse-pro",
+      "mvs-pro",
+      "mvs-connectors"
+    ],
+    "group_move": "Free migration v47, Pro migration v26 (Jobs::adopt_pending, own hooks only)",
+    "finished_retention": "Jobs::prune_history on mvs_prune_logs, group mvs only: completed rows after mvs_finished_action_retention_days (default 7), failed rows after 90 days (Jobs::FAILED_RETENTION_DAYS)",
+    "doc": "docs/standards/background-jobs.md",
+    "since": "2.7.0",
+    "retired_jobs": {
+      "hooks": [
+        "mvs_resolve_expired_battles",
+        "mvs_activate_scheduled_challenges",
+        "mvs_close_challenge_entries",
+        "mvs_finalize_expired_challenges",
+        "mvs_start_registered_tournaments",
+        "mvs_resolve_expired_matches",
+        "five-minute mvs_competitions_tick recurring row",
+        "recurring mvs_pro_captions_reap_stale row"
+      ],
+      "note": "transition hooks are now actions fired by the single mvs_competitions_tick; old rows cancelled by CompetitionsScheduler legacy retirement and Pro migrations v24-v26"
+    },
+    "lookups": "is_queued: pending or running (start guards); is_pending: waiting only (continuations); async_once: queue unless a copy is waiting; cancel_pending: set-based cancel of exact hooks (deactivation). Differences from Jetonomy Queue are listed in docs/standards/background-jobs.md section 1",
+    "scheduling_request": "Jobs::is_scheduling_request: cron, WP-CLI, admin page load, or action_scheduler_ensure_recurring_actions; DirectDelivery::is_scheduling_request deprecated alias"
   }
 }

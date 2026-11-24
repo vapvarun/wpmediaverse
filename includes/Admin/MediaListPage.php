@@ -201,21 +201,20 @@ class MediaListPage {
 								}
 								?>
 								<?php foreach ( $mvs_types as $t ) : ?>
-									<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $type_filter, $t ); ?>><?php echo esc_html( ucfirst( $t ) ); ?></option>
+									<option value="<?php echo esc_attr( $t ); ?>" <?php selected( $type_filter, $t ); ?>><?php echo esc_html( self::type_label( $t ) ); ?></option>
 								<?php endforeach; ?>
 							</select>
 							<select name="privacy">
 								<option value=""><?php esc_html_e( 'All Privacy', 'wpmediaverse' ); ?></option>
 								<?php
 								// Only levels this site's media actually uses (plus the active filter).
-								$mvs_privacy_labels = \WPMediaVerse\Core\TemplateHelpers::privacy_labels();
 								$mvs_privacy_in_use = \WPMediaVerse\Core\Plugin::container()->get( 'admin_aggregates' )->privacy_levels_in_use();
 								if ( '' !== $privacy_filter ) {
 									$mvs_privacy_in_use[] = $privacy_filter;
 								}
 								foreach ( array_unique( $mvs_privacy_in_use ) as $p ) :
 									?>
-									<option value="<?php echo esc_attr( $p ); ?>" <?php selected( $privacy_filter, $p ); ?>><?php echo esc_html( $mvs_privacy_labels[ $p ] ?? ucfirst( $p ) ); ?></option>
+									<option value="<?php echo esc_attr( $p ); ?>" <?php selected( $privacy_filter, $p ); ?>><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_label( $p ) ); ?></option>
 								<?php endforeach; ?>
 							</select>
 							<?php submit_button( __( 'Filter', 'wpmediaverse' ), '', 'filter_action', false ); ?>
@@ -319,10 +318,10 @@ class MediaListPage {
 
 		$statuses = array(
 			''        => array( __( 'All', 'wpmediaverse' ), $all_count, 'mvs-stat-card--accent' ),
-			'publish' => array( __( 'Published', 'wpmediaverse' ), (int) ( $status_counts['publish'] ?? 0 ), 'mvs-stat-card--success' ),
-			'pending' => array( __( 'Pending', 'wpmediaverse' ), (int) ( $status_counts['pending'] ?? 0 ), 'mvs-stat-card--warning' ),
-			'draft'   => array( __( 'Draft', 'wpmediaverse' ), (int) ( $status_counts['draft'] ?? 0 ), '' ),
-			'trash'   => array( __( 'Trash', 'wpmediaverse' ), (int) ( $status_counts['trash'] ?? 0 ), 'mvs-stat-card--danger' ),
+			'publish' => array( self::status_label( 'publish' ), (int) ( $status_counts['publish'] ?? 0 ), 'mvs-stat-card--success' ),
+			'pending' => array( self::status_label( 'pending' ), (int) ( $status_counts['pending'] ?? 0 ), 'mvs-stat-card--warning' ),
+			'draft'   => array( self::status_label( 'draft' ), (int) ( $status_counts['draft'] ?? 0 ), '' ),
+			'trash'   => array( self::status_label( 'trash' ), (int) ( $status_counts['trash'] ?? 0 ), 'mvs-stat-card--danger' ),
 		);
 		?>
 		<div class="mvs-admin-stats">
@@ -479,11 +478,11 @@ class MediaListPage {
 				</div>
 			</td>
 			<td><?php echo $author ? esc_html( $author->display_name ) : '—'; ?></td>
-			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $type ); ?>"><?php echo esc_html( ucfirst( $type ) ); ?></span></td>
-			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( ucfirst( $privacy ) ); ?></span></td>
-			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( ucfirst( $status ) ); ?></span></td>
+			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $type ); ?>"><?php echo esc_html( self::type_label( $type ) ); ?></span></td>
+			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $privacy ); ?>"><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_label( $privacy ) ); ?></span></td>
+			<td><span class="mvs-media-badge mvs-media-badge--<?php echo esc_attr( $status ); ?>"><?php echo esc_html( self::status_label( $status ) ); ?></span></td>
 			<td class="mvs-col-ai"><?php self::render_ai_cell( $media_id ); ?></td>
-			<td><?php echo esc_html( wp_date( get_option( 'date_format' ), strtotime( $item['created_at'] ) ) ); ?></td>
+			<td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( $item['created_at'] ) ); ?></td>
 		</tr>
 		<?php
 	}
@@ -1264,8 +1263,7 @@ class MediaListPage {
 		$repo = \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' );
 		$repo->set( $media_id, 'ai_status', 'processing' );
 
-		if ( function_exists( 'as_enqueue_async_action' ) ) {
-			as_enqueue_async_action( 'mvs_ai_process_media', array( $media_id ), 'wpmediaverse' );
+		if ( \WPMediaVerse\Core\Plugin::enqueue_ai( $media_id ) ) {
 			$message = sprintf(
 				/* translators: %d: media id */
 				__( 'AI re-run queued for media #%d. Reload this page in a moment to see the new result.', 'wpmediaverse' ),
@@ -1437,9 +1435,9 @@ class MediaListPage {
 								<tr><th><?php esc_html_e( 'Image size', 'wpmediaverse' ); ?></th><td><?php echo esc_html( sprintf( '%d × %d', $width, $height ) ) . ' ' . esc_html__( 'pixels', 'wpmediaverse' ); ?></td></tr>
 							<?php endif; ?>
 							<tr><th><?php esc_html_e( 'File size', 'wpmediaverse' ); ?></th><td><?php echo esc_html( size_format( (int) $item['file_size'] ) ); ?></td></tr>
-							<tr><th><?php esc_html_e( 'Who can see it', 'wpmediaverse' ); ?></th><td><?php echo esc_html( ucfirst( (string) $item['privacy'] ) ); ?></td></tr>
-							<tr><th><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th><td><?php echo esc_html( ucfirst( (string) $item['status'] ) ); ?></td></tr>
-							<tr><th><?php esc_html_e( 'Uploaded', 'wpmediaverse' ); ?></th><td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( (string) $item['created_at'] ) ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Who can see it', 'wpmediaverse' ); ?></th><td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::privacy_label( (string) $item['privacy'] ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Status', 'wpmediaverse' ); ?></th><td><?php echo esc_html( self::status_label( (string) $item['status'] ) ); ?></td></tr>
+							<tr><th><?php esc_html_e( 'Uploaded', 'wpmediaverse' ); ?></th><td><?php echo esc_html( \WPMediaVerse\Core\TemplateHelpers::date_label( (string) $item['created_at'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ); ?></td></tr>
 							<tr><th><?php esc_html_e( 'Preview', 'wpmediaverse' ); ?></th><td><a href="<?php echo esc_url( (string) $item['file_url'] ); ?>" target="_blank"><?php esc_html_e( 'Open the original image', 'wpmediaverse' ); ?> &rarr;</a></td></tr>
 						</tbody>
 					</table>
@@ -1487,7 +1485,7 @@ class MediaListPage {
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
-											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $optimized_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
 											?>
 											<?php
 										elseif ( $optimized_at > 0 && '' !== $webp_orig ) :
@@ -1496,7 +1494,7 @@ class MediaListPage {
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
-											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											echo esc_html( sprintf( __( 'on %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $optimized_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
 											?>
 											<?php
 										elseif ( $optimized_at > 0 ) :
@@ -1505,7 +1503,7 @@ class MediaListPage {
 											&nbsp;
 											<?php
 											/* translators: %s: human-readable date and time */
-											echo esc_html( sprintf( __( 'checked on %s', 'wpmediaverse' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $optimized_at ) ) );
+											echo esc_html( sprintf( __( 'checked on %s', 'wpmediaverse' ), \WPMediaVerse\Core\TemplateHelpers::date_label( $optimized_at, get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) ) );
 											?>
 											<?php
 										else :
@@ -1619,5 +1617,40 @@ class MediaListPage {
 			</div>
 		</div>
 		<?php
+	}
+	/**
+	 * Translatable label for a media type slug (a raw ucfirst() slug was not translatable).
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param string $type Media type slug.
+	 * @return string
+	 */
+	private static function type_label( string $type ): string {
+		$labels = array(
+			'image'    => __( 'Image', 'wpmediaverse' ),
+			'video'    => __( 'Video', 'wpmediaverse' ),
+			'audio'    => __( 'Audio', 'wpmediaverse' ),
+			'document' => __( 'Document', 'wpmediaverse' ),
+		);
+		return $labels[ $type ] ?? ucfirst( $type );
+	}
+
+	/**
+	 * Translatable label for a media status slug.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param string $status Media status slug.
+	 * @return string
+	 */
+	private static function status_label( string $status ): string {
+		$labels = array(
+			'publish' => __( 'Published', 'wpmediaverse' ),
+			'pending' => __( 'Pending', 'wpmediaverse' ),
+			'draft'   => __( 'Draft', 'wpmediaverse' ),
+			'trash'   => __( 'Trash', 'wpmediaverse' ),
+		);
+		return $labels[ $status ] ?? ucfirst( $status );
 	}
 }

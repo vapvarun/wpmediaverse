@@ -69,6 +69,7 @@ class Sanitizers {
 	 */
 	private const WHITELISTS = array(
 		'mvs_default_privacy'        => array( 'public', 'members', 'private' ),
+		'mvs_chat_position'          => array( 'right', 'left' ),
 		'mvs_duplicate_action'       => array( 'warn', 'skip', 'allow' ),
 		'mvs_thumbnail_style'        => array( 'square', 'original', 'list' ),
 		'mvs_thumbnail_size'         => array( 'medium', 'large', 'full' ),
@@ -597,6 +598,17 @@ class Sanitizers {
 	public static function sanitize_chat_panel_visibility( $value ): string {
 		$value = is_string( $value ) ? $value : '';
 		return in_array( $value, (array) self::get_whitelist( 'mvs_chat_panel_visibility' ), true ) ? $value : 'everywhere';
+	}
+
+	/**
+	 * Sanitize the chat button corner. Anything but a known corner falls back to the default, the right.
+	 *
+	 * @param mixed $value Raw input.
+	 * @return string 'right' or 'left'.
+	 */
+	public static function sanitize_chat_position( $value ): string {
+		$value = is_string( $value ) ? $value : '';
+		return in_array( $value, (array) self::get_whitelist( 'mvs_chat_position' ), true ) ? $value : 'right';
 	}
 
 	/**

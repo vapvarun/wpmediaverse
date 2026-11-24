@@ -144,7 +144,7 @@ class BigSiteMessagingAdminTest extends WP_UnitTestCase {
 			'delete_cascade() must not run inline on the deleted_user request when Action Scheduler is available — it must be batched.'
 		);
 		$this->assertNotFalse(
-			as_next_scheduled_action( UserDeletionService::CASCADE_HOOK, null, 'wpmediaverse' ),
+			as_next_scheduled_action( UserDeletionService::CASCADE_HOOK ),
 			'Deleting a user must schedule the cascade batch rather than silently doing nothing.'
 		);
 
@@ -188,7 +188,7 @@ class BigSiteMessagingAdminTest extends WP_UnitTestCase {
 
 		$this->assertFalse( $repo->exists( $media_id ), 'The real media item in the first batch must be deleted.' );
 		$this->assertNotFalse(
-			as_next_scheduled_action( UserDeletionService::CASCADE_HOOK, null, 'wpmediaverse' ),
+			as_next_scheduled_action( UserDeletionService::CASCADE_HOOK ),
 			'150 ids is more than one batch (100) — the remainder must be rescheduled, not dropped.'
 		);
 	}

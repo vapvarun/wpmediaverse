@@ -13,6 +13,8 @@
 #   bin/build-release.sh --allow-dirty    # skip the clean-tree check (dev)
 #   bin/build-release.sh --output ~/Desktop  # also copy zips to DIR
 #   bin/build-release.sh --skip-browser-smoke  # emergency only — logs a warning
+#   bin/build-release.sh --skip-boot-matrix    # emergency only — logs a warning
+#   bin/build-release.sh --skip-uninstall-smoke  # emergency only — logs a warning
 #   bin/build-release.sh --free-only      # only stage + zip Free (still version-pairs with Pro)
 #
 # Exit codes:
@@ -21,6 +23,7 @@
 #   10  one of the trees is dirty and --allow-dirty not set
 #   11  version mismatch within a plugin or across Free <-> Pro
 #   12  Pro plugin not found at ../wpmediaverse-pro
+#   13  coding rules failed in Free or Pro, including a rule that could not run
 #   20  composer install in a staged tree failed
 #   21  grunt build / npm install failed
 #   30  boot smoke or browser smoke gate failed
@@ -42,12 +45,16 @@ PRO_MAIN="${PRO_SLUG}.php"
 ALLOW_DIRTY=0
 OUTPUT_DIR=""
 SKIP_BROWSER_SMOKE=0
+SKIP_BOOT_MATRIX=0
+SKIP_UNINSTALL_SMOKE=0
 FREE_ONLY=0
 while [ $# -gt 0 ]; do
 	case "$1" in
 		--allow-dirty)         ALLOW_DIRTY=1; shift ;;
 		--output)              OUTPUT_DIR="$2"; shift 2 ;;
 		--skip-browser-smoke)  SKIP_BROWSER_SMOKE=1; shift ;;
+		--skip-boot-matrix)    SKIP_BOOT_MATRIX=1; shift ;;
+		--skip-uninstall-smoke) SKIP_UNINSTALL_SMOKE=1; shift ;;
 		--free-only)           FREE_ONLY=1; shift ;;
 		*) echo "unknown flag: $1" >&2; exit 2 ;;
 	esac
@@ -117,6 +124,17 @@ FREE_HEAD="$(git -C "$FREE_ROOT" rev-parse --short HEAD)"
 PRO_HEAD="(skipped)"
 [ "$FREE_ONLY" -eq 0 ] && PRO_HEAD="$(git -C "$PRO_ROOT" rev-parse --short HEAD)"
 ok "Free HEAD: $FREE_HEAD    Pro HEAD: $PRO_HEAD"
+
+# --- 1b. coding rules ------------------------------------------------------
+# MVS_RELEASE_BUILD=1 turns a rule that could not run (python3 or php missing,
+# Pro's Rule 10 without Free's checker) into a failure: a dev run may skip one,
+# a release may not.
+step "1b. coding rules (Free + Pro)"
+( cd "$FREE_ROOT" && MVS_RELEASE_BUILD=1 bash bin/coding-rules-check.sh ) || { fail "Free coding rules failed (a rule that could not run fails a release build)."; exit 13; }
+if [ "$FREE_ONLY" -eq 0 ]; then
+	( cd "$PRO_ROOT" && MVS_RELEASE_BUILD=1 bash bin/coding-rules-check.sh ) || { fail "Pro coding rules failed (a rule that could not run fails a release build)."; exit 13; }
+fi
+ok "coding rules pass"
 
 # --- 2. version coherence -------------------------------------------------
 step "2. version coherence (Free + Pro must match)"
@@ -197,6 +215,41 @@ if [ "$FREE_ONLY" -eq 0 ]; then
 		exit 30
 	fi
 	ok "Pro  boot smoke OK"
+fi
+
+# --- 3b. boot matrix: Free only, Pro only, both, on a real WordPress -------
+# tools/smoke-test.php boots each plugin in a stub. This boots them in WordPress
+# and fails on a 5xx, a fatal, a PHP warning or notice, or a new debug.log line,
+# for every mode: thousands of sites run Free alone or update one plugin first.
+# Needs a dev site: MVS_WP (or MVS_WP_PATH) and MVS_LOGIN_PARAM, see the script.
+step "3b. boot matrix smoke (Free only, Pro only, both)"
+if [ "$SKIP_BOOT_MATRIX" -eq 1 ]; then
+	warn "--skip-boot-matrix set: the Free-only / Pro-only boot check did NOT run. Emergency only."
+elif [ "$FREE_ONLY" -eq 1 ]; then
+	warn "--free-only: the matrix needs both plugins; skipped."
+elif [ -z "${MVS_WP:-}" ] && [ -z "${MVS_WP_PATH:-}" ]; then
+	fail "MVS_WP or MVS_WP_PATH is not set, so the Free-only / Pro-only boot check cannot run. Point it at the dev site (see bin/boot-matrix-smoke.sh) or pass --skip-boot-matrix."
+	exit 30
+elif ! bash "$FREE_ROOT/bin/boot-matrix-smoke.sh"; then
+	fail "Boot matrix smoke failed: a mode (Free only, Pro only or both) is not clean"
+	exit 30
+else
+	ok "Boot matrix smoke OK"
+fi
+
+# --- 3c. uninstall smoke: uninstall.php with the plugin inactive, remove-data OFF and ON, then reinstall ---
+# Destructive, so it runs on a THROWAWAY site of its own (MVS_UNINSTALL_WP), never the boot-matrix dev site.
+step "3c. uninstall smoke (data OFF, data ON, reinstall)"
+if [ "$SKIP_UNINSTALL_SMOKE" -eq 1 ]; then
+	warn "--skip-uninstall-smoke set: deleting the plugins was NOT tested. Emergency only."
+elif [ -z "${MVS_UNINSTALL_WP:-}" ]; then
+	fail "MVS_UNINSTALL_WP is not set, so uninstall/reinstall cannot be tested. Point it at a throwaway site's WP-CLI (see bin/uninstall-smoke.sh) or pass --skip-uninstall-smoke."
+	exit 30
+elif ! bash "$FREE_ROOT/bin/uninstall-smoke.sh"; then
+	fail "Uninstall smoke failed: deleting or reinstalling MediaVerse is not clean"
+	exit 30
+else
+	ok "Uninstall smoke OK"
 fi
 
 # --- 4. asset regen via grunt --------------------------------------------
