@@ -9,7 +9,8 @@
 	padding: 24px 0;
 }
 
-.mvs-load-more-btn {
+.mvs-load-more-btn,
+.mvs-load-more-iapi {
 	display: inline-flex;
 	align-items: center;
 	gap: 8px;
@@ -26,13 +27,15 @@
 	transition: background 0.15s, border-color 0.15s;
 }
 
-.mvs-load-more-btn:hover {
+.mvs-load-more-btn:hover,
+.mvs-load-more-iapi:hover {
 	background: var(--mvs-surface-2);
 	color: var(--mvs-text);
 	border-color: var(--mvs-border-control);
 }
 
-.mvs-load-more-btn.is-loading {
+.mvs-load-more-btn.is-loading,
+.mvs-load-more-iapi:disabled {
 	opacity: 0.7;
 	cursor: wait;
 }
@@ -67,7 +70,8 @@
 }
 
 @media (max-width: 640px) {
-	.mvs-load-more-btn {
+	.mvs-load-more-btn,
+	.mvs-load-more-iapi {
 		padding: 0 16px;
 		/*
 		 * `height: 36px` was here. The base is a compliant 40px and this override
@@ -88,7 +92,8 @@
 }
 
 /* Keyboard focus ring (themes such as Reign set outline: none on buttons). */
-.mvs-load-more:focus-visible {
+.mvs-load-more:focus-visible,
+.mvs-load-more-iapi:focus-visible {
 	outline: 2px solid var(--mvs-primary);
 	outline-offset: 2px;
 }

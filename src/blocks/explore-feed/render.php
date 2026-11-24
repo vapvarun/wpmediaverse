@@ -192,14 +192,15 @@ wp_interactivity_state(
 			<?php endforeach; ?>
 		</div>
 
-		<button class="mvs-load-more"
-			data-wp-bind--hidden="!context.hasMore"
-			data-wp-on--click="actions.loadMore"
-			data-wp-bind--disabled="context.loading"
-		>
-			<span data-wp-bind--hidden="context.loading"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
-			<span data-wp-bind--hidden="!context.loading"><?php esc_html_e( 'Loading...', 'wpmediaverse' ); ?></span>
-		</button>
+		<div class="mvs-load-more" data-wp-bind--hidden="!context.hasMore">
+			<button type="button" class="mvs-load-more-iapi"
+				data-wp-on--click="actions.loadMore"
+				data-wp-bind--disabled="context.loading"
+			>
+				<span data-wp-bind--hidden="context.loading"><?php esc_html_e( 'Load More', 'wpmediaverse' ); ?></span>
+				<span data-wp-bind--hidden="!context.loading"><?php esc_html_e( 'Loading...', 'wpmediaverse' ); ?></span>
+			</button>
+		</div>
 	<?php else : ?>
 		<?php
 		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML; the __() values are data it escapes.

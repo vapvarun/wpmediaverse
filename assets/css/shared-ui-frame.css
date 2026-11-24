@@ -115,8 +115,10 @@
  * (printed in the dashboard footer) toggles an inline display instead, hence
  * the two style exclusions — without them the FAB would vanish for good on
  * that page. visibility also drops the FAB from the tab order and the
- * accessibility tree. Basecamp 10320784115. */
-body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container {
+ * accessibility tree. The open chat panel is a dialog too: the FAB sat on its
+ * Send button. */
+body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container,
+body:has(.mvs-chat-panel[data-open="true"]) .mvs-fab-container {
 	visibility: hidden;
 }
 
