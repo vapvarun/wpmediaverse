@@ -202,9 +202,19 @@ do {
 } while ( $mvs_more );
 
 // Media comments live in core's comments tables (type mvs_comment, with mvs_media_id in commentmeta): left behind, they
-// reappear under whatever new media gets the same id after a reinstall.
-$wpdb->query( "DELETE cm FROM {$wpdb->commentmeta} cm INNER JOIN {$wpdb->comments} c ON c.comment_ID = cm.comment_id WHERE c.comment_type = 'mvs_comment'" );
-$wpdb->query( "DELETE FROM {$wpdb->comments} WHERE comment_type = 'mvs_comment'" );
+// reappear under whatever new media gets the same id after a reinstall. Removed in id batches, like the albums above:
+// two unbounded statements locked core's comments table (the site's own comments with it) on a site with very many.
+$mvs_comment_batch = 2000;
+do {
+	$mvs_batch = array_map( 'intval', (array) $wpdb->get_col( $wpdb->prepare( "SELECT comment_ID FROM {$wpdb->comments} WHERE comment_type = 'mvs_comment' LIMIT %d", $mvs_comment_batch ) ) );
+	if ( ! $mvs_batch ) {
+		break;
+	}
+	$mvs_ids = implode( ',', $mvs_batch );
+	$wpdb->query( "DELETE FROM {$wpdb->commentmeta} WHERE comment_id IN ( {$mvs_ids} )" );
+	$mvs_deleted = (int) $wpdb->query( "DELETE FROM {$wpdb->comments} WHERE comment_ID IN ( {$mvs_ids} )" );
+	$mvs_more    = count( $mvs_batch ) >= $mvs_comment_batch && $mvs_deleted > 0; // A batch that deletes nothing stops the loop.
+} while ( $mvs_more );
 $wpdb->query( "DELETE FROM {$wpdb->commentmeta} WHERE meta_key = 'mvs_media_id'" );
 // phpcs:enable
 
