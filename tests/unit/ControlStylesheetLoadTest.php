@@ -27,6 +27,17 @@ class ControlStylesheetLoadTest extends WP_UnitTestCase {
 		$this->assertTrue( wp_style_is( 'mvs-load-more', 'enqueued' ) );
 	}
 
+	public function test_a_shortcode_rendered_block_loads_the_rest_client_its_view_calls(): void {
+		wp_set_current_user( 0 );
+		do_action( 'wp_enqueue_scripts' );
+		wp_dequeue_script( 'mvs-rest' );
+		$this->assertTrue( wp_script_is( 'mvs-rest', 'registered' ) );
+
+		do_shortcode( '[mvs_explore_feed]' );
+
+		$this->assertTrue( wp_script_is( 'mvs-rest', 'enqueued' ) );
+	}
+
 	public function test_chat_text_fills_use_the_contrast_safe_pair(): void {
 		$css = (string) file_get_contents( dirname( __DIR__, 2 ) . '/assets/css/messaging.css' );
 

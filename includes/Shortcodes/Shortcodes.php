@@ -534,8 +534,11 @@ class Shortcodes {
 			$template = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/render.php';
 		}
 
-		// Ensure frontend + block styles are loaded.
+		// Ensure frontend + block styles are loaded, and the REST client the view
+		// modules call (window.mvsRest): block renders get it from a render_block
+		// filter that never runs for a shortcode, so a guest's Load more did nothing.
 		wp_enqueue_style( 'mvs-frontend' );
+		wp_enqueue_script( 'mvs-rest' );
 		$block_style = MVS_PLUGIN_DIR . 'build/blocks/' . $block_name . '/style-index.css';
 		if ( file_exists( $block_style ) ) {
 			wp_enqueue_style(
