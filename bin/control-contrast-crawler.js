@@ -29,6 +29,9 @@
 // its fill, "icon"); every one is listed under iconOnly with its lowest ratio. A button with neither
 // text nor icon, a transparent border and a fill under 3:1 fails as "transparent-edge". A summary or
 // [aria-expanded] control's chevron must reach 3:1; one with no indicator is listed under noIndicator.
+// Hover and active are forced on the control's ancestors too, as a real pointer does. A focusable
+// control whose keyboard focus changes nothing (outline, shadow, border, fill, colour) fails as
+// no-focus-indicator.
 
 async (page) => {
 const FRONT = [
@@ -64,7 +67,7 @@ const ACTIONS = {
   // The row's actions panel (rename, move, access, share with a person).
   docshare: ['summary.mvs-drive__actions-toggle'],
   // The document page's Share dialog (Pro document-share.js), opened from its Share button.
-  docdialog: [{ follow: 'a.mvs-drive__name' }, 'button.mvs-doc-share-button'],
+  docdialog: [{ follow: '.mvs-drive__row:not(:has(.mvs-drive__chip--folder)) a.mvs-drive__name' }, 'button.mvs-doc-share-button'],
   // Settings: every section is on one page, shown one at a time; reveal them all.
   sections: [{ eval: () => document.querySelectorAll('.mvs-settings-card[data-section]').forEach((c) => { c.hidden = false; c.style.display = 'block'; }) }],
 };
@@ -78,7 +81,9 @@ const ACTIONS = {
 // - wp-admin's own .nav-tab tabs (the Competitions section nav) are WordPress core chrome: each is
 //   identified by its label (5.35:1 or more) and the active one merges into the panel below by
 //   design; restyling them would set MediaVerse screens apart from every other admin screen.
-const EXEMPT = ['a.nav-tab', 'input.mvs-ig-comment-input', '.mvs-logged-out-banner__close', '.mvs-logged-out-banner__actions .mvs-btn--secondary'];
+// - wp-admin's list-table .toggle-row (phones) is core chrome too; core draws its focus ring on
+//   ::before, which the no-focus-indicator check does not read.
+const EXEMPT = ['a.nav-tab', 'button.toggle-row', 'input.mvs-ig-comment-input', '.mvs-logged-out-banner__close', '.mvs-logged-out-banner__actions .mvs-btn--secondary'];
 
 // Runs inside the page. Returns one record per tagged control.
 const IN_PAGE = (args) => {
@@ -168,6 +173,8 @@ const IN_PAGE = (args) => {
       if (cs.clip === 'rect(0px, 0px, 0px, 0px)' || cs.clipPath === 'inset(50%)') continue;
       el.setAttribute('data-mvc', String(i++));
     }
+    document.querySelectorAll('[data-mvc-anc]').forEach((n) => n.removeAttribute('data-mvc-anc'));
+    document.querySelectorAll('[data-mvc]').forEach((el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) a.setAttribute('data-mvc-anc', ''); });
     return i;
   }
 
@@ -218,7 +225,8 @@ const IN_PAGE = (args) => {
       for (let a = el.parentElement, d = 0; a && d < 2; a = a.parentElement, d++) {
         const acs = getComputedStyle(a);
         const ar = a.getBoundingClientRect();
-        if (ar.height > fr.height * 2 + 24) break;
+        // The tag box grows with its wrapped pills and still is the field's edge.
+        if (ar.height > fr.height * 2 + 24 && !a.matches('.mvs-tag-pills')) break;
         const asurf = bgUnder(a, false);
         for (const s of ['top', 'right', 'bottom', 'left']) {
           const w = parseFloat(acs.getPropertyValue(`border-${s}-width`));
@@ -310,8 +318,13 @@ const IN_PAGE = (args) => {
       }
     }
     const worstText = texts.reduce((m, t) => (!m || t.r / t.need < m.r / m.need ? t : m), null);
+    const sig = [cs.outlineStyle, cs.outlineWidth, cs.outlineColor, cs.boxShadow, cs.borderTopColor, cs.borderBottomColor, cs.borderBottomWidth, cs.backgroundColor, cs.color, cs.textDecorationLine,
+      // A field whose box draws the ring (:focus-within on the tag box, the search pill).
+      ...[el.parentElement, el.parentElement && el.parentElement.parentElement].filter(Boolean).map((a) => { const x = getComputedStyle(a); return x.outlineStyle + x.outlineColor + x.boxShadow + x.borderTopColor; })].join('|');
     out.push({
       i: +el.getAttribute('data-mvc'),
+      sig,
+      focusable: el.tabIndex >= 0,
       exempt: args.exempt.some((s) => el.matches(s)),
       sel: sel(el),
       label: label(el),
@@ -392,6 +405,9 @@ const mvcCrawl = async (shared, opts = {}) => {
           await page.addStyleTag({ content: '*,*::before,*::after{transition:none!important;animation:none!important;caret-color:transparent!important}' });
           await page.evaluate(() => { document.querySelectorAll('details').forEach((d) => { d.open = true; }); });
           await page.waitForTimeout(150);
+          // A dialog or an opened panel (new folder) focuses its first field: blur it, after the
+          // toggle handlers ran, so the rest state is measured at rest.
+          await page.evaluate(() => { if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur(); });
           return page.evaluate(IN_PAGE, { scope: set, tag: true, exempt: EXEMPT });
         };
         let n;
@@ -408,10 +424,14 @@ const mvcCrawl = async (shared, opts = {}) => {
         await cdp.send('CSS.enable');
         const { root } = await cdp.send('DOM.getDocument', { depth: -1 });
         const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: '[data-mvc]' });
+        // A hovered or pressed control hovers its ancestors too (a pill under the remove button).
+        const { nodeIds: ancIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: '[data-mvc-anc]' });
+        const restSig = {};
         // getDocument re-sends styleSheetAdded only on CSS.enable; give it a tick.
         await page.waitForTimeout(50);
         for (const state of states) {
           if (state !== 'default') await Promise.all(nodeIds.map((nodeId) => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: state === 'focus-visible' ? ['focus', 'focus-visible'] : [state] }).catch(() => {})));
+          if (state === 'hover' || state === 'active') await Promise.all(ancIds.map((nodeId) => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [state] }).catch(() => {})));
           let recs = [];
           try { recs = await page.evaluate(IN_PAGE, { scope: set, tag: false, exempt: EXEMPT }); } catch (e) { pages.push({ path, mode, width, state, error: String(e).slice(0, 80) }); }
           for (const r of recs) {
@@ -420,6 +440,11 @@ const mvcCrawl = async (shared, opts = {}) => {
               continue;
             }
             if (r.exempt) { exempt.add(r.sel); continue; }
+            if (state === 'default') restSig[r.i] = r.sig;
+            // Keyboard focus that changes nothing on the control: no focus indicator at all.
+            if (state === 'focus-visible' && r.focusable && restSig[r.i] === r.sig) {
+              violations.push({ path, mode, width, state, sel: r.sel, label: r.label, kind: 'no-focus-indicator', parts: '', text: null, rule: [] });
+            }
             if (r.nonText === 'fill-only') fillOnly.push({ sel: r.sel, label: r.label, state, mode, width, best: r.best, path });
             const bad = [];
             if (/^fail/.test(r.nonText)) bad.push(r.nonText === 'fail' || r.nonText === 'fail-no-boundary' ? 'nonText' : r.nonText.replace('fail-', ''));
@@ -446,7 +471,7 @@ const mvcCrawl = async (shared, opts = {}) => {
             } catch (e) { v.rule = [{ error: String(e).slice(0, 60) }]; }
             violations.push(v);
           }
-          if (state !== 'default') await Promise.all(nodeIds.map((nodeId) => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }).catch(() => {})));
+          if (state !== 'default') await Promise.all(nodeIds.concat(state === 'hover' || state === 'active' ? ancIds : []).map((nodeId) => cdp.send('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] }).catch(() => {})));
         }
         cdp.off('CSS.styleSheetAdded', onSheet);
         await cdp.send('CSS.disable');

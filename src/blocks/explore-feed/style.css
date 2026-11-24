@@ -115,3 +115,9 @@ input.mvs-explore-search:focus {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
+
+/* Keyboard focus ring (themes such as Reign set outline: none on buttons). */
+.mvs-explore-filter-btn:focus-visible {
+	outline: 2px solid var(--mvs-primary);
+	outline-offset: 2px;
+}

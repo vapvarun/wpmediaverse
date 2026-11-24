@@ -3561,17 +3561,11 @@ a.mvs-dashboard-card-title:hover {
     margin: calc(var(--mvs-touch-min, 44px) / -2 + 0.5em) 0;
     padding: 0;
     line-height: 1;
-    opacity: 0.8;
-}
-
-.mvs-tag-pill-remove:hover {
-    opacity: 1;
 }
 
 /* The ring is the pill's own text colour so it contrasts on a filled and on an outlined pill; the
    negative offset keeps it inside the 44px target instead of spilling over the neighbouring pill. */
 .mvs-tag-pill-remove:focus-visible {
-    opacity: 1;
     outline: 2px solid currentColor;
     outline-offset: -8px;
     border-radius: 50%;
@@ -6934,6 +6928,8 @@ a.mvs-dashboard-card-title:hover {
 .mvs-dashboard-dropzone:focus-visible,
 .mvs-search-mode-btn:focus-visible,
 .mvs-bulk-check:focus-visible,
+.mvs-fab:focus-visible,
+.mvs-toggle-btn:focus-visible,
 .mvs-load-more-btn:focus-visible {
     outline: 2px solid var(--mvs-primary);
     outline-offset: 2px;

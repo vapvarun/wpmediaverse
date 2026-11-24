@@ -1317,6 +1317,13 @@
     outline: none;
 }
 
+/* Keyboard focus gets the ring the other controls show; :focus above is the hover look only. */
+#buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:focus-visible,
+#buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags:focus-visible {
+    outline: 2px solid var(--mvs-primary);
+    outline-offset: 2px;
+}
+
 /* The composer options row hosts BP's own controls (the JS-injected
  * "Post in" box and the submit group) PLUS the three controls this plugin
  * injects into it. Themes that lay the row out with floats or rigid

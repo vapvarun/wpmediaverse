@@ -74,4 +74,12 @@ class ControlBorderTokenTest extends WP_UnitTestCase {
 		$rule = $this->rule( $this->css( 'admin.css' ), "a.mvs-btn--primary:focus,\na.mvs-btn--primary:active,\na.mvs-btn--primary:visited" );
 		$this->assertStringContainsString( 'var(--mvs-surface)', $rule );
 	}
+
+	public function test_tag_remove_is_not_faded_and_the_fab_has_a_focus_ring(): void {
+		$css = $this->css( 'frontend.css' );
+		// Faded to 0.8 the x measured 3.89:1 on the filled pill (TT25).
+		$this->assertStringNotContainsString( 'opacity', $this->rule( $css, '.mvs-tag-pill-remove' ) );
+		// Reign sets outline: none on buttons: the upload FAB needs its own ring.
+		$this->assertMatchesRegularExpression( '/\.mvs-fab:focus-visible,[^{]*\{\s*outline: 2px solid var\(--mvs-primary\)/', $css );
+	}
 }

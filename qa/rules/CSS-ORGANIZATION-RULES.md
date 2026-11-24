@@ -338,6 +338,12 @@ Pick by element, not by look: if it is a control, its edge is
 layout's comment field) stays borderless; its identity comes from its context,
 and the crawler lists it as an exemption.
 
+Phones (480px and below): the search bar's pill drops its edge and the field
+inside draws its own `--mvs-border-control` edge. The field gains 4px of top
+margin and a 1.5px edge, so the bar grows from 42px to 45px and the content
+below it moves down 7px (measured by QA on the 2.7.0 pass). That shift is
+expected, not a layout bug.
+
 Text on a brand fill reads the paired token (`--mvs-btn-primary-fg`,
 `--mvs-btn-primary-fg-hover`, `--mvs-on-accent`), never a literal `#fff`: on a
 light brand colour, white fails 4.5:1. Hover has its own fill, so it has its own
