@@ -88,6 +88,19 @@ body.dark-mode {
 	inset-inline-start: 20px;
 }
 
+/* With the chat button on the left the + upload button is alone on the right: it drops to the same
+ * bottom line as the chat button and keeps the same edge distance. --mvs-fab-safe is computed once at
+ * :root from the old bottom, so it is restated here, and the toast above the button and the page's
+ * bottom padding read the new value. */
+body:has(.mvs-chat-root--left) {
+	--mvs-fab-bottom: 20px;
+	--mvs-fab-safe: calc(var(--mvs-fab-bottom) + var(--mvs-fab-diameter, 56px) + var(--mvs-space-3, 16px));
+}
+
+body:has(.mvs-chat-root--left) .mvs-fab-container {
+	inset-inline-end: 20px;
+}
+
 .mvs-chat-root--left .mvs-chat-panel {
 	inset-inline-end: auto;
 	inset-inline-start: 0;

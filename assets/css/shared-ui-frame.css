@@ -118,8 +118,16 @@
  * accessibility tree. The open chat panel is a dialog too: the FAB sat on its
  * Send button. */
 body:has(:is(.mvs-modal-overlay, .mvs-lightbox-overlay, .mvs-confirm-overlay):not([hidden], [style*="display:none"], [style*="display: none"])) .mvs-fab-container,
-body:has(.mvs-chat-panel[data-open="true"]) .mvs-fab-container {
+body:has(.mvs-chat-panel[data-open="true"]):not(:has(.mvs-chat-root--left)) .mvs-fab-container {
 	visibility: hidden;
+}
+
+/* With the chat button on the left the open panel cannot reach the + button on the right, so the
+ * button stays. On a phone the panel is full width and covers it, so it steps out there as well. */
+@media (max-width: 767px) {
+	body:has(.mvs-chat-root--left .mvs-chat-panel[data-open="true"]) .mvs-fab-container {
+		visibility: hidden;
+	}
 }
 
 /* ─── Modal Overlay ─── */
