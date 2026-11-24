@@ -7,7 +7,7 @@
  *   $mvs_is_own_profile (bool) — Whether the viewer is the profile owner.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.7.0
  * @since   1.2.0
  */
 
@@ -36,7 +36,7 @@ if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
 		 * right after the click. Without this the state lived only in the page that sent the request, so a reload
 		 * showed "Follow" again.
 		 *
-		 * @since 2.7.1
+		 * @since 2.7.0
 		 *
 		 * @param bool $requested  Whether a request is pending. Default false.
 		 * @param int  $follower   The viewer.

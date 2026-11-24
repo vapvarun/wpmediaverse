@@ -7302,7 +7302,7 @@ class MediaRepository implements MediaRepositoryInterface {
 	 * and a move to the cloud all list a media's files from here, and used to skip such a variant: the file stayed
 	 * on disk after the media was deleted and was never moved.
 	 *
-	 * @since 2.7.1
+	 * @since 2.7.0
 	 *
 	 * @param int $media_id Media id.
 	 * @return array<string,string> Path meta key => relative path, blank paths with no recorded URL left out.
