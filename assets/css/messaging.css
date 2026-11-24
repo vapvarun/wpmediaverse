@@ -1195,6 +1195,7 @@ body:has(.mvs-chat-root--left) .mvs-fab-container {
 	font-size: 14px;
 	outline: none;
 	resize: none;
+	min-height: 0; /* a theme's textarea { min-height } (Reign sets 120px) would make the one-row box 120px tall even when empty */
 	max-height: 120px;
 	line-height: 1.4;
 	box-sizing: border-box;
