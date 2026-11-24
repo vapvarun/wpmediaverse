@@ -174,6 +174,7 @@ function wp_user_has_role( $u, string $r ): bool { return false; }
 
 function wp_next_scheduled( string $h, array $args = array() ) { return false; }
 function _get_cron_array() { return array(); }
+function wp_unschedule_hook( ...$a ) { return 0; }
 function wp_schedule_event( ...$a ): bool { return true; }
 function wp_schedule_single_event( ...$a ): bool { return true; }
 function wp_unschedule_event( ...$a ): bool { return true; }
