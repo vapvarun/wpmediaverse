@@ -23,6 +23,17 @@ class CacheService {
 	const TTL_LONG   = 3600;     // 1 hour.
 
 	/**
+	 * Whether the tag cloud keys are already cleared in this request.
+	 *
+	 * Moving 200 photos into an album fires mvs_media_privacy_changed 200 times, and each clear
+	 * deletes six transients, so 1,200 queries for the same result. A read (tag_cloud(),
+	 * tag_cloud_total()) can store the keys again, so it resets the flag.
+	 *
+	 * @var bool
+	 */
+	private $tag_cloud_cleared = false;
+
+	/**
 	 * A key tied to the group's last-changed token, so flush_all() can retire every cached read at
 	 * once by moving the token, on any object-cache backend (core's own pattern for a family of reads).
 	 *
@@ -300,7 +311,8 @@ class CacheService {
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
 	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
-		$key = 'tagcloud3_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
+		$key                     = 'tagcloud3_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
+		$this->tag_cloud_cleared = false;
 		return $this->remember_persistent(
 			$key,
 			static function () use ( $limit, $types ) {
@@ -319,7 +331,8 @@ class CacheService {
 	 * @return int
 	 */
 	public function tag_cloud_total( ?array $types = null ): int {
-		$key = 'tagcloudtotal3_' . ( $types ? implode( ',', $types ) : 'default' );
+		$key                     = 'tagcloudtotal3_' . ( $types ? implode( ',', $types ) : 'default' );
+		$this->tag_cloud_cleared = false;
 		return (int) $this->remember_persistent(
 			$key,
 			static function () use ( $types ) {
@@ -366,6 +379,11 @@ class CacheService {
 	 * below.
 	 */
 	public function invalidate_tag_cloud(): void {
+		if ( $this->tag_cloud_cleared ) {
+			return;
+		}
+		$this->tag_cloud_cleared = true;
+
 		// Legacy keys (deprecated get_tag_cloud()).
 		foreach ( array( 20, 50, 100 ) as $limit ) {
 			$this->delete( "tag_cloud_{$limit}" );

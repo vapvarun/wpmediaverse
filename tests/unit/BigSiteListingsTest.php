@@ -198,6 +198,31 @@ class BigSiteListingsTest extends WP_UnitTestCase {
 		$this->assertEquals( $cold, $warm, 'cached value must match the freshly computed one' );
 	}
 
+	public function test_tag_cloud_clears_once_per_change_burst_and_again_after_a_read(): void {
+		$author = self::factory()->user->create();
+		$media  = $this->seed_media( $author, 'public' );
+		wp_set_object_terms( $media, array( 'burst-tag' ), 'mvs_tag' );
+		$this->repo()->set( $media, 'tags', wp_json_encode( array( 'burst-tag' ) ) );
+
+		$cache = Plugin::container()->get( 'cache' );
+		$cache->tag_cloud( 20 );
+
+		global $wpdb;
+		$before = $wpdb->num_queries;
+		for ( $i = 0; $i < 50; $i++ ) {
+			$cache->invalidate_tag_cloud();
+		}
+		$burst = $wpdb->num_queries - $before;
+		$this->assertLessThan( 20, $burst, "50 clears in a row should cost one clear, used {$burst} queries." );
+
+		// A read stores the keys again, so the next change must clear them again.
+		$cache->tag_cloud( 20 );
+		$cache->invalidate_tag_cloud();
+		$found = false;
+		$cache->get( 'tagcloud3_20_default', $found );
+		$this->assertFalse( $found, 'a change after a read must clear the tag cloud again' );
+	}
+
 	// ------------------------------------------------------------------
 	// 3. Activity feed: batch-prefetches actors + media; query count does
 	// not grow with the number of distinct actors/media on the page.
