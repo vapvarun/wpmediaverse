@@ -623,13 +623,9 @@ body.dark-mode {
     font-size: 48px;
 }
 
-/* Heading reset within any MVS template — uses display font for headings */
-.mvs-single-media h1,
-.mvs-single-album h1,
-.mvs-single-collection h1,
-.mvs-explore-page h1,
 /* A notice printed by a Documents shortcode (switched off, or needs Pro). It can sit outside the
-   .mvs-documents wrapper, so it carries its own font and colours. */
+   .mvs-documents wrapper, so it carries its own font and colours. Its own rule: sharing a selector
+   list with the page headings below put this box on every page title. */
 .mvs-documents__notice {
     margin: 0 0 1rem;
     padding: 0.75rem 1rem;
@@ -643,6 +639,11 @@ body.dark-mode {
     line-height: 1.5;
 }
 
+/* Heading reset within any MVS template — uses display font for headings */
+.mvs-single-media h1,
+.mvs-single-album h1,
+.mvs-single-collection h1,
+.mvs-explore-page h1,
 .mvs-documents h1,
 .mvs-dashboard h1,
 .mvs-profile-edit h1 {
