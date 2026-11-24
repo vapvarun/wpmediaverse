@@ -440,7 +440,7 @@ final class Jobs {
 		// longest fixed part of the current translation. ponytail: a locale changed while the plugin was off misses
 		// its rows; they stay failed, as before.
 		$needles = array( 'no callbacks are registered' );
-		// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch -- Action Scheduler's own string, to match its log.
+		// phpcs:ignore WordPress.WP.I18n.TextDomainMismatch, WordPress.WP.I18n.MissingTranslatorsComment -- Action Scheduler's own string, to match its log.
 		foreach ( explode( '%1$s', __( 'Scheduled action for %1$s will not be executed as no callbacks are registered.', 'action-scheduler' ) ) as $part ) {
 			if ( strlen( trim( $part ) ) > strlen( $needles[1] ?? '' ) ) {
 				$needles[1] = trim( $part );
@@ -566,12 +566,12 @@ final class Jobs {
 		for ( $batch = 0; $batch < self::PRUNE_MAX_BATCHES && microtime( true ) < $deadline; $batch++ ) {
 			$ids = (array) as_get_scheduled_actions(
 				array(
-					'group'        => self::GROUP,
-					'status'       => $status,
-					$by            => $before,
+					'group'          => self::GROUP,
+					'status'         => $status,
+					$by              => $before,
 					$by . '_compare' => '<',
-					'per_page'     => self::PRUNE_BATCH,
-					'orderby'      => 'none',
+					'per_page'       => self::PRUNE_BATCH,
+					'orderby'        => 'none',
 				),
 				'ids'
 			);

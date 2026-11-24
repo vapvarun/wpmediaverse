@@ -3456,7 +3456,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		return array_map(
 			'intval',
 			(array) $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN (" . implode( ',', $media_ids ) . ')'
+				"SELECT media_id FROM {$wpdb->prefix}mvs_media_index WHERE media_id IN (" . implode( ',', $media_ids ) . ')' // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- ids are ints.
 			)
 		);
 	}

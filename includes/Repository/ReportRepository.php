@@ -146,7 +146,7 @@ class ReportRepository {
 		if ( $orphans ) {
 			$closed = (int) $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				$wpdb->prepare(
-					"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved', details = CONCAT( COALESCE( details, '' ), %s ) WHERE status = 'pending' AND id IN (" . implode( ',', $orphans ) . ')', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- ids are ints from the query above.
+					"UPDATE {$wpdb->prefix}mvs_reports SET status = 'resolved', details = CONCAT( COALESCE( details, '' ), %s ) WHERE status = 'pending' AND id IN (" . implode( ',', $orphans ) . ')', // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- ids are ints from the query above.
 					self::removed_note( 'media' )
 				)
 			);
