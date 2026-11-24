@@ -1543,6 +1543,17 @@
       "controls": "Where the floating slide-out chat icon appears for logged-in users. Consumed by Plugin::render_chat_panel() (wp_footer). Filterable per-page via mvs_should_render_chat_panel."
     },
     {
+      "key": "mvs_chat_position",
+      "group": "social",
+      "type": "string",
+      "default": "right",
+      "registered_in_option_group": "mvs_settings_social",
+      "section": "mvs_messaging",
+      "sanitize_callback": "Sanitizers::sanitize_chat_position (right|left)",
+      "where": "includes/Admin/Settings/MessagingSettingsRegistrar.php:189",
+      "controls": "Chat Button Position: which corner the floating chat button sits in (owner-approved new option for 2.7.0, 2026-11-21)."
+    },
+    {
       "key": "mvs_cloud_direct_public_urls",
       "group": "storage",
       "type": "boolean",
@@ -6201,7 +6212,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.1",
+    "branch": "2.7.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -7147,7 +7158,8 @@
         "seed/cleanup demo scripts: mvs_demo_user user meta"
       ],
       "note": "No new hook, route, CLI command, setting or table."
-    }
+    },
+    "delta_2026_11_24_v270": "2.7.0 targeted delta, code-verified against v2.6.4..HEAD (deterministic generator not run). New option mvs_chat_position (settings). New filters/actions (in manifest.hooks.json): mvs_can_follow, mvs_blocked_either_way_ids, mvs_display_timezone, mvs_follow_request_withdrawn, mvs_finished_action_retention_days, mvs_failed_action_retention_days, mvs_storage_cleanup_max_attempts. Action Scheduler DB safety: Core\\Jobs cleans only its own 'mvs' group rows (finished 7 days, failed filterable), claims each failed row before re-queueing, adopt_pending batches until a short page; StorageCleanupService queues paths and flushes on shutdown. No new REST route, AJAX action, admin page, table, block, shortcode or CLI command. Cron list already current. Frontend CSS: control borders, contrast and focus-visible rings only."
   },
   "category_sources": {
     "rest": [

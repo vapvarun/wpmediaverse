@@ -3,7 +3,7 @@
   "plugin": {
     "slug": "wpmediaverse-pro",
     "name": "WPMediaVerse Pro",
-    "version": "2.5.1",
+    "version": "2.7.0",
     "namespace": "WPMediaVersePro",
     "main_file": "wpmediaverse-pro.php",
     "text_domain": "wpmediaverse-pro",
@@ -2241,7 +2241,7 @@
   "generated": {
     "at": "2026-09-30T00:00:00Z",
     "from": "targeted delta 2026-09-30 (hand-verified; deterministic generator deliberately not run)",
-    "branch": "2.6.1",
+    "branch": "2.7.0",
     "schema_version": "v2.2",
     "scan_scope": "distignore",
     "scan_path": ".",
@@ -2592,7 +2592,8 @@
         "gamification.css: no-cover challenge/tournament placeholder tinted from --mvs-primary with a trophy",
         "Instagram layout players follow Allow downloads"
       ]
-    }
+    },
+    "delta_2026_11_24_v270": "2.7.0 targeted delta, code-verified against v2.6.4..HEAD (deterministic generator not run). MVS_PRO_MIN_FREE 2.7.0. Consumes Free filter mvs_story_keep_item (manifest.hooks.json). Documents: no TypeError when finfo_open fails, a .docx without the zip extension is reported. Flickr upload reply: no fatal without SimpleXML. Five templates re-versioned (battles-body, challenges-body, instagram/pinterest layout assets). audit/tables.lock baselined (9 CREATE TABLE statements, none added). src/ excluded from the zip. No new REST route, AJAX action, admin page, table, option, block, shortcode or CLI command. CSS: focus-visible rings and unfaded reply/close controls only."
   },
   "category_sources": {
     "rest": [
