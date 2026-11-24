@@ -129,8 +129,8 @@ class Migrator {
 
 	/**
 	 * One-time steps that apply an owner-facing choice, skipped when a repair
-	 * re-runs the migrations: v45 takes the moderator caps off Editors, and a
-	 * repair must not take back a re-grant the owner made since.
+	 * re-runs the migrations (see rebuild_schema()): v45 takes the moderator caps off
+	 * Editors, and a repair must not take back a re-grant the owner made since.
 	 */
 	const NOT_ON_REPAIR = array( 45 );
 
@@ -156,8 +156,13 @@ class Migrator {
 		if ( get_transient( self::SCHEMA_RECHECK_TRANSIENT ) ) {
 			return;
 		}
-		set_transient( self::SCHEMA_RECHECK_TRANSIENT, 1, DAY_IN_SECONDS );
+		// A repair that dies half way (a timeout) is tried again in ten minutes; one that finishes holds the
+		// next check for a day. A repair that could not take the lock clears the transient itself.
+		set_transient( self::SCHEMA_RECHECK_TRANSIENT, 1, self::LOCK_TTL );
 		( new self() )->repair_missing_tables();
+		if ( get_transient( self::SCHEMA_RECHECK_TRANSIENT ) ) {
+			set_transient( self::SCHEMA_RECHECK_TRANSIENT, 1, DAY_IN_SECONDS );
+		}
 	}
 
 	/**
@@ -179,19 +184,44 @@ class Migrator {
 
 		$missing = array_values( array_diff( self::tables(), $have ) );
 		if ( $missing ) {
-			update_option( self::VERSION_OPTION, 0 );
-			$this->run( true );
+			$this->rebuild_schema();
 		}
 
 		return $missing;
 	}
 
 	/**
-	 * Run pending migrations.
+	 * Re-run every step except the owner-choice ones, without touching the stored version.
 	 *
-	 * @param bool $repair True when re-running every step to rebuild missing tables (skips NOT_ON_REPAIR).
+	 * The repair used to reset the version to 0 and call run(), so for as long as it was under way the stored
+	 * version read 0 to every request: any other request could take the lock and run every step, the owner-choice
+	 * ones included, and a repair cut short left the version below 45 so the next ordinary request ran v45 and took
+	 * back an Editor moderation grant the owner had made. The version is left at what it is, so a repair is only a
+	 * rebuild: it cannot start a second upgrade, and nothing it does is remembered between requests.
 	 */
-	public function run( bool $repair = false ): void {
+	private function rebuild_schema(): void {
+		if ( ! self::acquire_lock( self::LOCK_NAME ) ) {
+			// Another runner holds it: look again on the next admin request instead of in a day.
+			delete_transient( self::SCHEMA_RECHECK_TRANSIENT );
+			return;
+		}
+
+		try {
+			for ( $v = 1; $v <= self::CURRENT_VERSION; $v++ ) {
+				$method = "migrate_to_{$v}";
+				if ( method_exists( $this, $method ) && ! in_array( $v, self::NOT_ON_REPAIR, true ) ) {
+					$this->$method();
+				}
+			}
+		} finally {
+			\WP_Upgrader::release_lock( self::LOCK_NAME );
+		}
+	}
+
+	/**
+	 * Run pending migrations.
+	 */
+	public function run(): void {
 		$installed_version = (int) get_option( self::VERSION_OPTION, 0 );
 
 		if ( $installed_version >= self::CURRENT_VERSION ) {
@@ -210,7 +240,7 @@ class Migrator {
 			set_transient( Activator::REQUEUE_TRANSIENT, 1, WEEK_IN_SECONDS );
 			for ( $v = $installed_version + 1; $v <= self::CURRENT_VERSION; $v++ ) {
 				$method = "migrate_to_{$v}";
-				if ( method_exists( $this, $method ) && ! ( $repair && in_array( $v, self::NOT_ON_REPAIR, true ) ) ) {
+				if ( method_exists( $this, $method ) ) {
 					$this->$method();
 				}
 				// Saved per step, so a timeout resumes at the next one instead of
