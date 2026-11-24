@@ -1,5 +1,5 @@
 import { useBlockProps, InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, RangeControl, ToggleControl } from '@wordpress/components';
+import { Notice, PanelBody, RangeControl, ToggleControl } from '@wordpress/components';
 import { __, _n, sprintf } from '@wordpress/i18n';
 import {
 	StandardInspectorPanels,
@@ -26,6 +26,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							false === album &&
 							__( 'Not found', 'wpmediaverse' ) }
 					</p>
+					{ albumId > 0 && album && 'public' !== album.privacy && (
+						<Notice status="warning" isDismissible={ false }>
+							{ __(
+								'This album is not public. Only people allowed to see it will see it on this page; everyone else sees nothing.',
+								'wpmediaverse'
+							) }
+						</Notice>
+					) }
 					<EntityPicker
 						path="/mvs/v1/albums"
 						browseLabel={ __( 'Browse albums', 'wpmediaverse' ) }
