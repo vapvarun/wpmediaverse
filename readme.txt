@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.6.4
+Stable tag: 2.7.0
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -124,6 +124,50 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
 
 == Changelog ==
+
+= 2.7.0 - November 2026 =
+
+Clearer controls, focus rings and dialogs for every member, safer background jobs, and a plugin that never takes the site down when a PHP extension is missing. Lockstep with WPMediaVerse Pro 2.7.0 - install and test both together. Sites on 2.6.1 to 2.6.4: update to 2.7.0 before you delete the plugin.
+
+* New      - Members can cancel a follow request, and the button shows Requested while it waits.
+* New      - Chat Button Position lets the site owner move the floating chat to the bottom left.
+* New      - The Media Grid block has a Show pagination switch and adapts to narrow columns and sidebars.
+* New      - Deleting a reported item closes its reports, and reports closed because the media is gone say so.
+* Improve  - Every field, select, outlined button, chip and pill has an edge that stands out at 3:1 on light and dark themes.
+* Improve  - Every control shows a visible ring on keyboard focus, including the Upload media button, Explore filters, Load more and the collection type toggle.
+* Improve  - Buttons, badges and Follow labels switch to black text where white does not stand out on the site's brand colour.
+* Improve  - On phones the search field draws its own edge, so the content below it sits 7px lower.
+* Improve  - The guest login prompt is no longer dimmed, and tag remove buttons are no longer faded.
+* Improve  - Share, Report and document share dialogs are named for screen readers.
+* Improve  - Grid tile hover stats are readable over any photo.
+* Improve  - One media edit form on every surface, with Replace File and a required title on the media page too.
+* Improve  - Deleting or merging a tag says when it is still running, and large tag jobs continue in the background.
+* Improve  - Dates show in the site's display timezone on every surface, and member emails go out in the recipient's language.
+* Improve  - Radii follow the theme and BuddyNext instead of fixed pixels.
+* Improve  - Licence notices appear only on Plugins, Updates and MediaVerse screens.
+* Improve  - The remove-data option says what is deleted, what stays and where the uploaded files live.
+* Fix      - MediaVerse no longer stops the site when the mbstring, ctype or fileinfo PHP extension is missing.
+* Fix      - Deleting the plugin no longer fails, and uninstall removes its comments, albums and scheduled jobs in batches.
+* Fix      - Missing tables are rebuilt on activation, and at most once a day on an admin request.
+* Fix      - Deleting many media items queues a few cleanup jobs, and a failing cloud delete retries twice, not four times.
+* Fix      - Cloud uploads sync after every image size exists, and never record a size that is not on the CDN.
+* Fix      - The activity composer keeps the files that uploaded when one is a duplicate, keeps an Only me photo post for its author, and offers no Only me in groups.
+* Fix      - A private album is no longer shown, and a public one no longer hidden, in the Album block.
+* Fix      - Pro shortcodes with Pro off show nothing to visitors and a short note to site admins.
+* Fix      - An unknown tag or category shows the Explore not found state with status 404.
+* Fix      - Back arrows mirror on right-to-left sites, and save errors are readable in dark mode.
+* Fix      - The lightbox comments can be reached on a phone, and a closed chat panel is hidden from the keyboard.
+* Fix      - Moving hundreds of photos into an album no longer runs extra database queries for every photo.
+* Security - A plain WordPress Editor is no longer a media moderator; the upgrade removes those capabilities from the stored Editor role.
+* Dev      - Action Scheduler 4.0.0 is bundled, the same copy BuddyNext ships, and every background job runs through one queue and one group.
+* Dev      - Finished background jobs are cleaned after 7 days; filters `mvs_finished_action_retention_days`, `mvs_failed_action_retention_days` and `mvs_storage_cleanup_max_attempts` tune it.
+* Dev      - Deactivation cancels Free's own pending jobs and leaves jobs that finish a committed action; reactivation queues again the jobs a runner failed while MediaVerse was off.
+* Dev      - New filters `mvs_can_follow`, `mvs_blocked_either_way_ids` and `mvs_display_timezone`, and new action `mvs_follow_request_withdrawn`; `mvs_report_resolved` now carries the target.
+* Dev      - New repository methods `space_drive_media_ids()` and `close_pending_for_target()` for a community plugin deleting a space.
+* Dev      - MediaVerse adds its colours, font sizes and spacing to WordPress's theme.json defaults instead of replacing them, and no longer sets the content width.
+* Dev      - The .pot now carries JavaScript strings too.
+* Dev      - Templates updated (2.7.0): album.php, documents.php, media-single.php, partials/chat-panel.php, partials/dashboard-content.php, partials/explore-tag-cloud.php, partials/media-edit-form.php, partials/shared-ui-frame.php, partials/usage-history.php.
+* Compat   - Aligned with WPMediaVerse Pro 2.7.0. Install both updates together.
 
 = 2.6.4 - November 2026 =
 
@@ -1078,6 +1122,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.7.0 =
+Contains a security fix: a plain WordPress Editor is no longer a media moderator. Sites on 2.6.1 to 2.6.4: update to 2.7.0 before you delete the plugin, because deleting those versions can fail. Update together with WPMediaVerse Pro 2.7.0.
 
 = 2.6.1 =
 Contains security fixes. Private albums and collections were listed to visitors, the tag cloud named tags used only on private media, and the Media Grid block could list an item a moderator had removed. This release also stops the plugin contacting the licence server on every admin request. Update together with WPMediaVerse Pro 2.6.1.

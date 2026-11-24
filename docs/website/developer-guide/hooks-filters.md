@@ -63,6 +63,13 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_mentions_created` | action | Free | 1.0 |
 | `mvs_user_followed` | action | Free | 1.0 |
 | `mvs_user_unfollowed` | action | Free | 1.0 |
+| `mvs_can_follow` | filter | Free | 2.7.0 |
+| `mvs_follow_request_withdrawn` | action | Free | 2.7.0 |
+| `mvs_blocked_either_way_ids` | filter | Free | 2.7.0 |
+| `mvs_display_timezone` | filter | Free | 2.7.0 |
+| `mvs_finished_action_retention_days` | filter | Free | 2.7.0 |
+| `mvs_failed_action_retention_days` | filter | Free | 2.7.0 |
+| `mvs_storage_cleanup_max_attempts` | filter | Free | 2.7.0 |
 | `mvs_media_shared` | action | Free | 1.0 |
 | `mvs_report_submitted` | action | Free | 1.0 |
 | `mvs_report_resolved` | action | Free | 2.6.0 |
@@ -463,6 +470,21 @@ add_filter( 'mvs_storage_cleanup_max_attempts', function () {
 | Parameter | Type | Description |
 |---|---|---|
 | `$max` | `int` | Attempts in all, at least 1. Default 3. |
+
+### `mvs_display_timezone` **(New in 2.7.0)**
+
+Filters the timezone that dates and times formatted in the browser display in. MediaVerse never uses the visitor's browser zone; the default is the site timezone from Settings > General. Return a member's own zone to show their local time.
+
+```php
+add_filter( 'mvs_display_timezone', function ( $timezone ) {
+    $mine = get_user_meta( get_current_user_id(), 'timezone_string', true );
+    return $mine ? $mine : $timezone;
+} );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$timezone` | `string` | IANA name such as `Asia/Kolkata`, or a `+05:30` style offset on sites set to a UTC offset. |
 
 ---
 
@@ -1102,6 +1124,56 @@ document.addEventListener( 'mvs-collections-click', ( event ) => {
 ```js
 document.dispatchEvent( new CustomEvent( 'mvs-collections-changed', { detail: { mediaId: 123 } } ) );
 ```
+
+### `mvs_can_follow` **(New in 2.7.0)**
+
+Filters whether a follow may be recorded. A community plugin that decides who may follow whom answers here, so MediaVerse never writes a follow it would take back. Return `'pending'` when your plugin recorded a follow request instead (a private account): MediaVerse writes no follow row, and the Follow button shows Requested.
+
+```php
+add_filter( 'mvs_can_follow', function ( $can, $follower_id, $following_id ) {
+    if ( my_account_is_private( $following_id ) ) {
+        my_record_follow_request( $follower_id, $following_id );
+        return 'pending';
+    }
+    return $can;
+}, 10, 3 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$can` | `bool\|string` | True to record the follow, false to refuse it, `'pending'` for a request. |
+| `$follower_id` | `int` | The member doing the following. |
+| `$following_id` | `int` | The member being followed. |
+
+### `mvs_follow_request_withdrawn` **(New in 2.7.0)**
+
+Fires when an unfollow finds no follow of its own to remove. The plugin that turned the follow into a request (see `mvs_can_follow`) holds that request, so it withdraws it here, and cancelling works from every client.
+
+```php
+add_action( 'mvs_follow_request_withdrawn', function ( $follower_id, $following_id ) {
+    my_delete_follow_request( $follower_id, $following_id );
+}, 10, 2 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$follower_id` | `int` | The member cancelling. |
+| `$following_id` | `int` | The member they asked to follow. |
+
+### `mvs_blocked_either_way_ids` **(New in 2.7.0)**
+
+Filters the members hidden from a viewer by a block, in either direction. Every list, count and feed reads this one answer, so a community plugin with its own block list adds its ids here and all of MediaVerse follows.
+
+```php
+add_filter( 'mvs_blocked_either_way_ids', function ( $ids, $user_id ) {
+    return array_unique( array_merge( $ids, my_block_list( $user_id ) ) );
+}, 10, 2 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$ids` | `int[]` | Member ids in a block relationship with the viewer. |
+| `$user_id` | `int` | The viewer. |
 
 ---
 
