@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-24T03:21:43+00:00\n"
+"POT-Creation-Date: 2026-11-24T03:53:06+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: wpmediaverse\n"
@@ -166,14 +166,14 @@ msgstr ""
 msgid "Loading..."
 msgstr ""
 
-#: build/blocks/explore-feed/render.php:209
+#: build/blocks/explore-feed/render.php:210
 #: build/blocks/media-grid/render.php:355
 #: includes/Admin/MediaListPage.php:267
 #: templates/partials/dashboard-content.php:985
 msgid "No media yet"
 msgstr ""
 
-#: build/blocks/explore-feed/render.php:210
+#: build/blocks/explore-feed/render.php:211
 #: build/blocks/media-grid/render.php:356
 msgid "No media items found."
 msgstr ""
@@ -339,7 +339,7 @@ msgid "Ask the site owner if you should be able to share media here."
 msgstr ""
 
 #: build/blocks/media-upload/render.php:97
-#: includes/Shortcodes/Shortcodes.php:773
+#: includes/Shortcodes/Shortcodes.php:776
 #: templates/partials/profile-edit-panel.php:81
 #: templates/profile-edit.php:136
 msgid "Uploading..."
@@ -2570,7 +2570,7 @@ msgstr ""
 #: includes/Admin/Settings/MessagingSettingsRegistrar.php:87
 #: includes/Admin/Settings/MessagingSettingsRegistrar.php:138
 #: includes/Services/ProfileService.php:302
-#: includes/Shortcodes/Shortcodes.php:834
+#: includes/Shortcodes/Shortcodes.php:837
 msgid "Everyone"
 msgstr ""
 
@@ -2828,7 +2828,7 @@ msgid "Dismiss this notice"
 msgstr ""
 
 #: includes/Admin/Settings/SettingsPage.php:634
-#: includes/Shortcodes/Shortcodes.php:863
+#: includes/Shortcodes/Shortcodes.php:866
 #: templates/profile-edit.php:231
 msgid "Save Changes"
 msgstr ""
@@ -4556,7 +4556,7 @@ msgstr ""
 
 #: includes/Core/TemplateLoader.php:1222
 #: includes/Core/TemplateLoader.php:1225
-#: includes/Shortcodes/Shortcodes.php:753
+#: includes/Shortcodes/Shortcodes.php:756
 #: templates/explore.php:160
 #: templates/partials/dashboard-content.php:361
 #: templates/profile-edit.php:114
@@ -5328,8 +5328,8 @@ msgstr ""
 #: includes/REST/Controller/CollectionController.php:501
 #: includes/REST/Controller/CollectionController.php:536
 #: includes/REST/Controller/CollectionController.php:545
-#: includes/Shortcodes/Shortcodes.php:609
-#: includes/Shortcodes/Shortcodes.php:616
+#: includes/Shortcodes/Shortcodes.php:612
+#: includes/Shortcodes/Shortcodes.php:619
 #: templates/collection.php:36
 msgid "Collection not found."
 msgstr ""
@@ -6166,7 +6166,7 @@ msgid "Any member can message you."
 msgstr ""
 
 #: includes/Services/ProfileService.php:303
-#: includes/Shortcodes/Shortcodes.php:835
+#: includes/Shortcodes/Shortcodes.php:838
 msgid "People who follow you"
 msgstr ""
 
@@ -6175,7 +6175,7 @@ msgid "People who follow you can message you. Anyone else can send a message req
 msgstr ""
 
 #: includes/Services/ProfileService.php:304
-#: includes/Shortcodes/Shortcodes.php:836
+#: includes/Shortcodes/Shortcodes.php:839
 msgid "People you follow back"
 msgstr ""
 
@@ -6184,7 +6184,7 @@ msgid "People you follow back can message you. Your other followers can send a m
 msgstr ""
 
 #: includes/Services/ProfileService.php:305
-#: includes/Shortcodes/Shortcodes.php:837
+#: includes/Shortcodes/Shortcodes.php:840
 msgid "No one"
 msgstr ""
 
@@ -6264,88 +6264,88 @@ msgstr ""
 msgid "Your uploads, albums and saved items live here."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:604
+#: includes/Shortcodes/Shortcodes.php:607
 msgid "Please provide a collection ID: [mvs_collection id=\"123\"]"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:636
+#: includes/Shortcodes/Shortcodes.php:639
 msgid "No media in this collection."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:666
+#: includes/Shortcodes/Shortcodes.php:669
 #: templates/partials/dashboard-content.php:236
 msgid "(Untitled)"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:687
+#: includes/Shortcodes/Shortcodes.php:690
 #: templates/profile-edit.php:22
 msgid "Log in to edit your profile"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:688
+#: includes/Shortcodes/Shortcodes.php:691
 #: templates/profile-edit.php:23
 msgid "Your photo, name and bio live here."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:767
+#: includes/Shortcodes/Shortcodes.php:770
 #: templates/profile-edit.php:130
 msgid "Your avatar"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:772
+#: includes/Shortcodes/Shortcodes.php:775
 #: templates/partials/profile-edit-panel.php:80
 #: templates/profile-edit.php:135
 msgid "Change Avatar"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:783
+#: includes/Shortcodes/Shortcodes.php:786
 #: templates/profile-edit.php:146
 msgid "Remove (use Gravatar)"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:786
+#: includes/Shortcodes/Shortcodes.php:789
 #: templates/profile-edit.php:149
 msgid "JPEG, PNG, GIF, or WebP. Max 2 MB."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:794
+#: includes/Shortcodes/Shortcodes.php:797
 #: templates/partials/profile-edit-panel.php:101
 #: templates/profile-edit.php:158
 msgid "First Name"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:804
+#: includes/Shortcodes/Shortcodes.php:807
 #: templates/partials/profile-edit-panel.php:108
 #: templates/profile-edit.php:168
 msgid "Last Name"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:814
+#: includes/Shortcodes/Shortcodes.php:817
 #: templates/partials/profile-edit-panel.php:117
 #: templates/profile-edit.php:178
 msgid "Display Name"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:823
+#: includes/Shortcodes/Shortcodes.php:826
 #: templates/partials/profile-edit-panel.php:123
 #: templates/profile-edit.php:187
 msgid "Bio"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:830
+#: includes/Shortcodes/Shortcodes.php:833
 #: templates/partials/profile-edit-panel.php:131
 #: templates/profile-edit.php:195
 msgid "Who can message you"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:842
+#: includes/Shortcodes/Shortcodes.php:845
 #: templates/partials/profile-edit-panel.php:142
 #: templates/profile-edit.php:207
 msgid "Show your online status"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:846
-#: includes/Shortcodes/Shortcodes.php:855
+#: includes/Shortcodes/Shortcodes.php:849
+#: includes/Shortcodes/Shortcodes.php:858
 #: templates/partials/profile-edit-panel.php:146
 #: templates/partials/profile-edit-panel.php:157
 #: templates/profile-edit.php:211
@@ -6353,8 +6353,8 @@ msgstr ""
 msgid "Yes"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:847
-#: includes/Shortcodes/Shortcodes.php:856
+#: includes/Shortcodes/Shortcodes.php:850
+#: includes/Shortcodes/Shortcodes.php:859
 #: templates/partials/profile-edit-panel.php:147
 #: templates/partials/profile-edit-panel.php:158
 #: templates/profile-edit.php:212
@@ -6362,13 +6362,13 @@ msgstr ""
 msgid "No"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:851
+#: includes/Shortcodes/Shortcodes.php:854
 #: templates/partials/profile-edit-panel.php:153
 #: templates/profile-edit.php:218
 msgid "Email me about activity"
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:864
+#: includes/Shortcodes/Shortcodes.php:867
 #: templates/album.php:223
 #: templates/media-single.php:827
 #: templates/partials/dashboard-content.php:1532
@@ -6378,15 +6378,15 @@ msgstr ""
 msgid "Saving..."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:940
+#: includes/Shortcodes/Shortcodes.php:943
 msgid "Documents are switched off in MediaVerse settings, so this page has nothing to list."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:975
+#: includes/Shortcodes/Shortcodes.php:978
 msgid "Folder listings need MediaVerse Pro."
 msgstr ""
 
-#: includes/Shortcodes/Shortcodes.php:1029
+#: includes/Shortcodes/Shortcodes.php:1032
 msgid "This drive view needs MediaVerse Pro."
 msgstr ""
 
