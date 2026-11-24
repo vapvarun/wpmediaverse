@@ -4002,7 +4002,7 @@ a.mvs-dashboard-card-title:hover {
  */
 .mvs-tag-cloud-item:hover,
 .mvs-tag-cloud-item:focus-visible {
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
@@ -5116,9 +5116,9 @@ a.mvs-dashboard-card-title:hover {
     padding: 2px 8px;
     border-radius: var(--mvs-radius-xs);
     font-size: 0.75em;
-    background: rgba(var(--mvs-primary-rgb), 0.15);
+    background: color-mix(in srgb, var(--mvs-primary) 15%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
-    border: 1px solid rgba(var(--mvs-primary-rgb), 0.30);
+    border: 1px solid color-mix(in srgb, var(--mvs-primary) 30%, transparent);
 }
 
 /* Type toggle */
@@ -6263,6 +6263,15 @@ a.mvs-dashboard-card-title:hover {
     border: none;
 }
 
+/* The profile header's "more" button opens a menu; it is not a destructive action, so it hovers
+   like the tag chips (a Remove or Cancel text button keeps the warning tint above). */
+.mvs-btn.mvs-btn--text.mvs-actions-more:hover,
+.mvs-btn.mvs-btn--text.mvs-actions-more:focus,
+.mvs-btn.mvs-btn--text.mvs-actions-more:active {
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
+    color: var(--mvs-primary-text, var(--mvs-primary));
+}
+
 /* Block/unblock toggle: de-emphasized next to Follow/Message; danger tint when
    active or hovered so the destructive action reads clearly. */
 .mvs-block-toggle {
@@ -6689,7 +6698,7 @@ a.mvs-dashboard-card-title:hover {
     height: 88px;
     margin: 0 auto 20px;
     border-radius: 50%;
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
     z-index: 1;
 }
@@ -6757,7 +6766,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-empty-state-frontend--404 .mvs-tag-cloud-item:hover,
 .mvs-empty-state-frontend--404 .mvs-tag-cloud-item:focus-visible {
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
