@@ -140,13 +140,16 @@ Clearer controls, focus rings and dialogs for every member, safer background job
 * Improve  - The guest login prompt is no longer dimmed, and tag remove buttons are no longer faded.
 * Improve  - Share, Report and document share dialogs are named for screen readers.
 * Improve  - Sent chat messages and filled chat buttons keep their text readable on any brand colour.
-* Improve  - Grid tile hover stats are readable over any photo.
+* Improve  - Grid tile hover stats sit on a bottom gradient so the picture keeps its look, stay readable over any photo and also show on keyboard focus.
 * Improve  - One media edit form on every surface, with Replace File and a required title on the media page too.
 * Improve  - Deleting or merging a tag says when it is still running, and large tag jobs continue in the background.
 * Improve  - Dates show in the site's display timezone on every surface, and member emails go out in the recipient's language.
 * Improve  - Radii follow the theme and BuddyNext instead of fixed pixels.
 * Improve  - Licence notices appear only on Plugins, Updates and MediaVerse screens.
 * Improve  - The remove-data option says what is deleted, what stays and where the uploaded files live.
+* Improve  - Keyboard focus rings use a text-safe colour that stands out on a pale brand colour, and every MediaVerse button, link and field shows one on themes that reset outlines.
+* Improve  - The reply quote in a sent chat bubble stays readable on any brand colour.
+* Fix      - The chat send button is disabled until there is something to send, including before the page script has loaded.
 * Fix      - MediaVerse no longer stops the site when the mbstring, ctype or fileinfo PHP extension is missing.
 * Fix      - Deleting the plugin no longer fails, and uninstall removes its comments, albums and scheduled jobs in batches.
 * Fix      - Missing tables are rebuilt on activation, and at most once a day on an admin request.
