@@ -623,13 +623,9 @@ body.dark-mode {
     font-size: 48px;
 }
 
-/* Heading reset within any MVS template — uses display font for headings */
-.mvs-single-media h1,
-.mvs-single-album h1,
-.mvs-single-collection h1,
-.mvs-explore-page h1,
 /* A notice printed by a Documents shortcode (switched off, or needs Pro). It can sit outside the
-   .mvs-documents wrapper, so it carries its own font and colours. */
+   .mvs-documents wrapper, so it carries its own font and colours. Its own rule: sharing a selector
+   list with the page headings below put this box on every page title. */
 .mvs-documents__notice {
     margin: 0 0 1rem;
     padding: 0.75rem 1rem;
@@ -643,6 +639,11 @@ body.dark-mode {
     line-height: 1.5;
 }
 
+/* Heading reset within any MVS template — uses display font for headings */
+.mvs-single-media h1,
+.mvs-single-album h1,
+.mvs-single-collection h1,
+.mvs-explore-page h1,
 .mvs-documents h1,
 .mvs-dashboard h1,
 .mvs-profile-edit h1 {
@@ -1146,16 +1147,21 @@ body.dark-mode .mvs-skeleton::after {
     transition: background 0.15s, color 0.15s;
 }
 
-.mvs-follow-toggle--following {
+/* Two classes: .mvs-btn comes later with one class and sets a transparent border, which hid
+   this button's own border and left "Following" looking like plain text. */
+.mvs-follow-toggle--following,
+.mvs-btn.mvs-follow-toggle--following {
     background: var(--mvs-surface-2);
     color: var(--mvs-text);
     border: 1px solid var(--mvs-border-control);
 }
 
-.mvs-follow-toggle--following:hover {
-    background: var(--mvs-danger-bg);
-    color: var(--mvs-danger-text, var(--mvs-danger));
-    border-color: var(--mvs-danger);
+/* Hovers like the tag chips: a light tint of the theme primary, not a warning. */
+.mvs-follow-toggle--following:hover,
+.mvs-btn.mvs-follow-toggle--following:hover {
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
+    color: var(--mvs-primary-text, var(--mvs-primary));
+    border-color: var(--mvs-border-control);
 }
 
 .mvs-follow-toggle:disabled {
@@ -2624,6 +2630,9 @@ body.dark-mode .mvs-skeleton::after {
    ========================================================================== */
 
 .mvs-dashboard {
+    /* The grids below size by the width the dashboard really gets, not the viewport: a theme sidebar takes
+       a third of it, and 5 columns of a 1440px viewport became 80px cards inside an 811px dashboard. */
+    container: mvs-dash / inline-size;
     max-width: var(--mvs-content-width, 1200px);
     margin: 0 auto;
     /* Not the bottom: §7 owns it (FAB safe area). */
@@ -2964,6 +2973,31 @@ body.dark-mode .mvs-skeleton::after {
     .mvs-dashboard-grid.mvs-cols-3,
     .mvs-dashboard-grid.mvs-cols-4,
     .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: 1fr; }
+}
+
+/* Columns follow the width the dashboard really gets, not the viewport. Where the rail shows (viewport 861px and up)
+   it takes 232px of the content width (13rem plus the gap), and a card needs about 160px, so each step below keeps
+   the panel wide enough: the configured count is the most a wide dashboard shows, never what a narrow one is squeezed
+   to. Narrower viewports have no rail and keep the viewport rules above. */
+@media (min-width: 861px) {
+    @container mvs-dash (max-width: 1095px) {
+        .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(4, 1fr); }
+    }
+    @container mvs-dash (max-width: 919px) {
+        .mvs-dashboard-grid.mvs-cols-4,
+        .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(3, 1fr); }
+    }
+    @container mvs-dash (max-width: 743px) {
+        .mvs-dashboard-grid.mvs-cols-3,
+        .mvs-dashboard-grid.mvs-cols-4,
+        .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @container mvs-dash (max-width: 567px) {
+        .mvs-dashboard-grid.mvs-cols-2,
+        .mvs-dashboard-grid.mvs-cols-3,
+        .mvs-dashboard-grid.mvs-cols-4,
+        .mvs-dashboard-grid.mvs-cols-5 { grid-template-columns: 1fr; }
+    }
 }
 
 .mvs-dashboard-card {
@@ -3996,7 +4030,7 @@ a.mvs-dashboard-card-title:hover {
  */
 .mvs-tag-cloud-item:hover,
 .mvs-tag-cloud-item:focus-visible {
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
 
@@ -5110,9 +5144,9 @@ a.mvs-dashboard-card-title:hover {
     padding: 2px 8px;
     border-radius: var(--mvs-radius-xs);
     font-size: 0.75em;
-    background: rgba(var(--mvs-primary-rgb), 0.15);
+    background: color-mix(in srgb, var(--mvs-primary) 15%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
-    border: 1px solid rgba(var(--mvs-primary-rgb), 0.30);
+    border: 1px solid color-mix(in srgb, var(--mvs-primary) 30%, transparent);
 }
 
 /* Type toggle */
@@ -6257,6 +6291,15 @@ a.mvs-dashboard-card-title:hover {
     border: none;
 }
 
+/* The profile header's "more" button opens a menu; it is not a destructive action, so it hovers
+   like the tag chips (a Remove or Cancel text button keeps the warning tint above). */
+.mvs-btn.mvs-btn--text.mvs-actions-more:hover,
+.mvs-btn.mvs-btn--text.mvs-actions-more:focus,
+.mvs-btn.mvs-btn--text.mvs-actions-more:active {
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
+    color: var(--mvs-primary-text, var(--mvs-primary));
+}
+
 /* Block/unblock toggle: de-emphasized next to Follow/Message; danger tint when
    active or hovered so the destructive action reads clearly. */
 .mvs-block-toggle {
@@ -6683,7 +6726,7 @@ a.mvs-dashboard-card-title:hover {
     height: 88px;
     margin: 0 auto 20px;
     border-radius: 50%;
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
     z-index: 1;
 }
@@ -6751,7 +6794,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-empty-state-frontend--404 .mvs-tag-cloud-item:hover,
 .mvs-empty-state-frontend--404 .mvs-tag-cloud-item:focus-visible {
-    background: rgba(var(--mvs-primary-rgb, 0, 115, 170), 0.08);
+    background: color-mix(in srgb, var(--mvs-primary) 8%, transparent);
     color: var(--mvs-primary-text, var(--mvs-primary));
 }
 

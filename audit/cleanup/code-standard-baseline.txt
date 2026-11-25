@@ -70,7 +70,7 @@ wpdb	includes/Services/HealthCheckService.php	1
 method	includes/Services/ImageOptimizationService.php::optimize_media	161
 method	includes/Services/LoggerService.php::register_hooks	158
 wpdb	includes/Services/LoggerService.php	7
-method	includes/Services/PrivacyService.php::check_access	199
+method	includes/Services/PrivacyService.php::check_access	207
 method	includes/Services/SignedUrlService.php::serve	162
 wpdb	includes/Services/StatsService.php	4
 wpdb	includes/Services/StorageLimitService.php	1

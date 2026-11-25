@@ -2,9 +2,9 @@
  * Apply-on-change for `TemplateHelpers::render_panel_toolbar()`.
  *
  * That helper is the one toolbar: the document drive, the dashboard panels,
- * Explore Media and Explore Documents all render through it. Each emits an
- * Apply button server-side so a member without JavaScript submits a plain form
- * and gets their sort. This removes it and submits on change instead — a
+ * Explore Media and Explore Documents all render through it. Each prints an
+ * Apply button inside noscript so a member without JavaScript submits a plain form
+ * and gets their sort. With JavaScript this submits on change instead — a
  * control that already shows what it will do does not also need a button asking
  * you to confirm it.
  *
@@ -25,17 +25,6 @@
 	'use strict';
 
 	var TOOLBAR = 'form.mvs-panel-toolbar';
-
-	/**
-	 * Hide the no-JS fallback wherever a toolbar appears.
-	 */
-	function hideApply() {
-		var buttons = document.querySelectorAll( 'form.mvs-panel-toolbar [type="submit"]' );
-
-		for ( var i = 0; i < buttons.length; i++ ) {
-			buttons[ i ].hidden = true;
-		}
-	}
 
 	document.addEventListener( 'change', function ( event ) {
 		var select = event.target;
@@ -79,13 +68,4 @@
 
 		form.submit();
 	} );
-
-	if ( 'loading' === document.readyState ) {
-		document.addEventListener( 'DOMContentLoaded', hideApply );
-	} else {
-		hideApply();
-	}
-
-	// Re-hide after an Interactivity-API region swap brings new markup in.
-	document.addEventListener( 'wpmediaverse-region-updated', hideApply );
 }() );

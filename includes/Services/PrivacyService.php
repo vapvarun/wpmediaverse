@@ -474,6 +474,14 @@ class PrivacyService {
 			return true;
 		}
 
+		// An album that is not published (trashed, draft, pending) is withdrawn. Core already 404s its permalink; this
+		// is the one place the block, the shortcode, both REST routes, the BuddyPress tabs and the album page ask, so
+		// none of them keeps serving a public album an admin has taken down. Its owner and moderators (above) can still
+		// reach it. Albums are always created as published; a collection can be stored private, so it is not covered.
+		if ( $treat_as_cpt && 'mvs_album' === $post_type && 'publish' !== get_post_status( $media_id ) ) {
+			return false;
+		}
+
 		// A block removes access to the blocked member's media, in BOTH
 		// directions. It belongs here rather than in each caller: every read
 		// path - the permalink, the REST single item, the profile grid, the
