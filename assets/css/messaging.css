@@ -681,8 +681,11 @@ body:has(.mvs-chat-root--left) .mvs-fab-container {
 }
 
 .mvs-chat-msg--sent .mvs-chat-msg__reply {
-	/* A darker overlay keeps the quote's text above 4.5:1; a white one lightened the fill. */
-	background: rgba(0, 0, 0, 0.18);
+	/* The overlay goes the other way from the text the theme puts on the fill: black under light text, white under dark
+	   text, so the quote's contrast rises whichever fill a theme supplies. A fixed black one fell to 3.61:1 on BuddyX
+	   because it only helps light text. */
+	background: rgba(0, 0, 0, 0.26);
+	background: color-mix(in srgb, oklch(from var(--mvs-chat-on-fill) clamp(0, (0.6 - l) * 1000, 1) 0 0) 26%, transparent);
 }
 
 .mvs-chat-msg--received .mvs-chat-msg__reply {
