@@ -40,8 +40,17 @@
 	outline: none;
 }
 
-.mvs-lightbox-overlay button:focus-visible {
+/* The controls ON the dark media stage (close, previous, next, fullscreen) take the on-overlay ink. The sidebar's buttons
+   (Share, Save, Download, reactions) sit on the panel, which is light in light mode: a white ring there was 1.04:1. */
+.mvs-lightbox-overlay .mvs-lightbox-close:focus-visible,
+.mvs-lightbox-overlay .mvs-lightbox-media button:focus-visible {
 	outline: 2px solid var(--mvs-on-overlay, #fff);
+	outline-offset: 2px;
+}
+
+.mvs-lightbox-sidebar button:focus-visible,
+.mvs-lightbox-sidebar a:focus-visible {
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: 2px;
 }
 

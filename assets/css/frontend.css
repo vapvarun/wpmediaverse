@@ -6988,6 +6988,22 @@ a.mvs-dashboard-card-title:hover {
     outline-offset: 2px;
 }
 
+/* Every other MediaVerse control gets the same ring, so no button, link or field is left without one under a theme that
+   resets outlines (Reign did, on the upload confirm and cancel buttons, the chat header and rows, the reactions and the
+   Save and Share buttons). Specificity (0,2,0) beats a theme's button:focus reset (0,1,1); the lightbox stage controls above and
+   in shared-ui-frame.css are more specific and keep their own ink. */
+[class*="mvs-"]:where(button, a, summary, [role="button"], [role="tab"], input, select, textarea):focus-visible {
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
+    outline-offset: 2px;
+}
+
+/* A ring drawn outside a tile that clips its content is cut off: on the grid tiles and the dashboard thumbnails it is
+   drawn just inside the edge. */
+.mvs-grid-item :is(a, button):focus-visible,
+.mvs-dashboard-card-thumb :is(a, button):focus-visible {
+    outline-offset: -3px;
+}
+
 /* Focus trap visual — modals */
 .mvs-modal:focus-within {
     box-shadow: 0 0 0 4px rgba(0, 115, 170, 0.15);
@@ -7777,12 +7793,16 @@ a.mvs-dashboard-card-title:hover {
     object-fit: contain;
 }
 
-/* High-contrast focus ring on every lightbox action — keyboard a11y for
-   the new Download / Fullscreen buttons + the existing Share / Open. */
-.mvs-lightbox-action:focus-visible,
+/* Focus ring on the lightbox: the stage controls (close, previous, next) sit on the dark stage and take the on-overlay
+   ink; the actions in the sidebar take the brand-safe ring token (they were white on a white panel, 1.04:1). */
 .mvs-lightbox-close:focus-visible,
 .mvs-lightbox-nav:focus-visible {
     outline: 2px solid var(--mvs-on-overlay, #fff);
+    outline-offset: 2px;
+}
+
+.mvs-lightbox-action:focus-visible {
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
