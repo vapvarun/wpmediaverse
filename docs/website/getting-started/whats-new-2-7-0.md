@@ -9,7 +9,9 @@ MediaVerse 2.7.0 makes every control easier to see and reach by keyboard, moves 
 ## Controls and accessibility
 
 - Fields, selects, outlined buttons, chips and pills have an edge that stands out at 3:1 on light and dark themes.
-- Every control shows a visible ring on keyboard focus, including the Upload media button, Explore filters, Load more and the collection type toggle.
+- Every control shows a visible ring on keyboard focus, including the Upload media button, Explore filters, Load more and the collection type toggle. The ring uses a text-safe version of your brand colour, so it stands out even on a pale one, and it shows on themes that remove outlines from buttons.
+- Grid tile hover stats sit on a bottom gradient, so the picture keeps its look, and they also show when a tile has keyboard focus.
+- The reply quote in a sent chat bubble stays readable on any brand colour, and the chat send button is disabled until there is something to send.
 - Buttons, badges and Follow labels switch to black text where white does not stand out on the site's brand colour.
 - The chat's sent messages and filled buttons keep their text readable on any brand colour.
 - The guest login prompt is no longer dimmed, and tag remove buttons are no longer faded.
@@ -41,6 +43,7 @@ See [Background Jobs](../developer-guide/background-jobs.md).
 ## Pro
 
 - **Pro** Competition tabs, the collection picker and the photo import dialog show a focus ring, and competition blocks and shortcodes are styled on any page.
+- **Pro** The stories viewer opens over a solid stage, and an empty stories bar says whose stories appear.
 - **Pro** The competitions tick runs at the next deadline instead of every 5 minutes.
 - **Pro** Document search backfill starts, resumes after a lost run and re-reads replaced files.
 - **Pro** A document share reaches BuddyNext's notification centre.

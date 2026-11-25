@@ -524,7 +524,7 @@ class MediaRepository implements MediaRepositoryInterface {
 			return 0;
 		}
 		// Pass-through guard: only URLs inside the gated uploads dir map to media.
-		if ( false === strpos( $url, '/wp-content/uploads/wpmediaverse/' ) ) {
+		if ( false === strpos( $url, '/wp-content/uploads/wpmediaverse/' ) ) { // CI: storage-internal - a guard on the stored path, not an emitted URL.
 			return 0;
 		}
 

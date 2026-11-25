@@ -118,6 +118,6 @@ input.mvs-explore-search:focus {
 
 /* Keyboard focus ring (themes such as Reign set outline: none on buttons). */
 .mvs-explore-filter-btn:focus-visible {
-	outline: 2px solid var(--mvs-primary);
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: 2px;
 }

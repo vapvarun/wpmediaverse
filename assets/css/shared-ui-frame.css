@@ -40,15 +40,24 @@
 	outline: none;
 }
 
-.mvs-lightbox-overlay button:focus-visible {
-	outline: 2px solid var(--mvs-primary);
+/* The controls ON the dark media stage (close, previous, next, fullscreen) take the on-overlay ink. The sidebar's buttons
+   (Share, Save, Download, reactions) sit on the panel, which is light in light mode: a white ring there was 1.04:1. */
+.mvs-lightbox-overlay .mvs-lightbox-close:focus-visible,
+.mvs-lightbox-overlay .mvs-lightbox-media button:focus-visible {
+	outline: 2px solid var(--mvs-on-overlay, #fff);
+	outline-offset: 2px;
+}
+
+.mvs-lightbox-sidebar button:focus-visible,
+.mvs-lightbox-sidebar a:focus-visible {
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: 2px;
 }
 
 /* Visible keyboard focus for shell form controls; see the matching rule in
    frontend.css. Basecamp 10320619382. */
 :where(.mvs-app-shell) :is(input, select, textarea):focus-visible {
-	outline: 2px solid var(--mvs-primary);
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: 2px;
 }
 
@@ -293,7 +302,7 @@ body:has(.mvs-chat-panel[data-open="true"]):not(:has(.mvs-chat-root--left)) .mvs
 }
 
 .mvs-modal-dropzone-placeholder:focus-visible {
-	outline: 2px solid var(--mvs-primary);
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: 2px;
 	border-radius: var(--mvs-radius-sm, 6px);
 }
@@ -407,7 +416,7 @@ body:has(.mvs-chat-panel[data-open="true"]):not(:has(.mvs-chat-root--left)) .mvs
 }
 
 .mvs-modal-preview-remove:focus-visible {
-	outline: 2px solid var(--mvs-primary, #2271b1);
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: 2px;
 }
 
@@ -1263,4 +1272,10 @@ body:has(.mvs-chat-panel[data-open="true"]):not(:has(.mvs-chat-root--left)) .mvs
 .mvs-edit-form .mvs-tag-text-input {
     min-height: var(--mvs-touch-min, 44px);
     box-sizing: border-box;
+}
+
+/* The upload and edit dialogs' Cancel, Upload and Save buttons keep a visible keyboard ring under themes that reset button outlines. */
+.mvs-modal-footer .mvs-btn:focus-visible {
+	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
+	outline-offset: 2px;
 }

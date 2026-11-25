@@ -58,6 +58,7 @@ defined( 'ABSPATH' ) || exit;
 			class="mvs-chat-composer__send"
 			data-wp-on--click="actions.sendMessage"
 			data-wp-bind--disabled="!state.canSend"
+			disabled
 			type="button"
 			aria-label="<?php esc_attr_e( 'Send message', 'wpmediaverse' ); ?>"
 		>
