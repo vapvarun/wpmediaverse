@@ -54,6 +54,19 @@ $album = $mvs_album_post;
 //
 // The id is an ALBUM id: say so, or a photo that shares its number decides.
 if ( ! \WPMediaVerse\Core\Plugin::container()->get( 'privacy' )->can_view( (int) $album_id, get_current_user_id(), \WPMediaVerse\Services\PrivacyService::SPACE_CPT ) ) {
+	// A page author who can edit posts is told why the block is blank, the way the not-found branch above does.
+	// A visitor still gets nothing, so the notice never confirms an album exists.
+	if ( current_user_can( 'edit_posts' ) ) {
+		// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- render_block_empty_state() returns pre-escaped HTML.
+		echo \WPMediaVerse\Core\Plugin::container()->get( 'template_helpers' )->render_block_empty_state(
+			array(
+				'icon'    => 'lock',
+				'title'   => __( 'Album not visible to you', 'wpmediaverse' ),
+				'message' => __( 'This album is private or members only, and you are not allowed to see it. Visitors who cannot see it get nothing here.', 'wpmediaverse' ),
+			)
+		);
+		// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
 	return;
 }
 

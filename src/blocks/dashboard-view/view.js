@@ -529,8 +529,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 		},
 		get rulePillText() {
 			const rule = getContext().rule;
-			// Prefer the REST-provided label (term/user name); value holds the raw ID.
-			return rule ? rule.key + ': ' + ( rule.label || rule.value ) : '';
+			// The REST rule carries readable text for every key (field name and value); the raw key and value are the fallback.
+			return rule ? ( rule.key_label || rule.key ) + ': ' + ( rule.label || rule.value ) : '';
 		},
 		get isSmartCollection() {
 			return getContext().item?.type === 'smart';

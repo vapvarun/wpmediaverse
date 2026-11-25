@@ -200,23 +200,14 @@
 	outline-offset: 2px;
 }
 
-/* Follow toggle: swap label based on `is-following` class. */
-.mvs-follow-toggle .mvs-follow-toggle__following,
-.mvs-follow-toggle.is-following .mvs-follow-toggle__follow {
-	display: none;
-}
-
-.mvs-follow-toggle.is-following .mvs-follow-toggle__following {
-	display: inline;
-}
-
-.mvs-follow-toggle.is-following {
+/* Follow toggle: the shared profile-actions.js swaps the label and the `--following` class. */
+.mvs-follow-toggle.mvs-follow-toggle--following {
 	background: var( --mvs-bg-muted, #f3f4f6 );
 	color: var( --mvs-text, #111827 );
 	border-color: var(--mvs-border-control);
 }
 
-.mvs-follow-toggle.is-following:hover {
+.mvs-follow-toggle.mvs-follow-toggle--following:hover {
 	background: var( --mvs-danger-bg, #fee2e2 );
 	color: var( --mvs-danger, #b91c1c );
 	border-color: var( --mvs-danger, #b91c1c );

@@ -7,7 +7,7 @@
  *   $mvs_is_own_profile (bool) — Whether the viewer is the profile owner.
  *
  * @package WPMediaVerse
- * @version 2.6.0
+ * @version 2.7.0
  * @since   1.2.0
  */
 
@@ -20,11 +20,29 @@ if ( ! isset( $mvs_profile_id ) || $mvs_is_own_profile || ! is_user_logged_in() 
 
 // Follow + block state.
 $mvs_is_following = false;
+$mvs_is_requested = false;
 $mvs_is_blocked   = false;
 if ( class_exists( '\WPMediaVerse\Core\Plugin' ) ) {
 	$mvs_c = \WPMediaVerse\Core\Plugin::container();
 	if ( $mvs_c->has( 'follows' ) ) {
 		$mvs_is_following = $mvs_c->get( 'follows' )->is_following( get_current_user_id(), $mvs_profile_id );
+	}
+	if ( ! $mvs_is_following ) {
+		/**
+		 * Filter whether the viewer has a follow request waiting on this member.
+		 *
+		 * A community plugin that turns a follow of a private account into a request answers it (through
+		 * `mvs_can_follow`), and the button then shows "Requested" and cancels the request when clicked, as it does
+		 * right after the click. Without this the state lived only in the page that sent the request, so a reload
+		 * showed "Follow" again.
+		 *
+		 * @since 2.7.0
+		 *
+		 * @param bool $requested  Whether a request is pending. Default false.
+		 * @param int  $follower   The viewer.
+		 * @param int  $following  The member whose profile this is.
+		 */
+		$mvs_is_requested = (bool) apply_filters( 'mvs_follow_is_requested', false, get_current_user_id(), $mvs_profile_id );
 	}
 	if ( $mvs_c->has( 'reports' ) ) {
 		$mvs_is_blocked = $mvs_c->get( 'reports' )->is_blocked( get_current_user_id(), $mvs_profile_id );
@@ -59,9 +77,18 @@ $mvs_report_reasons = array(
 <button type="button" class="mvs-btn mvs-btn--small mvs-follow-toggle <?php echo $mvs_is_following ? 'mvs-follow-toggle--following' : 'mvs-btn--primary'; ?>"
 	data-user-id="<?php echo esc_attr( $mvs_profile_id ); ?>"
 	data-following="<?php echo $mvs_is_following ? '1' : '0'; ?>"
+	<?php echo $mvs_is_requested ? 'data-requested="1"' : ''; ?>
 	data-rest-url="<?php echo esc_url( rest_url( 'mvs/v1/' ) ); ?>"
 	data-nonce="<?php echo esc_attr( wp_create_nonce( 'wp_rest' ) ); ?>">
-	<?php echo $mvs_is_following ? esc_html__( 'Following', 'wpmediaverse' ) : esc_html__( 'Follow', 'wpmediaverse' ); ?>
+	<?php
+	if ( $mvs_is_following ) {
+		esc_html_e( 'Following', 'wpmediaverse' );
+	} elseif ( $mvs_is_requested ) {
+		esc_html_e( 'Requested', 'wpmediaverse' );
+	} else {
+		esc_html_e( 'Follow', 'wpmediaverse' );
+	}
+	?>
 </button>
 <?php if ( $mvs_messaging_on ) : ?>
 	<button type="button" class="mvs-btn mvs-btn--secondary mvs-btn--small mvs-message-btn"

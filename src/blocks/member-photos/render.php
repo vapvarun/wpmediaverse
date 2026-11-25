@@ -149,11 +149,18 @@ if ( $mvs_member_user_obj ) {
 // and the FollowService is available.
 $mvs_member_show_follow  = false;
 $mvs_member_is_following = false;
+$mvs_member_is_requested = false;
 if ( $mvs_member_actions && is_user_logged_in() && get_current_user_id() !== $mvs_member_resolved_user_id ) {
 	$follows = \WPMediaVerse\Core\Plugin::container()->get( 'follows' );
 	if ( $follows ) {
 		$mvs_member_show_follow  = true;
+		// The click handler is delegated and only enqueued on MediaVerse pages; a block on an ordinary page needs it too.
+		wp_enqueue_script( 'mvs-profile-actions' );
 		$mvs_member_is_following = $follows->is_following( get_current_user_id(), $mvs_member_resolved_user_id );
+		if ( ! $mvs_member_is_following ) {
+			// A private account holds the follow as a request; the profile button asks the same filter.
+			$mvs_member_is_requested = (bool) apply_filters( 'mvs_follow_is_requested', false, get_current_user_id(), $mvs_member_resolved_user_id );
+		}
 	}
 }
 
@@ -231,13 +238,23 @@ if ( $mvs_member_user_obj ) {
 							<?php esc_html_e( 'View profile', 'wpmediaverse' ); ?>
 						</a>
 						<?php if ( $mvs_member_show_follow ) : ?>
+							<?php // Same attributes and label markup as the profile button, so the shared profile-actions.js handles the click. ?>
 							<button
 								type="button"
-								class="mvs-member-photos-card__btn mvs-member-photos-card__btn--primary mvs-follow-toggle <?php echo $mvs_member_is_following ? 'is-following' : ''; ?>"
-								data-target-user-id="<?php echo esc_attr( $mvs_member_resolved_user_id ); ?>"
-								aria-pressed="<?php echo $mvs_member_is_following ? 'true' : 'false'; ?>">
-								<span class="mvs-follow-toggle__follow"><?php esc_html_e( 'Follow', 'wpmediaverse' ); ?></span>
-								<span class="mvs-follow-toggle__following"><?php esc_html_e( 'Following', 'wpmediaverse' ); ?></span>
+								class="mvs-member-photos-card__btn mvs-member-photos-card__btn--primary mvs-follow-toggle <?php echo $mvs_member_is_following ? 'mvs-follow-toggle--following' : ''; ?>"
+								data-user-id="<?php echo esc_attr( $mvs_member_resolved_user_id ); ?>"
+								data-following="<?php echo $mvs_member_is_following ? '1' : '0'; ?>"
+								<?php echo $mvs_member_is_requested ? 'data-requested="1"' : ''; ?>
+								data-rest-url="<?php echo esc_url( rest_url( 'mvs/v1/' ) ); ?>">
+								<?php
+								if ( $mvs_member_is_following ) {
+									esc_html_e( 'Following', 'wpmediaverse' );
+								} elseif ( $mvs_member_is_requested ) {
+									esc_html_e( 'Requested', 'wpmediaverse' );
+								} else {
+									esc_html_e( 'Follow', 'wpmediaverse' );
+								}
+								?>
 							</button>
 						<?php endif; ?>
 					</div>

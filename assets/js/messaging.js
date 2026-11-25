@@ -182,6 +182,14 @@ function messagePreview( msg ) {
 const seenUnsendIds = new Set();
 
 // onInit idempotency guards.
+// The composer textarea grows with what is typed (onComposerInput sets an inline height), so when the text is
+// cleared, on send, that height has to go with it or the box stays as tall as the long message was.
+const resetComposerHeight = () => {
+	document.querySelectorAll( '.mvs-chat-composer__input' ).forEach( ( input ) => {
+		input.style.height = '';
+	} );
+};
+
 // openConversationBound: ensures the mvs-open-conversation listener is added at
 // most once across the page lifetime (the slide-out persists in wp_footer and
 // its store is never re-mounted, but onInit can be called again by the
@@ -1382,6 +1390,7 @@ const { state, actions } = store( 'mvs/messaging', {
 			} );
 			state.messages = [ ...state.messages, tempMsg ];
 			state.composerText = '';
+			resetComposerHeight();
 			state.replyingTo = null;
 			state.selectedAttachment = null;
 			state.attachmentPreview = null;

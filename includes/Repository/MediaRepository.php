@@ -7285,20 +7285,61 @@ class MediaRepository implements MediaRepositoryInterface {
 			$paths[] = (string) $file_path;
 		}
 
-		$variant_paths = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		foreach ( $this->get_variant_paths( $media_id ) as $variant_path ) {
+			$paths[] = $variant_path;
+		}
+
+		return array_values( array_unique( $paths ) );
+	}
+
+	/**
+	 * Every variant's relative path, keyed by its path meta key (`thumb_medium_path` => `2026/11/photo-300.jpg`).
+	 *
+	 * A variant whose cloud upload failed keeps its local file under a recorded URL, but its path record is blank
+	 * (MediaVariantWriter::record() blanks it, because a path would make the URL builder invent a CDN URL for a file
+	 * that is not there). The file is still on disk, so its path is read back from that URL, the way the 2.5 path
+	 * backfill reads it: everything after `/wpmediaverse/`, without a query string. Delete, the storage clean-up
+	 * and a move to the cloud all list a media's files from here, and used to skip such a variant: the file stayed
+	 * on disk after the media was deleted and was never moved.
+	 *
+	 * @since 2.7.0
+	 *
+	 * @param int $media_id Media id.
+	 * @return array<string,string> Path meta key => relative path, blank paths with no recorded URL left out.
+	 */
+	public function get_variant_paths( int $media_id ): array {
+		global $wpdb;
+
+		$rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
-				"SELECT meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT meta_key, meta_value FROM {$wpdb->prefix}mvs_media_meta WHERE media_id = %d AND meta_key LIKE %s", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 				$media_id,
 				'%_path'
 			)
 		);
-		foreach ( $variant_paths as $variant_path ) {
-			if ( '' !== (string) $variant_path ) {
-				$paths[] = (string) $variant_path;
+
+		$marker = '/wpmediaverse/';
+		$paths  = array();
+		foreach ( (array) $rows as $row ) {
+			$meta_key = (string) $row->meta_key;
+			$path     = (string) $row->meta_value;
+
+			if ( '' === $path ) {
+				// `file_path` is the index row's own column, not a variant with a URL meta of its name.
+				$url_key = (string) preg_replace( '/_path$/', '', $meta_key );
+				$url     = ( '' !== $url_key && 'file' !== $url_key ) ? (string) $this->get_raw( $media_id, $url_key ) : '';
+				$at      = '' === $url ? false : strpos( $url, $marker );
+				if ( false !== $at ) {
+					$path = ltrim( (string) strtok( substr( $url, $at + strlen( $marker ) ), '?#' ), '/' );
+				}
+			}
+
+			if ( '' !== $path ) {
+				$paths[ $meta_key ] = $path;
 			}
 		}
 
-		return array_values( array_unique( $paths ) );
+		return $paths;
 	}
 
 	/**

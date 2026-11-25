@@ -661,6 +661,24 @@ class CollectionController extends WP_REST_Controller {
 	}
 
 	/**
+	 * The readable name of a smart-collection rule field, matching the edit modal.
+	 *
+	 * @param string $key Rule key.
+	 * @return string Readable name; the key itself for an unknown one.
+	 */
+	private static function rule_key_label( string $key ): string {
+		return array(
+			'media_type'  => __( 'Media Type', 'wpmediaverse' ),
+			'tag'         => __( 'Tag', 'wpmediaverse' ),
+			'category'    => __( 'Category', 'wpmediaverse' ),
+			'author'      => __( 'Author', 'wpmediaverse' ),
+			'privacy'     => __( 'Privacy', 'wpmediaverse' ),
+			'date_after'  => __( 'After', 'wpmediaverse' ),
+			'date_before' => __( 'Before', 'wpmediaverse' ),
+		)[ $key ] ?? $key;
+	}
+
+	/**
 	 * Enrich a rule with a human-readable label.
 	 *
 	 * The stored 'value' (term/user ID) is preserved so clients can round-trip
@@ -673,11 +691,35 @@ class CollectionController extends WP_REST_Controller {
 	 * @return array Rule with original 'value' plus readable 'label'.
 	 */
 	private function enrich_rule( array $rule ): array {
-		$key           = $rule['key'] ?? '';
-		$value         = $rule['value'] ?? '';
-		$rule['label'] = (string) $value;
+		$key               = $rule['key'] ?? '';
+		$value             = $rule['value'] ?? '';
+		$rule['label']     = (string) $value;
+		$rule['key_label'] = self::rule_key_label( (string) $key );
 
 		switch ( $key ) {
+			case 'media_type':
+				$rule['label'] = array(
+					'image'    => __( 'Image', 'wpmediaverse' ),
+					'video'    => __( 'Video', 'wpmediaverse' ),
+					'audio'    => __( 'Audio', 'wpmediaverse' ),
+					'document' => __( 'Document', 'wpmediaverse' ),
+				)[ $value ] ?? (string) $value;
+				break;
+			case 'privacy':
+				$rule['label'] = array(
+					'public'  => __( 'Public', 'wpmediaverse' ),
+					'members' => __( 'Members', 'wpmediaverse' ),
+					'private' => __( 'Private', 'wpmediaverse' ),
+				)[ $value ] ?? (string) $value;
+				break;
+			case 'date_after':
+			case 'date_before':
+				// A calendar date the owner typed, not a stored instant: format it as that date in any timezone.
+				$when = strtotime( $value . ' 12:00:00 UTC' );
+				if ( $when ) {
+					$rule['label'] = wp_date( (string) get_option( 'date_format' ), $when, new \DateTimeZone( 'UTC' ) );
+				}
+				break;
 			case 'tag':
 				$term = get_term( (int) $value, 'mvs_tag' );
 				if ( $term && ! is_wp_error( $term ) ) {
