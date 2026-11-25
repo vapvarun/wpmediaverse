@@ -1986,11 +1986,14 @@ body.dark-mode .mvs-skeleton::after {
     inset-inline-end: 0;
     bottom: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
-    /* The shared scrim pair. A 0.4 scrim over a white photo left the stats at
-       2.85:1, and --mvs-bg as the text turned dark in dark mode (1.7:1). */
-    background: var(--mvs-overlay);
+    padding-block-end: 12px;
+    /* The shared scrim pair, as a bottom gradient: the picture keeps its look above the counts. A full-tile scrim turned
+       a white photo flat grey at the moment a member is judging it. The counts sit where the scrim is at least 66%
+       black, which measures 7.2:1 against a white photo (it was 2.85:1 at a 0.4 scrim, and --mvs-bg as the text turned
+       dark in dark mode at 1.7:1). */
+    background: linear-gradient(to top, var(--mvs-overlay) 0, color-mix(in srgb, var(--mvs-overlay) 92%, transparent) 40px, transparent 96px);
     color: var(--mvs-on-overlay);
     font-size: 0.9em;
     opacity: 0;
@@ -1998,7 +2001,8 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-grid-item:hover .mvs-grid-item-overlay,
-.mvs-grid-item-link:hover .mvs-grid-item-overlay {
+.mvs-grid-item-link:hover .mvs-grid-item-overlay,
+.mvs-grid-item:has(:focus-visible) .mvs-grid-item-overlay {
     opacity: 1;
 }
 
