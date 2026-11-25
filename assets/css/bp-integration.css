@@ -152,7 +152,7 @@
 }
 
 #buddypress .mvs-bp-screen .mvs-bp-upload-field:focus {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 1px;
 }
 
@@ -1320,7 +1320,7 @@
 /* Keyboard focus gets the ring the other controls show; :focus above is the hover look only. */
 #buddypress #whats-new-form #whats-new-options #mvs-activity-privacy.mvs-activity-privacy:focus-visible,
 #buddypress #whats-new-form #whats-new-options #mvs-activity-tags.mvs-activity-tags:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 

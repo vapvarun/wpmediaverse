@@ -225,6 +225,9 @@
      * against a dark surface the accent must be LIGHTENED to clear the floor,
      * just as it is darkened against a light one. Same shape, opposite bound. */
     --mvs-primary-text: oklch(from var(--mvs-primary) min(l, 0.48) c h);
+    /* The keyboard focus ring: the text-safe brand colour, so a pale brand (#ffd34d scored 1.38:1) still reaches the 3:1
+       of WCAG 1.4.11. Controls on the dark media stage use --mvs-on-overlay instead. */
+    --mvs-focus-ring: var(--mvs-primary-text, var(--mvs-primary));
 
     /*
      * The primary button's colours, resolved ONCE.
@@ -536,6 +539,9 @@ body.dark-mode {
        the same bug as clamping wrongly - it only works for the accents that
        happen to pass. Basecamp 10253005724. */
     --mvs-primary-text: oklch(from var(--mvs-primary) max(l, 0.72) c h);
+    /* The keyboard focus ring: the text-safe brand colour, so a pale brand (#ffd34d scored 1.38:1) still reaches the 3:1
+       of WCAG 1.4.11. Controls on the dark media stage use --mvs-on-overlay instead. */
+    --mvs-focus-ring: var(--mvs-primary-text, var(--mvs-primary));
     --mvs-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
     --mvs-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
     --mvs-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
@@ -742,7 +748,7 @@ body.mvs-page select {
    (0,1,1) through :where() so a component's own focus style still wins, and
    declared after the theme so a tie goes our way. Basecamp 10320619382. */
 :where(body.mvs-page) :is(input, select, textarea):focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -2146,7 +2152,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-grid-item-author-link:focus-visible {
-    outline: 2px solid var(--mvs-primary, currentColor);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
     border-radius: var(--mvs-radius-xs);
 }
@@ -3058,7 +3064,7 @@ body.dark-mode .mvs-skeleton::after {
 }
 
 .mvs-dashboard-card--selected {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: -2px;
 }
 
@@ -3327,7 +3333,7 @@ a.mvs-dashboard-card-title:hover {
 
 .mvs-panel-toolbar__search:focus-visible,
 .mvs-panel-toolbar__select:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -3568,7 +3574,7 @@ a.mvs-dashboard-card-title:hover {
 
 /* The tag input inside has no border or outline of its own; the box shows focus. */
 .mvs-tag-pills:focus-within {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -5075,7 +5081,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-collection-search-input:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -5613,7 +5619,7 @@ a.mvs-dashboard-card-title:hover {
    outlines), so a keyboard user could not see which thumbnail's button was
    active. Basecamp 10320657228. */
 .mvs-media-picker-cover-btn:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -5683,7 +5689,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-media-picker-cover {
-    outline: 3px solid var(--mvs-primary);
+    outline: 3px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: -3px;
 }
 
@@ -6437,12 +6443,12 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-search-field input:focus-visible {
-    outline: 2px solid var(--mvs-primary, #0073aa);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: -2px;
 }
 
 .mvs-search-field input:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: -2px;
     border-radius: 2px;
 }
@@ -6974,7 +6980,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-fab:focus-visible,
 .mvs-toggle-btn:focus-visible,
 .mvs-load-more-btn:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -7772,7 +7778,7 @@ a.mvs-dashboard-card-title:hover {
 .mvs-lightbox-action:focus-visible,
 .mvs-lightbox-close:focus-visible,
 .mvs-lightbox-nav:focus-visible {
-    outline: 2px solid var(--mvs-primary, #2271b1);
+    outline: 2px solid var(--mvs-on-overlay, #fff);
     outline-offset: 2px;
 }
 
@@ -8183,7 +8189,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-lightbox-comment-input:focus-visible {
-    outline: 2px solid var(--mvs-primary, #E35656);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: -2px;
 }
 
@@ -8277,7 +8283,7 @@ a.mvs-dashboard-card-title:hover {
 }
 
 .mvs-replace-file-label:focus-within {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -8940,7 +8946,7 @@ button.mvs-follows-open,
 }
 
 .mvs-doc-download:focus-visible {
-    outline: 2px solid var(--mvs-primary);
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
     outline-offset: 2px;
 }
 
@@ -9141,7 +9147,7 @@ button.mvs-follows-open,
     }
 
     .mvs-dashboard-tabs .mvs-dashboard-tab:focus-visible {
-        outline: 2px solid var(--mvs-primary);
+        outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
         outline-offset: -2px;
     }
 
