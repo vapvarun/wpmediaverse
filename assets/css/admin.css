@@ -134,18 +134,16 @@
 
 /* ==========================================================================
    Suppress Third-Party Notices on MVS Pages
-   WordPress builds a submenu screen's body class from the menu TITLE (mediaverse_page_mvs-tags), not the slug, so
-   the old wpmediaverse_page prefix never matched and only the top-level screen was covered.
    ========================================================================== */
 
 .toplevel_page_wpmediaverse .notice:not(.mvs-notice):not(.settings-error),
 .toplevel_page_wpmediaverse .update-nag,
 .toplevel_page_wpmediaverse div.error:not(.mvs-notice):not(.settings-error),
 .toplevel_page_wpmediaverse div.updated:not(.mvs-notice):not(.settings-error),
-[class*="mediaverse_page_"] .notice:not(.mvs-notice):not(.settings-error),
-[class*="mediaverse_page_"] .update-nag,
-[class*="mediaverse_page_"] div.error:not(.mvs-notice):not(.settings-error),
-[class*="mediaverse_page_"] div.updated:not(.mvs-notice):not(.settings-error),
+[class*="wpmediaverse_page"] .notice:not(.mvs-notice):not(.settings-error),
+[class*="wpmediaverse_page"] .update-nag,
+[class*="wpmediaverse_page"] div.error:not(.mvs-notice):not(.settings-error),
+[class*="wpmediaverse_page"] div.updated:not(.mvs-notice):not(.settings-error),
 .post-type-mvs_album .notice:not(.mvs-notice):not(.settings-error),
 .post-type-mvs_album .update-nag,
 .post-type-mvs_album div.error:not(.mvs-notice):not(.settings-error),
