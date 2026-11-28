@@ -231,8 +231,13 @@ final class MediaTypes {
 	 * The MIME type the allowed lists use for a sniffed type.
 	 *
 	 * PHP's finfo reports an MP4 whose container brand is M4V (Apple, HandBrake, many
-	 * stock clips) as video/x-m4v. It is the same H.264 MP4, so it is checked
-	 * against video/mp4: allowed when the owner allows MP4, refused when not.
+	 * stock clips) as video/x-m4v, and one branded QuickTime (iPhone, screen
+	 * recorders, several editors; a .mov or a .mp4) as video/quicktime. Both are the
+	 * same ISO container family as MP4, so they are checked against video/mp4:
+	 * allowed when the owner allows MP4, refused when not. QuickTime follows
+	 * WordPress: it counts only while WordPress itself allows video/quicktime
+	 * (it does by default), so a site that removes .mov from upload_mimes keeps
+	 * refusing it.
 	 *
 	 * @since 2.6.2
 	 *
@@ -240,6 +245,12 @@ final class MediaTypes {
 	 * @return string
 	 */
 	public static function canonical_mime( string $mime ): string {
-		return 'video/x-m4v' === $mime ? 'video/mp4' : $mime;
+		if ( 'video/x-m4v' === $mime ) {
+			return 'video/mp4';
+		}
+		if ( 'video/quicktime' === $mime && in_array( 'video/quicktime', get_allowed_mime_types(), true ) ) {
+			return 'video/mp4';
+		}
+		return $mime;
 	}
 }
