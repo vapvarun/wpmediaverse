@@ -81,8 +81,8 @@ final class MediaFileRotator {
 		add_action( 'mvs_media_privacy_changed', array( self::class, 'on_privacy_changed' ), 20, 3 );
 		add_action( 'mvs_moderation_changed', array( self::class, 'on_moderation_changed' ), 20, 3 );
 		// The AI reviewer writes moderation_status directly, without mvs_moderation_changed.
-		add_action( 'mvs_media_flagged', array( self::class, 'queue' ), 20, 1 );
-		add_action( 'mvs_media_trashed', array( self::class, 'queue' ), 20, 1 );
+		add_action( 'mvs_media_flagged', array( self::class, 'take_down' ), 20, 1 );
+		add_action( 'mvs_media_trashed', array( self::class, 'take_down' ), 20, 1 );
 		add_action( self::HOOK, array( self::class, 'rotate_many' ) );
 		add_action( self::LEGACY_HOOK, array( self::class, 'run_legacy_batch' ) );
 	}
@@ -185,16 +185,33 @@ final class MediaFileRotator {
 	 */
 	public static function on_moderation_changed( int $media_id, string $status, string $old_status = '' ): void {
 		if ( ModerationService::STATUS_APPROVED !== $status && in_array( $old_status, array( '', ModerationService::STATUS_APPROVED ), true ) ) {
-			self::queue( $media_id );
+			self::take_down( $media_id );
 		}
+	}
+
+	/**
+	 * Revoke every link to an item an owner or moderator took down.
+	 *
+	 * Local files get new random names. Files on a cloud driver are brought
+	 * home and deleted from the bucket, because public cloud media serves
+	 * straight from the CDN: without this the old CDN URL kept working after a
+	 * rejection. The privacy path already does the same for public to private.
+	 *
+	 * @param int $media_id Media id.
+	 * @return void
+	 */
+	public static function take_down( int $media_id ): void {
+		self::queue( $media_id );
+		UploadService::queue_cloud_repatriation( $media_id );
 	}
 
 	/**
 	 * Rename every local, random-named file of one media item to a new stem and
 	 * update its stored paths and URLs (revocation).
 	 *
-	 * Files on a cloud driver and files with readable (legacy) names are left
-	 * alone here: neither is ever served directly, so there is nothing to revoke.
+	 * Files on a cloud driver are handled by take_down() and the privacy listener
+	 * (repatriation). Files with readable (legacy) names are left alone here:
+	 * they are never served directly, so there is nothing to revoke.
 	 *
 	 * @param int $media_id Media id.
 	 * @return void
