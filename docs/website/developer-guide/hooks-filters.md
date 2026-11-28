@@ -63,6 +63,7 @@ The most-reached-for hooks. This table is not the full list - [section 23](#23-a
 | `mvs_mentions_created` | action | Free | 1.0 |
 | `mvs_user_followed` | action | Free | 1.0 |
 | `mvs_user_unfollowed` | action | Free | 1.0 |
+| `mvs_can_create_conversation` | filter | Free | 2.7.1 |
 | `mvs_can_follow` | filter | Free | 2.7.0 |
 | `mvs_follow_request_withdrawn` | action | Free | 2.7.0 |
 | `mvs_blocked_either_way_ids` | filter | Free | 2.7.0 |
@@ -1124,6 +1125,25 @@ document.addEventListener( 'mvs-collections-click', ( event ) => {
 ```js
 document.dispatchEvent( new CustomEvent( 'mvs-collections-changed', { detail: { mediaId: 123 } } ) );
 ```
+
+### `mvs_can_create_conversation` **(New in 2.7.1)**
+
+Filters whether a member may create a group conversation. A host plugin that restricts members, for example a suspended one, answers here so every group creation path honours it. It fires for every group, including space and group channels created through `get_or_create_channel()`; check `$opts['container_type']` if you only want to stop member-made groups. Pro's group route answers 403 `mvs_group_create_forbidden` when it refuses.
+
+```php
+add_filter( 'mvs_can_create_conversation', function ( $allowed, $creator_id, $members, $opts ) {
+    return my_member_is_suspended( $creator_id ) ? false : $allowed;
+}, 10, 4 );
+```
+
+| Parameter | Type | Description |
+|---|---|---|
+| `$allowed` | `bool` | True by default. Return false to refuse. |
+| `$creator_id` | `int` | The member creating the group. |
+| `$members` | `int[]` | The other members, creator excluded. |
+| `$opts` | `array` | Create options, such as `container_type` and `container_id`. |
+
+`mvs_message_content_check` also runs for attachment-only messages from 2.7.1, with an empty `$content`, so a host that refuses a sender covers every send path.
 
 ### `mvs_can_follow` **(New in 2.7.0)**
 

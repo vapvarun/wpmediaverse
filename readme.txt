@@ -3,7 +3,7 @@ Contributors: vapvarun, wbcomdesigns
 Tags: media, gallery, buddypress, social media, albums
 Requires at least: 6.5
 Tested up to: 7.1
-Stable tag: 2.7.0
+Stable tag: 2.7.1
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -124,6 +124,23 @@ The importers ship in MediaVerse Pro. With Pro active, run `wp mvs import-rtmedi
 Reaction emoji are Microsoft Fluent Emoji (https://github.com/microsoft/fluentui-emoji), licensed CC BY 4.0.
 
 == Changelog ==
+
+= 2.7.1 - November 2026 =
+
+A host plugin can stop a suspended member on every message path, phone-recorded videos upload, and a takedown now removes the CDN copy. Lockstep with WPMediaVerse Pro 2.7.1 - install and test both together.
+
+* New      - A member's profile tag chips filter that member's media, stay on the profile and offer only the tags that member used.
+* Improve  - Videos recorded on phones or screen recorders (a QuickTime-branded .mp4, or a .mov) upload wherever MP4 is allowed, from the feed, the dashboard and the Upload Media page.
+* Improve  - The file dialog on every upload surface lists .mov wherever MP4 is allowed.
+* Fix      - Rejecting, flagging or trashing a public photo on cloud storage removes its CDN copy, so the old link stops working.
+* Fix      - A cloud sync no longer records a CDN link for a photo size the CDN does not hold.
+* Fix      - Keyboard focus rings show on the lightbox Close and Fullscreen buttons, dashboard thumbnails, the edit dialog checkboxes and chat rows.
+* Fix      - On the BuddyPress profile the Upload Media and Create Album buttons no longer touch the Media and Albums sub-tabs.
+* Dev      - New filter `mvs_can_create_conversation` lets a host plugin refuse group creation, for example for a suspended member. With BuddyNext 1.3.0 (re-roll) installed its suspended-member gates use it; without it the filter does nothing.
+* Dev      - `mvs_message_content_check` now also runs for attachment-only messages, with an empty text.
+* Dev      - New `MessagingService::may_create_group()`, `UploadService::allows_quicktime()` and `UploadService::client_mimes()`.
+* Dev      - Templates updated (2.7.1): partials/explore-tag-cloud.php.
+* Compat   - Aligned with WPMediaVerse Pro 2.7.1. Install both updates together.
 
 = 2.7.0 - November 2026 =
 
@@ -1129,6 +1146,9 @@ Major release. Automatic image optimization, modern WebP and AVIF formats, cloud
 * GDPR data export and erasure
 
 == Upgrade Notice ==
+
+= 2.7.1 =
+Phone-recorded videos (.mov and QuickTime .mp4) upload, and rejecting or trashing a public photo on cloud storage removes its CDN copy. Update together with WPMediaVerse Pro 2.7.1.
 
 = 2.7.0 =
 Contains a security fix: a plain WordPress Editor is no longer a media moderator. Sites on 2.6.1 to 2.6.4: update to 2.7.0 before you delete the plugin, because deleting those versions can fail. Update together with WPMediaVerse Pro 2.7.0.

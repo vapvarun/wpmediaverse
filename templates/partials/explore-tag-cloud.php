@@ -21,7 +21,7 @@
  *   - $mvs_filter_tag  (string, optional) Current tag slug filter.
  *
  * @package WPMediaVerse
- * @version 2.7.0
+ * @version 2.7.1
  * @since   2.4.2
  */
 
