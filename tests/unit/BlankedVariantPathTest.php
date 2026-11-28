@@ -112,8 +112,38 @@ class BlankedVariantPathTest extends \WP_UnitTestCase {
 		};
 		$method      = new \ReflectionMethod( CloudOps::class, 'refresh_variant_urls' );
 		$method->setAccessible( true );
-		$method->invoke( null, $media_id, $destination );
+		$method->invoke( null, $media_id, $destination, array( $paths[ $meta_key ] ) );
 
 		$this->assertSame( 'https://cdn.example.test/wpmediaverse/' . $paths[ $meta_key ], $repo->get_raw( $media_id, $url_key ) );
+	}
+
+	/**
+	 * A variant the destination does not hold never gets a destination URL.
+	 */
+	public function test_a_variant_missing_from_the_destination_keeps_its_old_url(): void {
+		$repo     = Plugin::container()->get( 'media_repository' );
+		$media_id = $this->media();
+
+		$paths    = $repo->get_variant_paths( $media_id );
+		$meta_key = (string) array_key_first( $paths );
+		$url_key  = (string) preg_replace( '/_path$/', '', $meta_key );
+		$before   = (string) $repo->get_raw( $media_id, $url_key );
+
+		$destination = new class() {
+			/**
+			 * Destination URL for a relative path.
+			 *
+			 * @param string $rel Relative path.
+			 * @return string
+			 */
+			public function url( string $rel ): string {
+				return 'https://cdn.example.test/wpmediaverse/' . ltrim( $rel, '/' );
+			}
+		};
+		$method      = new \ReflectionMethod( CloudOps::class, 'refresh_variant_urls' );
+		$method->setAccessible( true );
+		$method->invoke( null, $media_id, $destination, array() );
+
+		$this->assertSame( $before, $repo->get_raw( $media_id, $url_key ), 'No verified copy, no CDN URL.' );
 	}
 }

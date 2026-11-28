@@ -259,7 +259,7 @@ class CloudOps {
 		// The read side does not trust these metas when a `_path` exists
 		// (MediaUrl::variant_url), so this is hygiene;
 		// it keeps the stored data honest.
-		self::refresh_variant_urls( $media_id, $dest_driver );
+		self::refresh_variant_urls( $media_id, $dest_driver, $on_dest );
 
 		// Only files the destination verifiably holds. A variant skipped as
 		// "absent on both sides" is never deleted on the source's word alone.
@@ -291,11 +291,17 @@ class CloudOps {
 	 *
 	 * @since 2.3.1
 	 *
+	 * A variant takes the destination URL only when the destination is verified
+	 * to hold it ($on_dest). A variant missing from both sides keeps the URL it
+	 * had, so a CDN URL is never handed out for a file that is not on the CDN
+	 * (a feed rendering that size would show a broken image).
+	 *
 	 * @param int                    $media_id    Media ID.
 	 * @param StorageDriverInterface $dest_driver Driver the files now live on.
+	 * @param string[]               $on_dest     Relative paths the destination is verified to hold.
 	 * @return int Number of URL metas rewritten.
 	 */
-	private static function refresh_variant_urls( int $media_id, $dest_driver ): int {
+	private static function refresh_variant_urls( int $media_id, $dest_driver, array $on_dest ): int {
 		if ( $media_id <= 0 || ! is_object( $dest_driver ) || ! method_exists( $dest_driver, 'url' ) ) {
 			return 0;
 		}
@@ -318,7 +324,7 @@ class CloudOps {
 				continue;
 			}
 
-			if ( '' === (string) $repo->get_raw( $media_id, $url_key ) ) {
+			if ( '' === (string) $repo->get_raw( $media_id, $url_key ) || ! in_array( $rel_path, $on_dest, true ) ) {
 				continue;
 			}
 
