@@ -484,7 +484,7 @@ body:has(.mvs-chat-root--left) .mvs-fab-container {
 }
 
 /* The list clips its rows, so the ring is drawn inside the row. */
-.mvs-chat-conv-item:focus-visible {
+.mvs-chat-conv-item.mvs-chat-conv-item:focus-visible {
 	outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
 	outline-offset: -2px;
 }

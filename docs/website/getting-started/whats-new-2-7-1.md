@@ -23,7 +23,7 @@ MediaVerse 2.7.1 lets a host plugin stop a suspended member on every message pat
 
 - New filter `mvs_can_create_conversation` lets a host plugin refuse group creation. See [Hooks and filters](../developer-guide/hooks-filters.md).
 - `mvs_message_content_check` now also runs for attachment-only messages, with an empty text.
-- With BuddyNext 1.3.0 (re-roll) installed, its suspended-member gates use these two seams. Without it they do nothing.
+- A host plugin such as BuddyNext can use these two seams to stop a suspended member. They do nothing until a host registers a callback.
 
 ## Pro
 

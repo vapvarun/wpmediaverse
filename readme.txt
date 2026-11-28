@@ -138,10 +138,11 @@ A host plugin can stop a suspended member on every message path, phone-recorded 
 * Fix      - The My Media bulk Add to album list is ready as soon as items are selected.
 * Fix      - The My Media item count and tab badge drop at once after a delete.
 * Fix      - Tags typed or pasted with commas in the edit dialog become separate tags.
+* Fix      - Editing a collection can no longer blank its title, and a video or audio file can no longer be picked as an album cover.
 * Fix      - Following from a profile header or from a post in the Instagram layout updates every Follow button for that member.
 * Fix      - Keyboard focus rings show on the lightbox Close and Fullscreen buttons, dashboard thumbnails, the edit dialog checkboxes and chat rows.
 * Fix      - On the BuddyPress profile the Upload Media and Create Album buttons have about 24px of space above them on every theme and profile layout, so they no longer touch the sub-tabs.
-* Dev      - New filter `mvs_can_create_conversation` lets a host plugin refuse group creation, for example for a suspended member. With BuddyNext 1.3.0 (re-roll) installed its suspended-member gates use it; without it the filter does nothing.
+* Dev      - New filter `mvs_can_create_conversation` lets a host plugin refuse group creation, for example for a suspended member. It does nothing until a host plugin such as BuddyNext registers a callback.
 * Dev      - `mvs_message_content_check` now also runs for attachment-only messages, with an empty text.
 * Dev      - New `MessagingService::may_create_group()`, `UploadService::allows_quicktime()` and `UploadService::client_mimes()`.
 * Dev      - Templates updated (2.7.1): partials/dashboard-content.php, partials/explore-tag-cloud.php.
