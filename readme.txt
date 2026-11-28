@@ -135,7 +135,7 @@ A host plugin can stop a suspended member on every message path, phone-recorded 
 * Fix      - Rejecting, flagging or trashing a public photo on cloud storage removes its CDN copy, so the old link stops working.
 * Fix      - A cloud sync no longer records a CDN link for a photo size the CDN does not hold.
 * Fix      - Keyboard focus rings show on the lightbox Close and Fullscreen buttons, dashboard thumbnails, the edit dialog checkboxes and chat rows.
-* Fix      - On the BuddyPress profile the Upload Media and Create Album buttons no longer touch the Media and Albums sub-tabs.
+* Fix      - On the BuddyPress profile the Upload Media and Create Album buttons have about 24px of space above them on every theme and profile layout, so they no longer touch the sub-tabs.
 * Dev      - New filter `mvs_can_create_conversation` lets a host plugin refuse group creation, for example for a suspended member. With BuddyNext 1.3.0 (re-roll) installed its suspended-member gates use it; without it the filter does nothing.
 * Dev      - `mvs_message_content_check` now also runs for attachment-only messages, with an empty text.
 * Dev      - New `MessagingService::may_create_group()`, `UploadService::allows_quicktime()` and `UploadService::client_mimes()`.
