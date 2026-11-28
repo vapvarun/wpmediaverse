@@ -273,6 +273,7 @@ wp_interactivity_state(
 			'saveFailed'              => __( 'Save failed.', 'wpmediaverse' ),
 			// Albums.
 			'albumUpdated'            => __( 'Album updated!', 'wpmediaverse' ),
+			'coverMustBeImage'        => __( 'Cover image must be an image (not video or audio).', 'wpmediaverse' ),
 			'albumCreated'            => __( 'Album created!', 'wpmediaverse' ),
 			'confirmDeleteAlbum'      => __( 'Delete this album? Media items will not be deleted.', 'wpmediaverse' ),
 			'albumDeleted'            => __( 'Album deleted.', 'wpmediaverse' ),
@@ -654,14 +655,14 @@ wp_interactivity_state(
 					aria-current="<?php echo $mvs_dash_is_active ? 'true' : 'false'; ?>"
 					href="<?php echo esc_url( $mvs_dash_url ); ?>"
 					<?php echo $mvs_dash_has_panel ? '' : ' data-mvs-navigate="1"'; ?>
-					data-wp-context="<?php echo esc_attr( (string) wp_json_encode( array( 'railSlug' => $mvs_dash_slug ) ) ); ?>"
+					data-wp-context="<?php echo esc_attr( (string) wp_json_encode( array( 'railSlug' => $mvs_dash_slug, 'railCount' => $mvs_dash_count ) ) ); ?>"
 					data-wp-class--active="state.isActiveRail"
 					data-wp-bind--aria-current="state.isActiveRail"
 					data-wp-on--click="actions.switchTab">
 					<span class="mvs-dashboard-tab__label"><?php echo esc_html( $mvs_dash_section['label'] ); ?></span>
 					<?php if ( null !== $mvs_dash_count ) : ?>
 						<?php // Null and zero are different answers: null is "does not count itself". ?>
-						<span class="mvs-dashboard-tab__count"><?php echo esc_html( number_format_i18n( $mvs_dash_count ) ); ?></span>
+						<span class="mvs-dashboard-tab__count" data-wp-text="state.railCount"><?php echo esc_html( number_format_i18n( $mvs_dash_count ) ); ?></span>
 					<?php endif; ?>
 				</a>
 				<?php

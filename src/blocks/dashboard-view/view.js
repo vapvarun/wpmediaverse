@@ -285,6 +285,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 		// How many rows the panel holds, in the same words the album and
 		// collection cards already use ("%d items"), so the toolbar and the
 		// cards below it cannot describe the same library differently.
+		// Rail badges are server-rendered once; a delete changes the Media one at once through this delta.
+		railDelta: {},
+		get railCount() {
+			const c = getContext();
+			const n = Math.max( 0, ( Number( c.railCount ) || 0 ) + ( state.railDelta[ c.railSlug ] || 0 ) );
+			return new Intl.NumberFormat( document.documentElement.lang || undefined ).format( n );
+		},
 		get mediaCountLabel() { return countLabel( state.media.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
 		get albumsCountLabel() { return countLabel( state.albums.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
 		get favoritesCountLabel() { return countLabel( state.favorites.total, state.i18n?.itemsCount, state.i18n?.itemCount ); },
@@ -1129,7 +1136,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 		dropMedia( ids ) {
 			const before = state.media.items.length;
 			state.media.items = state.media.items.filter( ( m ) => ! ids.includes( m.id ) );
-			state.media.total = Math.max( 0, state.media.total - ( before - state.media.items.length ) );
+			const removed = before - state.media.items.length;
+			state.media.total = Math.max( 0, state.media.total - removed );
+			state.railDelta = { ...state.railDelta, media: ( state.railDelta.media || 0 ) - removed };
 		},
 		confirmDeleteMedia() {
 			const ctx = getContext();
@@ -1659,6 +1668,12 @@ const { state, actions } = store( 'mvs/dashboard', {
 			event.stopPropagation();
 			const id = parseInt( event.target.closest( '[data-picker-id]' )?.dataset.pickerId, 10 );
 			if ( ! id ) return;
+			// A cover must be an image: say so now, instead of adding the item to the album and being refused at Save.
+			const picked = state.albumModal.pickerItems.find( ( m ) => m.id === id );
+			if ( state.albumModal.coverId !== id && picked?.media_type && 'image' !== picked.media_type ) {
+				sharedUI.actions.showToast( ( state.i18n?.coverMustBeImage || 'Cover image must be an image (not video or audio).' ), 'error' );
+				return;
+			}
 			state.albumModal.coverId = state.albumModal.coverId === id ? 0 : id;
 			// The cover must be one of the album's items — auto-select it so the
 			// save pipeline adds it before the /cover PUT (which would otherwise 400).
@@ -1822,6 +1837,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 			} catch ( e ) {
 				state.albumModal.saving = false;
 				sharedUI.actions.showToast( e?.serverMessage || ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
+				// Earlier writes of this save (the title, photos) may have gone through: show what is stored.
+				await actions.loadAlbums( ctx );
 			}
 		},
 

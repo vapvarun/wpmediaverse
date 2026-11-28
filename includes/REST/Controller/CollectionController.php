@@ -393,6 +393,10 @@ class CollectionController extends WP_REST_Controller {
 		$title = $request->get_param( 'title' );
 		if ( null !== $title ) {
 			$update_data['post_title'] = sanitize_text_field( $title );
+			// Same rule as create: an edit may not blank the title.
+			if ( '' === $update_data['post_title'] ) {
+				return new WP_Error( 'mvs_missing_title', __( 'Collection title is required.', 'wpmediaverse' ), array( 'status' => 400 ) );
+			}
 		}
 
 		$description = $request->get_param( 'description' );
