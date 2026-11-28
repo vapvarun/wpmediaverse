@@ -6057,10 +6057,11 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.2
 	 *
-	 * @param array|null $types Media types to count against, null for the library default.
+	 * @param array|null $types     Media types to count against, null for the library default.
+	 * @param int        $author_id Count only this member's media (a profile). 0 for the whole library.
 	 * @return int
 	 */
-	public function tag_cloud_total( ?array $types = null ): int {
+	public function tag_cloud_total( ?array $types = null, int $author_id = 0 ): int {
 		global $wpdb;
 
 		$types                          = null === $types ? MediaTypes::MEDIA_LIBRARY : $types;
@@ -6068,6 +6069,9 @@ class MediaRepository implements MediaRepositoryInterface {
 		// The cloud is one cached list for every viewer, so it counts only what
 		// anyone may see: a tag used only on private items is not shown.
 		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
+		// One member's tags (author_date index), for a profile.
+		$author_sql    = $author_id > 0 ? 'AND m.post_author = %d' : '';
+		$author_params = $author_id > 0 ? array( $author_id ) : array();
 
 		$sql = "SELECT COUNT(*) FROM (
 				SELECT t.term_id
@@ -6080,8 +6084,11 @@ class MediaRepository implements MediaRepositoryInterface {
 				  AND m.status = 'publish'
 				  AND m.moderation_status = 'approved'
 				  AND {$public_sql}
+				  {$author_sql}
 				GROUP BY t.term_id
 			) AS qualifying";
+
+		$type_params = array_merge( $type_params, $author_params );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL
 		return (int) $wpdb->get_var( $type_params ? $wpdb->prepare( $sql, $type_params ) : $sql );
@@ -6107,11 +6114,12 @@ class MediaRepository implements MediaRepositoryInterface {
 	 *
 	 * @since 2.4.0
 	 *
-	 * @param int      $limit Maximum terms to return. Clamped to 1..200.
-	 * @param string[] $types Media types the listing renders. Default MEDIA_LIBRARY.
+	 * @param int      $limit     Maximum terms to return. Clamped to 1..200.
+	 * @param string[] $types     Media types the listing renders. Default MEDIA_LIBRARY.
+	 * @param int      $author_id Only tags this member's media carries (a profile). 0 for the whole library.
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
-	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
+	public function tag_cloud( int $limit = 20, ?array $types = null, int $author_id = 0 ): array {
 		global $wpdb;
 
 		$limit = max( 1, min( 200, $limit ) );
@@ -6121,6 +6129,7 @@ class MediaRepository implements MediaRepositoryInterface {
 		// The cloud is one cached list for every viewer, so it counts only what
 		// anyone may see: a tag used only on private items is not shown.
 		list( $public_sql ) = $this->explore_privacy_clause( 'm', 0 );
+		$author_sql         = $author_id > 0 ? 'AND m.post_author = %d' : '';
 
 		$sql = "SELECT t.term_id, t.name, t.slug, COUNT(*) AS media_count
 			FROM {$wpdb->term_relationships} tr
@@ -6132,11 +6141,12 @@ class MediaRepository implements MediaRepositoryInterface {
 			AND m.status = 'publish'
 			AND m.moderation_status = 'approved'
 			AND {$public_sql}
+			{$author_sql}
 			GROUP BY t.term_id, t.name, t.slug
 			ORDER BY media_count DESC, MAX(m.created_at) DESC, t.name ASC
 			LIMIT %d";
 
-		$params   = $type_params;
+		$params   = array_merge( $type_params, $author_id > 0 ? array( $author_id ) : array() );
 		$params[] = $limit;
 
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL

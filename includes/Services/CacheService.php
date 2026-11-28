@@ -306,11 +306,17 @@ class CacheService {
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param int      $limit Max tags (1-200).
-	 * @param string[] $types Media types to count against. Null = library default.
+	 * @param int      $limit     Max tags (1-200).
+	 * @param string[] $types     Media types to count against. Null = library default.
+	 * @param int      $author_id One member's tags (a profile). Not cached here: it is per member, the
+	 *                            query is bounded by the author_date index, and one cache key per member
+	 *                            would grow without limit.
 	 * @return array<int, object> Term rows: term_id, name, slug, media_count.
 	 */
-	public function tag_cloud( int $limit = 20, ?array $types = null ): array {
+	public function tag_cloud( int $limit = 20, ?array $types = null, int $author_id = 0 ): array {
+		if ( $author_id > 0 ) {
+			return \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud( $limit, $types, $author_id );
+		}
 		$key                     = 'tagcloud3_' . $limit . '_' . ( $types ? implode( ',', $types ) : 'default' );
 		$this->tag_cloud_cleared = false;
 		return $this->remember_persistent(
@@ -327,10 +333,14 @@ class CacheService {
 	 *
 	 * @since 2.6.0
 	 *
-	 * @param string[]|null $types Media types to count against. Null = library default.
+	 * @param string[]|null $types     Media types to count against. Null = library default.
+	 * @param int           $author_id One member's tags (a profile); uncached, see tag_cloud().
 	 * @return int
 	 */
-	public function tag_cloud_total( ?array $types = null ): int {
+	public function tag_cloud_total( ?array $types = null, int $author_id = 0 ): int {
+		if ( $author_id > 0 ) {
+			return (int) \WPMediaVerse\Core\Plugin::container()->get( 'media_repository' )->tag_cloud_total( $types, $author_id );
+		}
 		$key                     = 'tagcloudtotal3_' . ( $types ? implode( ',', $types ) : 'default' );
 		$this->tag_cloud_cleared = false;
 		return (int) $this->remember_persistent(

@@ -12,6 +12,10 @@
  *
  * Theme override: {theme}/wpmediaverse/partials/explore-tag-cloud.php
  *
+ * On a member's profile (/media/@user/) the chips filter THAT member's media:
+ * links stay on the profile and only the tags the member's public media carries
+ * are offered. Everywhere else the chips go to the Explore archive.
+ *
  * Expects:
  *   - $mvs_archive_url (string) Base media archive URL.
  *   - $mvs_filter_tag  (string, optional) Current tag slug filter.
@@ -55,10 +59,18 @@ $mvs_tag_limit = max( 1, min( 200, $mvs_tag_limit ) );
 // request. CacheService::tag_cloud()/tag_cloud_total() wrap the repository's
 // GROUP BY join in a persistent cache so a 50k+ media library isn't re-scored
 // on every page view.
-$mvs_cache      = \WPMediaVerse\Core\Plugin::container()->get( 'cache' );
-$mvs_show_all   = ! empty( $_GET['mvs_all_tags'] ); // phpcs:ignore WordPress.Security.NonceVerification
-$mvs_tag_total  = $mvs_cache->tag_cloud_total();
-$mvs_tag_chips  = $mvs_cache->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 ) : $mvs_tag_limit );
+$mvs_cache    = \WPMediaVerse\Core\Plugin::container()->get( 'cache' );
+$mvs_show_all = ! empty( $_GET['mvs_all_tags'] ); // phpcs:ignore WordPress.Security.NonceVerification
+
+// Profile route: chips link back to the profile and list that member's tags only.
+$mvs_tag_profile = isset( $GLOBALS['mvs_profile_user'] ) && is_object( $GLOBALS['mvs_profile_user'] ) ? $GLOBALS['mvs_profile_user'] : null;
+$mvs_tag_author  = $mvs_tag_profile ? (int) $mvs_tag_profile->ID : 0;
+if ( $mvs_tag_profile ) {
+	$mvs_archive_url = home_url( '/media/@' . $mvs_tag_profile->user_nicename . '/' );
+}
+
+$mvs_tag_total  = $mvs_cache->tag_cloud_total( null, $mvs_tag_author );
+$mvs_tag_chips  = $mvs_cache->tag_cloud( $mvs_show_all ? max( $mvs_tag_total, 1 ) : $mvs_tag_limit, null, $mvs_tag_author );
 $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sanitize_text_field( wp_unslash( $_GET['mvs_tag'] ) ) : '' ) ); // phpcs:ignore WordPress.Security.NonceVerification
 ?>
 <div class="mvs-tag-cloud<?php echo $mvs_show_all ? ' mvs-tag-cloud--all' : ''; ?>">
@@ -81,6 +93,9 @@ $mvs_active_tag = (string) ( $mvs_filter_tag ?? ( isset( $_GET['mvs_tag'] ) ? sa
 			</a>
 		<?php endforeach; ?>
 	</span>
+	<?php if ( $mvs_tag_profile && ! $mvs_tag_chips ) : ?>
+		<span class="mvs-tag-cloud-empty"><?php esc_html_e( 'No tags on this member\'s media yet.', 'wpmediaverse' ); ?></span>
+	<?php endif; ?>
 	<?php
 	// The cap is correct - 121 chips above the grid buries the media, and
 	// core caps its own tag cloud too. What was missing is any route to
