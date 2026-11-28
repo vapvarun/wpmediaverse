@@ -629,6 +629,19 @@
       "consumed_by": []
     },
     {
+      "name": "mvs_can_create_conversation",
+      "type": "filter",
+      "args_count": 4,
+      "args_signature": [
+        "bool $allowed",
+        "int $creator_id",
+        "array $members",
+        "array $opts"
+      ],
+      "where": "includes/Messaging/MessagingService.php:1011",
+      "consumed_by": []
+    },
+    {
       "name": "mvs_can_send_message",
       "type": "filter",
       "args_count": 3,

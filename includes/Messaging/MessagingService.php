@@ -976,6 +976,42 @@ class MessagingService {
 	}
 
 	/**
+	 * Whether a member may create a group conversation right now.
+	 *
+	 * The one creation gate: create_group_conversation() calls it, and a caller
+	 * that wants a precise refusal (a REST route returning 403 rather than a
+	 * generic failure) calls it first. Covers the size cap and the
+	 * mvs_can_create_conversation seam a host uses to refuse a member, for
+	 * example a suspended one.
+	 *
+	 * @param int   $creator_id Member creating the group.
+	 * @param int[] $members    Other members, creator excluded.
+	 * @param array $opts       Create options (container_type, container_id).
+	 * @return bool
+	 */
+	public function may_create_group( int $creator_id, array $members, array $opts = array() ): bool {
+		if ( count( $members ) + 1 > $this->max_group_participants( $creator_id, $opts ) ) {
+			return false;
+		}
+
+		/**
+		 * Filters whether a member may create a group conversation.
+		 *
+		 * Fires for every group, including space and group channels created
+		 * through get_or_create_channel(); a host that only wants to stop
+		 * member-created groups can check $opts['container_type'].
+		 *
+		 * @since 2.7.1
+		 *
+		 * @param bool  $allowed    Default true.
+		 * @param int   $creator_id Member creating the group.
+		 * @param int[] $members    Other members, creator excluded.
+		 * @param array $opts       Create options (container_type, container_id).
+		 */
+		return (bool) apply_filters( 'mvs_can_create_conversation', true, $creator_id, $members, $opts );
+	}
+
+	/**
 	 * Get participants of a conversation.
 	 *
 	 * @param int $conversation_id Conversation ID.
@@ -1302,7 +1338,7 @@ class MessagingService {
 			}
 		}
 		$members = array_keys( $members );
-		if ( count( $members ) + 1 > $this->max_group_participants( $creator_id, $opts ) ) {
+		if ( ! $this->may_create_group( $creator_id, $members, $opts ) ) {
 			return 0;
 		}
 
@@ -1763,8 +1799,10 @@ class MessagingService {
 
 		// Content-moderation seam. MediaVerse ships standalone, so it only fires a
 		// filter; a host (e.g. BuddyNext auto-moderation) can hook it to scan the
-		// message text. A WP_Error return blocks the send.
-		if ( '' !== $content ) {
+		// message text (an empty string for an attachment-only send). A WP_Error return blocks the send.
+		// Fires for attachment-only sends too (empty text), so a host that refuses
+		// a sender, for example a suspended member, covers every send path.
+		if ( '' !== $content || $has_attachment ) {
 			$moderation = apply_filters( 'mvs_message_content_check', true, $content, $sender_id, $conversation_id );
 			if ( is_wp_error( $moderation ) ) {
 				return array(
