@@ -7004,6 +7004,18 @@ a.mvs-dashboard-card-title:hover {
     outline-offset: -3px;
 }
 
+/* The thumb is itself the link and clips its overflow, so an outside ring would be cut off: draw it inside. */
+a.mvs-dashboard-card-thumb:focus-visible {
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
+    outline-offset: -3px;
+}
+
+/* Checkboxes in the edit dialog (Update URL slug, Allow viewers to download) had no ring of their own. */
+.mvs-modal-field--checkbox input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--mvs-focus-ring, var(--mvs-primary));
+    outline-offset: 2px;
+}
+
 /* Focus trap visual — modals */
 .mvs-modal:focus-within {
     box-shadow: 0 0 0 4px rgba(0, 115, 170, 0.15);
@@ -7796,9 +7808,18 @@ a.mvs-dashboard-card-title:hover {
 /* Focus ring on the lightbox: the stage controls (close, previous, next) sit on the dark stage and take the on-overlay
    ink; the actions in the sidebar take the brand-safe ring token (they were white on a white panel, 1.04:1). */
 .mvs-lightbox-close:focus-visible,
+.mvs-lightbox-fullscreen:focus-visible,
 .mvs-lightbox-nav:focus-visible {
     outline: 2px solid var(--mvs-on-overlay, #fff);
     outline-offset: 2px;
+}
+
+/* Close and Fullscreen sit on the sidebar panel from the tablet width up: panel ring there (see shared-ui-frame.css). */
+@media (min-width: 768px) {
+    .mvs-lightbox-close:focus-visible,
+    .mvs-lightbox-fullscreen:focus-visible {
+        outline-color: var(--mvs-focus-ring, var(--mvs-primary));
+    }
 }
 
 .mvs-lightbox-action:focus-visible {

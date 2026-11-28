@@ -43,9 +43,19 @@
 /* The controls ON the dark media stage (close, previous, next, fullscreen) take the on-overlay ink. The sidebar's buttons
    (Share, Save, Download, reactions) sit on the panel, which is light in light mode: a white ring there was 1.04:1. */
 .mvs-lightbox-overlay .mvs-lightbox-close:focus-visible,
+.mvs-lightbox-overlay .mvs-lightbox-fullscreen:focus-visible,
 .mvs-lightbox-overlay .mvs-lightbox-media button:focus-visible {
 	outline: 2px solid var(--mvs-on-overlay, #fff);
 	outline-offset: 2px;
+}
+
+/* From the tablet width up the sidebar is a panel beside the stage and Close and Fullscreen sit on it, so their ring
+   takes the panel ring token (white on the light panel was 1.04:1). Below it they sit on the dark stage. */
+@media (min-width: 768px) {
+	.mvs-lightbox-overlay .mvs-lightbox-close:focus-visible,
+	.mvs-lightbox-overlay .mvs-lightbox-fullscreen:focus-visible {
+		outline-color: var(--mvs-focus-ring, var(--mvs-primary));
+	}
 }
 
 .mvs-lightbox-sidebar button:focus-visible,
