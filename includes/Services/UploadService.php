@@ -1128,7 +1128,14 @@ class UploadService {
 			}
 		}
 
-		return implode( ',', array_merge( $mimes, $exts ) );
+		// QuickTime files (.mov, and phone recordings) upload wherever MP4 does (MediaTypes::canonical_mime),
+		// so the file dialog must not grey them out.
+		if ( in_array( 'video/mp4', $mimes, true ) && in_array( 'video/quicktime', get_allowed_mime_types(), true ) ) {
+			$exts[] = 'video/quicktime';
+			$exts[] = '.mov';
+		}
+
+		return implode( ',', array_unique( array_merge( $mimes, $exts ) ) );
 	}
 
 	/**

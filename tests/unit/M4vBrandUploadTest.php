@@ -93,6 +93,11 @@ class M4vBrandUploadTest extends WP_UnitTestCase {
 		$this->assertSame( 'video/mp4', Plugin::container()->get( 'media_repository' )->get( (int) $result, 'file_type' ) );
 	}
 
+	public function test_file_dialog_offers_mov_wherever_mp4_is_allowed(): void {
+		$this->assertStringContainsString( '.mov', \WPMediaVerse\Services\UploadService::accept_attribute( array( 'image/jpeg', 'video/mp4' ) ) );
+		$this->assertStringNotContainsString( '.mov', \WPMediaVerse\Services\UploadService::accept_attribute( array( 'image/jpeg' ) ) );
+	}
+
 	public function quicktime_names(): array {
 		return array(
 			'mp4 file'  => array( 'phone-video.mp4' ),
