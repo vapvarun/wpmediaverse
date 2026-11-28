@@ -20,6 +20,43 @@
 	var cfg = window.mvsProfileActions || {};
 	var i18n = cfg.i18n || {};
 
+	/**
+	 * Paint one Follow button: Follow, Following or Requested.
+	 *
+	 * @param {HTMLElement} btn       The button.
+	 * @param {boolean}     requested A follow request is waiting.
+	 * @param {boolean}     following The viewer follows the member.
+	 */
+	function paintFollow( btn, requested, following ) {
+		if ( requested ) {
+			btn.setAttribute( 'data-following', '0' );
+			btn.setAttribute( 'data-requested', '1' );
+			btn.textContent = i18n.requested || '';
+			btn.classList.remove( 'mvs-follow-toggle--following' );
+			btn.classList.add( 'mvs-btn--primary' );
+		} else if ( following ) {
+			btn.removeAttribute( 'data-requested' );
+			btn.setAttribute( 'data-following', '1' );
+			btn.textContent = i18n.following || '';
+			btn.classList.add( 'mvs-follow-toggle--following' );
+			btn.classList.remove( 'mvs-btn--primary' );
+		} else {
+			btn.removeAttribute( 'data-requested' );
+			btn.setAttribute( 'data-following', '0' );
+			btn.textContent = i18n.follow || '';
+			btn.classList.remove( 'mvs-follow-toggle--following' );
+			btn.classList.add( 'mvs-btn--primary' );
+		}
+	}
+
+	// Another control (an Instagram feed card) changed the follow state: keep every Follow button in step.
+	document.addEventListener( 'mvs:follow-changed', function ( e ) {
+		var d = e.detail || {};
+		document.querySelectorAll( '.mvs-follow-toggle[data-user-id="' + d.userId + '"]' ).forEach( function ( b ) {
+			paintFollow( b, !! d.requested, !! d.following );
+		} );
+	} );
+
 	// --- Delegated Follow toggle: any .mvs-follow-toggle click. ---
 	document.addEventListener( 'click', function ( e ) {
 		var fbtn = e.target.closest( '.mvs-follow-toggle' );
@@ -48,26 +85,11 @@
 			.then( function ( data ) {
 				fbtn.classList.remove( 'is-loading' );
 				fbtn.disabled = false;
-				if ( data.requested ) {
-					// A private account turned the follow into a request: waiting, not following.
-					fbtn.setAttribute( 'data-following', '0' );
-					fbtn.setAttribute( 'data-requested', '1' );
-					fbtn.textContent = i18n.requested || '';
-					fbtn.classList.remove( 'mvs-follow-toggle--following' );
-					fbtn.classList.add( 'mvs-btn--primary' );
-				} else if ( data.following ) {
-					fbtn.removeAttribute( 'data-requested' );
-					fbtn.setAttribute( 'data-following', '1' );
-					fbtn.textContent = i18n.following || '';
-					fbtn.classList.add( 'mvs-follow-toggle--following' );
-					fbtn.classList.remove( 'mvs-btn--primary' );
-				} else {
-					fbtn.removeAttribute( 'data-requested' );
-					fbtn.setAttribute( 'data-following', '0' );
-					fbtn.textContent = i18n.follow || '';
-					fbtn.classList.remove( 'mvs-follow-toggle--following' );
-					fbtn.classList.add( 'mvs-btn--primary' );
-				}
+				paintFollow( fbtn, !! data.requested, !! data.following );
+				// Tell every other Follow control for this member (another button, a feed card) the new state.
+				document.dispatchEvent( new CustomEvent( 'mvs:follow-changed', {
+					detail: { userId: Number( userId ), requested: !! data.requested, following: !! data.following },
+				} ) );
 				if ( data.counts ) {
 					// Two header markups exist: the free explore profile wraps the
 					// counts in .mvs-follows-open buttons (data-list names each

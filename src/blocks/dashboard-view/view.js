@@ -104,6 +104,21 @@ function apiFetch( ctx, path, opts = {} ) {
 	return window.mvsRest.restFetch( ctx.restUrl + path, opts );
 }
 
+/**
+ * A write that fails must reach the caller's error path. The shared REST client never throws on an HTTP
+ * error (it resolves { ok, status, data }), so a bare `await apiFetch()` inside try/catch reported success
+ * for a refused request: "Collection created!" after a 400. The thrown error carries the server's message.
+ */
+async function apiWrite( ctx, path, opts = {} ) {
+	const res = await apiFetch( ctx, path, opts );
+	if ( ! res || ! res.ok ) {
+		const err = new Error( res?.data?.message || 'Request failed' );
+		err.serverMessage = res?.data?.message || '';
+		throw err;
+	}
+	return res;
+}
+
 function proApiFetch( ctx, path, opts = {} ) {
 	// Pro REST endpoints live at /wp-json/mvs-pro/v1/ — derive from ctx.restUrl
 	// which is /wp-json/mvs/v1/ by replacing the namespace.
@@ -1105,6 +1120,17 @@ const { state, actions } = store( 'mvs/dashboard', {
 		/* =====================================================================
 		   Delete Media
 		   ===================================================================== */
+		/**
+		 * Take deleted items off the grid AND off the totals the toolbar count and the tab badge read,
+		 * so they drop at once instead of showing the old number until a reload.
+		 *
+		 * @param {number[]} ids Deleted media ids.
+		 */
+		dropMedia( ids ) {
+			const before = state.media.items.length;
+			state.media.items = state.media.items.filter( ( m ) => ! ids.includes( m.id ) );
+			state.media.total = Math.max( 0, state.media.total - ( before - state.media.items.length ) );
+		},
 		confirmDeleteMedia() {
 			const ctx = getContext();
 			const id = ctx.item?.id;
@@ -1115,7 +1141,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 						method: 'DELETE',
 					} );
 					if ( res.ok ) {
-						state.media.items = state.media.items.filter( ( m ) => m.id !== id );
+						actions.dropMedia( [ id ] );
 						sharedUI.actions.showToast( ( state.i18n?.mediaDeleted || 'Media deleted.' ), 'success' );
 					} else {
 						sharedUI.actions.showToast( ( state.i18n?.deleteFailed || 'Delete failed.' ), 'error' );
@@ -1142,9 +1168,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 			} else {
 				state.bulkSelectedIds = [ ...state.bulkSelectedIds, id ];
 			}
+			// Have the Add-to-album list ready before the member opens the picker: a native select that opens
+			// while its options are still loading keeps showing only the placeholder.
+			actions.ensureBulkAlbums();
 		},
 		selectAllBulk() {
 			state.bulkSelectedIds = state.media.items.map( ( m ) => m.id );
+			actions.ensureBulkAlbums();
 		},
 		clearBulk() {
 			state.bulkSelectedIds = [];
@@ -1246,7 +1276,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					try {
 						const res = await apiFetch( ctx, 'media/bulk', { method: 'POST', body: { action: 'delete', media_ids: ids } } );
 						if ( res.ok ) {
-							state.media.items = state.media.items.filter( ( m ) => ! ids.includes( m.id ) );
+							actions.dropMedia( ids );
 							state.bulkSelectedIds = [];
 							const msg = actions.bulkResultMessage( res.data, ( state.i18n?.bulkDeleted || 'Selected items deleted.' ) );
 							sharedUI.actions.showToast( msg.text, msg.type );
@@ -1721,7 +1751,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			try {
 				let albumId = state.albumModal.albumId;
 				if ( state.albumModal.isEdit ) {
-					await apiFetch( ctx, 'albums/' + albumId, {
+					await apiWrite( ctx, 'albums/' + albumId, {
 						method: 'PUT',
 						body: payload,
 					} );
@@ -1731,13 +1761,13 @@ const { state, actions } = store( 'mvs/dashboard', {
 					const toAdd = selected.filter( ( id ) => ! currentItems.includes( id ) );
 					const toRemove = currentItems.filter( ( id ) => ! selected.includes( id ) );
 					if ( toAdd.length ) {
-						await apiFetch( ctx, 'albums/' + albumId + '/items', {
+						await apiWrite( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',
 							body: { media_ids: toAdd },
 						} );
 					}
 					for ( const removeId of toRemove ) {
-						await apiFetch( ctx, 'albums/' + albumId + '/items/' + removeId, {
+						await apiWrite( ctx, 'albums/' + albumId + '/items/' + removeId, {
 							method: 'DELETE',
 						} );
 					}
@@ -1762,7 +1792,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 					}
 					albumId = albumResult.data.id;
 					if ( state.albumModal.selectedIds.length && albumId ) {
-						await apiFetch( ctx, 'albums/' + albumId + '/items', {
+						await apiWrite( ctx, 'albums/' + albumId + '/items', {
 							method: 'POST',
 							body: { media_ids: state.albumModal.selectedIds },
 						} );
@@ -1770,7 +1800,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 				// Set cover if selected.
 				if ( state.albumModal.coverId && albumId ) {
-					await apiFetch( ctx, 'albums/' + albumId + '/cover', {
+					await apiWrite( ctx, 'albums/' + albumId + '/cover', {
 						method: 'PUT',
 						body: { media_id: state.albumModal.coverId },
 					} );
@@ -1789,9 +1819,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 				}
 				sharedUI.actions.showToast( notes.join( ' ' ), 'success' );
 				await actions.loadAlbums( ctx );
-			} catch {
+			} catch ( e ) {
 				state.albumModal.saving = false;
-				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
+				sharedUI.actions.showToast( e?.serverMessage || ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
 			}
 		},
 
@@ -2082,7 +2112,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 			state.collectionModal.previewTimer = setTimeout( async () => {
 				try {
-					await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
+					await apiWrite( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
 						method: 'PUT',
 						body: { rules: validRules.map( ( { key, value } ) => ( { key, value } ) ) },
 					} );
@@ -2115,20 +2145,20 @@ const { state, actions } = store( 'mvs/dashboard', {
 
 			try {
 				if ( state.collectionModal.isEdit ) {
-					await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId, {
+					await apiWrite( ctx, 'collections/' + state.collectionModal.collectionId, {
 						method: 'PUT',
 						body: payload,
 					} );
 					// Update rules separately if smart.
 					if ( state.collectionModal.collectionType === 'smart' && validRules.length ) {
-						await apiFetch( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
+						await apiWrite( ctx, 'collections/' + state.collectionModal.collectionId + '/rules', {
 							method: 'PUT',
 							body: { rules: validRules },
 						} );
 					}
 					sharedUI.actions.showToast( ( state.i18n?.collectionUpdated || 'Collection updated!' ), 'success' );
 				} else {
-					await apiFetch( ctx, 'collections', {
+					await apiWrite( ctx, 'collections', {
 						method: 'POST',
 						body: payload,
 					} );
@@ -2137,9 +2167,9 @@ const { state, actions } = store( 'mvs/dashboard', {
 				state.collectionModal.visible = false;
 				state.collectionModal.saving = false;
 				await actions.loadCollections( ctx );
-			} catch {
+			} catch ( e ) {
 				state.collectionModal.saving = false;
-				sharedUI.actions.showToast( ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
+				sharedUI.actions.showToast( e?.serverMessage || ( state.i18n?.saveFailed || 'Save failed.' ), 'error' );
 			}
 		},
 
@@ -2205,7 +2235,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			event.stopPropagation();
 			const ctx = getContext();
 			try {
-				await apiFetch( ctx, 'me/notifications/read', {
+				await apiWrite( ctx, 'me/notifications/read', {
 					method: 'POST',
 				} );
 				state.notifications.count = 0;
@@ -2233,7 +2263,7 @@ const { state, actions } = store( 'mvs/dashboard', {
 			}
 			const ctx = getContext();
 			try {
-				await apiFetch( ctx, 'me/notifications/read', {
+				await apiWrite( ctx, 'me/notifications/read', {
 					method: 'POST',
 					body: { ids: [ clicked.id ] },
 				} );

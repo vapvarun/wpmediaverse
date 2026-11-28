@@ -55,6 +55,17 @@ function gmtToMs( s ) {
  * The Interactivity API updates `src` via data-wp-bind, but <video>/<audio>
  * elements require an explicit .load() call to fetch a dynamically changed src.
  */
+/**
+ * Tags typed or pasted as "rain, lisbon, street" are three tags, as the upload form promises ("comma
+ * separated"); the edit dialog used to store the whole line as one tag.
+ *
+ * @param {string} text Raw input.
+ * @return {string[]} Trimmed, non-empty tags.
+ */
+function splitTags( text ) {
+	return String( text || '' ).split( ',' ).map( ( t ) => t.trim() ).filter( Boolean );
+}
+
 function loadLightboxMedia() {
 	requestAnimationFrame( () => {
 		const video = document.querySelector( '.mvs-lightbox-video:not([hidden])' );
@@ -1236,11 +1247,11 @@ const { state, actions } = store( 'mvs/shared-ui', {
 			state.editModalTagDropdown = state.editModalTagResults.length > 0;
 		},
 		addEditTag( event ) {
-			if ( event.key !== 'Enter' ) return;
+			if ( event.key !== 'Enter' && event.key !== ',' ) return;
 			event.preventDefault();
-			const val = String( state.editModalTagInput || '' ).trim();
-			if ( val && ! state.editModalTagList.includes( val ) ) {
-				state.editModalTagList = [ ...state.editModalTagList, val ];
+			const added = splitTags( state.editModalTagInput ).filter( ( t ) => ! state.editModalTagList.includes( t ) );
+			if ( added.length ) {
+				state.editModalTagList = [ ...state.editModalTagList, ...new Set( added ) ];
 			}
 			state.editModalTagInput = '';
 			state.editModalTagDropdown = false;
@@ -1316,9 +1327,9 @@ const { state, actions } = store( 'mvs/shared-ui', {
 
 			// A tag typed but not yet confirmed with Enter is still the member's
 			// intent when they press Save.
-			const pendingTag = String( state.editModalTagInput || '' ).trim();
-			if ( pendingTag && ! state.editModalTagList.includes( pendingTag ) ) {
-				state.editModalTagList = [ ...state.editModalTagList, pendingTag ];
+			const pending = splitTags( state.editModalTagInput ).filter( ( t ) => ! state.editModalTagList.includes( t ) );
+			if ( pending.length ) {
+				state.editModalTagList = [ ...state.editModalTagList, ...new Set( pending ) ];
 			}
 			state.editModalTagInput = '';
 			state.editModalTagDropdown = false;

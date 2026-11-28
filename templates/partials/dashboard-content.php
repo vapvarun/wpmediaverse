@@ -6,7 +6,7 @@
  * Expects $mvs_dash_ctx (array) to be set before inclusion.
  *
  * @package WPMediaVerse
- * @version 2.7.0
+ * @version 2.7.1
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -122,8 +122,12 @@ foreach ( $mvs_allowed_mimes as $mvs_mime ) {
 		$mvs_allowed_exts[] = $mvs_mime_to_ext[ $mvs_mime ];
 	}
 }
+// QuickTime (.mov) uploads wherever MP4 does, so the client-side check lets it through too.
+if ( \WPMediaVerse\Services\UploadService::allows_quicktime( $mvs_allowed_mimes ) ) {
+	$mvs_allowed_exts[] = '.mov';
+}
 $mvs_dash_ctx['allowedExtensions'] = implode( ',', $mvs_allowed_exts );
-$mvs_dash_ctx['allowedMimeTypes']  = implode( ',', $mvs_allowed_mimes );
+$mvs_dash_ctx['allowedMimeTypes']  = implode( ',', \WPMediaVerse\Services\UploadService::client_mimes( $mvs_allowed_mimes ) );
 
 // Enqueue profile edit store.
 $mvs_pe_asset_file = MVS_PLUGIN_DIR . 'build/blocks/profile-edit/view.asset.php';

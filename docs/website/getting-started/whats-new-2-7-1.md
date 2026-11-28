@@ -8,6 +8,9 @@ MediaVerse 2.7.1 lets a host plugin stop a suspended member on every message pat
 
 - Videos recorded on a phone or a screen recorder (a QuickTime-branded .mp4, or a .mov) upload wherever MP4 is allowed, from the feed, the dashboard and the Upload Media page. The file dialog lists .mov too. A site that removes .mov from the WordPress upload types keeps refusing it.
 - On a member's profile, the tag chips filter that member's media and stay on the profile. Only the tags that member used are offered, and a member with no tags shows a short message.
+- Creating a collection or saving an album the server refuses no longer says it worked; the dialog stays open and shows the reason.
+- In My Media the bulk Add to album list is ready when you select items, the item count drops straight after a delete, and tags typed with commas in the edit dialog become separate tags.
+- Following someone from their profile header or from a post in the Instagram layout updates every Follow button for that member.
 - Keyboard focus rings show on the lightbox Close and Fullscreen buttons, dashboard thumbnails, the edit dialog checkboxes and chat rows.
 - On the BuddyPress profile, the Upload Media and Create Album buttons have about 24px of space above them on every theme and profile layout, so they no longer touch the sub-tabs.
 
