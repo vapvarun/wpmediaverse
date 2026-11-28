@@ -37,15 +37,20 @@ class CloudOps {
 	 * of them by accident, and widening THIS one means a cloud operation acting
 	 * on a row it was never meant to.
 	 *
-	 * @param int $media_id Media id.
+	 * A trashed row is acted on only when the caller is bringing its files home
+	 * ($with_trashed): a trashed public photo must stop being served from the CDN,
+	 * but nothing may push a trashed item up to the cloud.
+	 *
+	 * @param int  $media_id     Media id.
+	 * @param bool $with_trashed Also accept a trashed row (cloud to local only).
 	 * @return array|null Row with media_id, file_path and privacy, or null.
 	 */
-	private static function actionable_row( int $media_id ): ?array {
+	private static function actionable_row( int $media_id, bool $with_trashed = false ): ?array {
 		$rows = self::repo()->query(
 			array(
 				'media_ids'   => array( $media_id ),
 				'status'      => '',
-				'status_in'   => array( 'publish', 'draft' ),
+				'status_in'   => $with_trashed ? array( 'publish', 'draft', 'trash' ) : array( 'publish', 'draft' ),
 				'has_file'    => true,
 				// No type predicate: storage is a property of the file. Not
 				// `MediaTypes::ALL`, which omits `legacy_document` and would
@@ -137,7 +142,7 @@ class CloudOps {
 	public static function migrate_one( int $media_id, string $from, string $to, bool $keep_source ): array {
 		global $wpdb;
 
-		$row = self::actionable_row( $media_id );
+		$row = self::actionable_row( $media_id, 'local' === $to );
 		if ( ! $row ) {
 			return array(
 				'ok'     => false,

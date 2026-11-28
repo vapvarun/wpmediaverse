@@ -1102,6 +1102,33 @@ class UploadService {
 	}
 
 	/**
+	 * Whether QuickTime files (.mov, and phone recordings) upload under this allowed list.
+	 *
+	 * They upload wherever MP4 does (MediaTypes::canonical_mime) while WordPress itself allows
+	 * video/quicktime, so every surface that lists or checks the allowed types asks here.
+	 *
+	 * @since 2.7.1
+	 *
+	 * @param string[] $mimes Allowed MIME types.
+	 * @return bool
+	 */
+	public static function allows_quicktime( array $mimes ): bool {
+		return in_array( 'video/mp4', $mimes, true ) && in_array( 'video/quicktime', get_allowed_mime_types(), true );
+	}
+
+	/**
+	 * The allowed MIME types as a client sees them: QuickTime added where MP4 is allowed.
+	 *
+	 * @since 2.7.1
+	 *
+	 * @param string[] $mimes Allowed MIME types.
+	 * @return string[]
+	 */
+	public static function client_mimes( array $mimes ): array {
+		return self::allows_quicktime( $mimes ) ? array_values( array_unique( array_merge( $mimes, array( 'video/quicktime' ) ) ) ) : array_values( $mimes );
+	}
+
+	/**
 	 * Build a file input's `accept` value from a list of allowed MIME types.
 	 *
 	 * Emits BOTH the MIME types and their file extensions. A MIME-only `accept`
@@ -1128,9 +1155,7 @@ class UploadService {
 			}
 		}
 
-		// QuickTime files (.mov, and phone recordings) upload wherever MP4 does (MediaTypes::canonical_mime),
-		// so the file dialog must not grey them out.
-		if ( in_array( 'video/mp4', $mimes, true ) && in_array( 'video/quicktime', get_allowed_mime_types(), true ) ) {
+		if ( self::allows_quicktime( $mimes ) ) {
 			$exts[] = 'video/quicktime';
 			$exts[] = '.mov';
 		}

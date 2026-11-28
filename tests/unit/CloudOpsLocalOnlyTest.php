@@ -396,6 +396,28 @@ class CloudOpsLocalOnlyTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A trashed public photo can be brought home from the cloud, and is never pushed up to it.
+	 *
+	 * Trash is a status, not a delete: before 2.7.1 the per-media cloud operations only saw
+	 * published and draft rows, so trashing a photo left every file on the CDN at the same URL.
+	 */
+	public function test_a_trashed_photo_is_brought_home_but_never_sent_to_the_cloud(): void {
+		$id = $this->insert(
+			array(
+				'status'    => 'trash',
+				'file_path' => '2026/09/trashed-' . wp_rand() . '.jpg',
+			)
+		);
+
+		$home = CloudOps::migrate_one( $id, 'fakecloud', 'local', false );
+		$this->assertNotSame( 'media row not found', $home['error'] ?? '', 'The trashed row must be visible to a cloud to local move.' );
+
+		$up = CloudOps::migrate_one( $id, 'local', 'fakecloud', true );
+		$this->assertSame( 'media row not found', $up['error'] ?? '', 'A trashed row must never be uploaded.' );
+		$this->assertSame( array(), $this->cloud->files, 'Nothing reached the cloud.' );
+	}
+
+	/**
 	 * In-memory driver that records every call.
 	 *
 	 * @return StorageDriverInterface

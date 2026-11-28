@@ -98,10 +98,18 @@ class M4vBrandUploadTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( '.mov', \WPMediaVerse\Services\UploadService::accept_attribute( array( 'image/jpeg' ) ) );
 	}
 
+	public function test_upload_block_context_and_picker_list_quicktime_where_mp4_is_allowed(): void {
+		$allowed = array( 'image/jpeg', 'video/mp4' );
+		$this->assertContains( 'video/quicktime', \WPMediaVerse\Services\UploadService::client_mimes( $allowed ), 'The block checks files client-side against this list.' );
+		$this->assertNotContains( 'video/quicktime', \WPMediaVerse\Services\UploadService::client_mimes( array( 'image/jpeg' ) ) );
+		$this->assertTrue( \WPMediaVerse\Services\UploadService::allows_quicktime( $allowed ) );
+		$this->assertFalse( \WPMediaVerse\Services\UploadService::allows_quicktime( array( 'image/jpeg' ) ) );
+	}
+
 	public function quicktime_names(): array {
 		return array(
-			'mp4 file'  => array( 'phone-video.mp4' ),
-			'mov file'  => array( 'phone-video.mov' ),
+			'mp4 file' => array( 'phone-video.mp4' ),
+			'mov file' => array( 'phone-video.mov' ),
 		);
 	}
 

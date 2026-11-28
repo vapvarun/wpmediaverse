@@ -143,7 +143,7 @@ wp_interactivity_state(
 			'files'          => array(),
 			'privacy'        => $show_privacy ? get_option( 'mvs_default_privacy', 'public' ) : '',
 			'isStory'        => $mvs_prefill_story,
-			'allowedTypes'   => array_map( 'trim', explode( ',', $allowed_types ) ),
+			'allowedTypes'   => \WPMediaVerse\Services\UploadService::client_mimes( array_map( 'trim', explode( ',', $allowed_types ) ) ),
 		)
 	);
 	?>
@@ -173,7 +173,7 @@ wp_interactivity_state(
 		<input type="file" class="mvs-upload-input" multiple
 			aria-label="<?php esc_attr_e( 'Choose files to upload', 'wpmediaverse' ); ?>"
 			data-wp-on--change="actions.handleFileSelect"
-			accept="<?php echo esc_attr( $allowed_types ); ?>"
+			accept="<?php echo esc_attr( \WPMediaVerse\Services\UploadService::accept_attribute( array_map( 'trim', explode( ',', $allowed_types ) ) ) ); ?>"
 		/>
 		<?php
 		if ( $show_privacy ) :
