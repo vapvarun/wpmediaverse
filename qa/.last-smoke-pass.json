@@ -1,182 +1,61 @@
 {
- "mode": "combo",
- "release_version": "2.7.0",
- "free_version": "2.7.0",
- "pro_version": "2.7.0",
- "ran_at": "2026-11-24T03:54:29Z",
- "env": "mv-agent Docker :8911, Reign 8.1.2 (+BuddyX 5.1.3 pass), BuddyPress 14.5.6, PHP 8.2",
- "sections": {
-  "A_fresh_install": {
-   "pass": 0,
-   "fail": 0,
-   "skipped": 1
+  "mode": "combo",
+  "release_version": "2.7.1",
+  "free_version": "2.7.1",
+  "pro_version": "2.7.1",
+  "ran_at": "2026-11-28T16:50:01Z",
+  "env": "Docker stack localhost:8941, WordPress 7.1.4, Reign 8.1.2, PHP 8.2.35, WP_DEBUG on; scope: branch mode, 14 cards, final targeted re-check (Free HEAD c0e7cde2, Pro d5514a57); earlier results carried over for untouched items",
+  "sections": {
+    "A_fresh_install": {"pass": 0, "fail": 0, "skipped": 1},
+    "B_upgrade": {"pass": 0, "fail": 0, "skipped": 1},
+    "C_core_flows": {"pass": 39, "fail": 0, "skipped": 14},
+    "D_regression_guards": {"pass": 0, "fail": 0, "skipped": 1},
+    "E_pro_smoke": {"pass": 10, "fail": 0, "skipped": 6},
+    "F_cross_browser": {"pass": 0, "fail": 0, "skipped": 1}
   },
-  "B_upgrade": {
-   "pass": 0,
-   "fail": 0,
-   "skipped": 1
+  "hard_fails": [],
+  "untested": [
+    {"id": "3.suspended-member-refused", "reason": "Suspension is a BuddyNext feature and BuddyNext is not in this stack", "needs": "BuddyNext"},
+    {"id": "4.cloud-takedown", "reason": "No cloud storage driver in the stack; unit-tested", "needs": "a real CDN driver"},
+    {"id": "3.album-part-way-failure-reload", "reason": "With video covers refused before any request, no way found to make an album save fail part way, so 'list reloads and shows the stored name' could not be observed", "needs": "fault injection on the album cover request"},
+    {"id": "2.album-remove-photo-ui", "reason": "No remove-photo control found in the album edit dialog; removal done through REST only", "needs": "album detail UI walk"},
+    {"id": "3.instagram-load-more-on-profile", "reason": "picabo has 3 items so no load-more on the profile; load-more cards verified on /explore-media/ earlier", "needs": "profile with more than one page"},
+    {"id": "1.build-ver-bump", "reason": "build/blocks/dashboard-view/view.js is enqueued as ?ver=2.7.1 before and after each rebuild; new behaviour loaded here only with cache disabled. Sites that already cached 2.7.1 files would need a hard refresh", "needs": "owner awareness"},
+    {"id": "7.pro-off-shortcode-wording", "reason": "owner wording: 'This block needs MediaVerse Pro.' is owner-approved, not reported as a failure", "needs": "none"},
+    {"id": "8.dark-mode-core-flows", "reason": "Dark measured on Pinterest explore, instagram profile buttons and leaderboard only", "needs": "full dark sweep"},
+    {"id": "8.390px-core-flows", "reason": "390px checked on the instagram profile header and tag chips in earlier passes only", "needs": "390px sweep"},
+    {"id": "note.rail-badges", "reason": "The My Media rail shows a count badge only on Media and Documents; Albums and Collections have no badge and there is no Favorites rail item in this build", "needs": "none"},
+    {"id": "note.mark-all-read-offline", "reason": "Offline Mark all read keeps the count (correct) but shows no error message", "needs": "owner call on a toast"},
+    {"id": "C.deferred", "reason": "deferred: branch mode", "needs": "runbook rows not listed in scope"}
+  ],
+  "coverage": {
+    "rtl": "deferred: branch mode",
+    "multisite": "na",
+    "concurrency": "deferred",
+    "uninstall": "run by bin/uninstall-smoke.sh, passed",
+    "boot_matrix": "run by bin/boot-matrix-smoke.sh, passed"
   },
-  "C_core_flows": {
-   "pass": 17,
-   "fail": 7,
-   "skipped": 0
-  },
-  "D_regression_guards": {
-   "pass": 0,
-   "fail": 0,
-   "skipped": 1
-  },
-  "E_pro_smoke": {
-   "pass": 5,
-   "fail": 1,
-   "skipped": 0
-  },
-  "F_cross_browser": {
-   "pass": 0,
-   "fail": 0,
-   "skipped": 1
-  }
- },
- "hard_fails": [],
- "failures": [
-  {
-   "id": "C.css.upload-focus",
-   "origin": "deferred-2.7.1",
-   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
-   "expected": "Visible focus ring after keyboard Tab on Upload and Cancel",
-   "actual": "computed outline none 0px, box-shadow none, :focus-visible true (1440+390, light+dark)",
-   "url": "/upload-media/"
-  },
-  {
-   "id": "C.css.chat-focus",
-   "origin": "deferred-2.7.1",
-   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
-   "expected": "Visible focus ring on every chat control",
-   "actual": "outline none 0px, no shadow",
-   "url": "chat panel on /explore-media/ (Reign)"
-  },
-  {
-   "id": "C.chat.fab-covers-send",
-   "origin": "fixed",
-   "triage_note": "Fixed in cd715dcb, re-verified in the browser on Reign after the walk.",
-   "expected": "Send button hit-testable",
-   "actual": "elementFromPoint at send centre = BUTTON.mvs-fab (1440: 1410,785; 390: 356,734)",
-   "url": "chat panel with a conversation open, Reign"
-  },
-  {
-   "id": "C.css.chat-composer-edge",
-   "origin": "deferred-2.7.1",
-   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
-   "expected": "field edge >=3:1",
-   "actual": "1.28:1 (light), 1.53:1 (dark)",
-   "url": "chat panel composer"
-  },
-  {
-   "id": "C.css.profile-prompt-contrast",
-   "origin": "deferred-2.7.1",
-   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
-   "expected": "text >=4.5:1; ring on close",
-   "actual": "2.93:1; outline none",
-   "url": "/my-media/ (also /my-media/media/, /my-media/albums/)"
-  },
-  {
-   "id": "C.css.collect-btn-focus",
-   "origin": "deferred-2.7.1",
-   "triage_note": "Not a functional break, data loss, security issue or keyboard trap; carried to docs/plans/2.7.1-follow-ups.md under the owner rule of 2026-11-24.",
-   "expected": "ring on :focus-visible",
-   "actual": "outline none 0px, no shadow",
-   "url": "/media/<slug>/ as non-author"
-  },
-  {
-   "id": "MV35.load-more-unstyled",
-   "origin": "fixed",
-   "triage_note": "Fixed in cd715dcb, re-verified in the browser on Reign after the walk.",
-   "expected": "Styled Load more button (border, radius, 44px min height, centred)",
-   "actual": "bg rgb(239,239,239), border 2px outset, radius 0, padding 24px 0",
-   "url": "/qa270-explore-block/ and /qa270-explore-sc/ (deleted)"
-  },
-  {
-   "id": "E.documents-text-search",
-   "origin": "for",
-   "triage_note": "Body-text search returns 0 for freshly indexed documents (search table row exists, status indexed; AS extract job complete). Raw SQL MATCH AGAINST on the table also returns 0 until OPTIMIZE TABLE flushes the InnoDB FTS cache; then /documents/search finds them. MySQL 8.0.46 in Docker; code path is correct. Verify on a production-like DB before dismissing; title search works.",
-   "expected": "Search on a word inside the document returns it",
-   "actual": "total 0 for zebracrossing/quokka until FTS sync",
-   "url": "/my-media/documents/ search, GET /mvs-pro/v1/documents/search?q="
-  }
- ],
- "untested": [
-  {
-   "id": "A_fresh_install",
-   "reason": "deferred: branch mode",
-   "needs": "branch-mode smoke"
-  },
-  {
-   "id": "B_upgrade",
-   "reason": "deferred: branch mode",
-   "needs": "branch-mode smoke"
-  },
-  {
-   "id": "D_regression_guards",
-   "reason": "deferred: branch mode",
-   "needs": "branch-mode smoke"
-  },
-  {
-   "id": "F_cross_browser",
-   "reason": "deferred: branch mode",
-   "needs": "branch-mode smoke"
-  },
-  {
-   "id": "C.css.keyboard-trap-esc",
-   "reason": "Esc does not close chat panel; focus does leave the panel so no trap",
-   "needs": "owner call on Esc behaviour"
-  },
-  {
-   "id": "C.css.dark-mode-prefers-color-scheme",
-   "reason": "Plugin dark mode keys on html[data-theme|data-bx-mode=dark|.dark-mode], not prefers-color-scheme; dark pass applied those attributes plus colorScheme emulation",
-   "needs": "none, by design per frontend.css comment"
-  }
- ],
- "debug_log_issues": [],
- "coverage": {
-  "css_surfaces": "13 surfaces x 1440/390 x light/dark on Reign; 3 on BuddyX",
-  "note": "debug.log grew 105596 -> ~146k bytes, all entries from my own wp eval/eval-file calls; no plugin errors"
- },
- "walked": [
-  "C.css.explore: pass (Reign 1440/390 light+dark; fields/selects have edges, rings present)",
-  "C.css.explore-search: pass",
-  "C.css.explore-tag: pass",
-  "C.css.single-media: pass (follow button toggles Following/Follow)",
-  "C.css.lightbox: pass (opens from grid, rings present)",
-  "C.css.upload: FAIL confirm/cancel no focus ring",
-  "C.css.my-media: FAIL profile banner 2.93:1 + close no ring",
-  "C.css.my-media-albums: FAIL same banner",
-  "C.css.follow-btn: FAIL only Pro Save (collect) button lacks ring; follow button itself passes and toggles",
-  "C.css.follow-profile: pass (BP profile select edge is theme-owned: for-theme)",
-  "C.css.chat: FAIL header/composer rings, FAB covers Send, composer edge; sent bubble 5.38:1 light/9:1 dark, reply quote ok, unread pill 5.38:1, trigger badge 4.73:1 (badge updates async; 0 shown right after reload in 3 of 4 combos though list showed unread 1)",
-  "C.css.guest-prompt: pass (login prompt styled, ring present)",
-  "C.theme.buddyx-explore: pass (1 false-positive logged-out-banner close 1.07 in one combo, transparent button)",
-  "C.theme.buddyx-single-media: pass",
-  "C.theme.buddyx-chat: pass (BuddyX supplies rings; Send not covered)",
-  "MV35.explore-feed-block: FAIL button unstyled (css loads, ring ok)",
-  "MV35.explore-feed-shortcode: FAIL same",
-  "MV35.gamification-challenges: pass (mvs-pro-gamification-css loads 413 rules; .mvs-competition-tab ring 2px)",
-  "MV35.gamification-battles: pass",
-  "MV35.compete-hub: pass (renders; seed has no tabs so ring n/a). gamification css also loads on explore pages (global enqueue, note)",
-  "C.member.activity-composer-attach: pass (Attach media 18px icon, privacy+tags rings 2px, post persisted with privacy=members, tag qa270comp, media linked; 64px tile)",
-  "C.member.activity-preview: pass (single image 64px tile)",
-  "C.cron: pass (mvs_cleanup_media_files queued group mvs on delete, ran to complete; Pro deactivate/reactivate no error, recurring cron events back; debug.log clean apart from my own wp eval noise). Observations: stale failed AS rows mvs_competitions_tick [mvs] (callback unregistered while competitions option off) and mvs_tag_merge_batch [wpmediaverse] from 11-22; legacy group wpmediaverse rows pre-date 2.7.0",
-  "C.cron.cleanup-media-job: pass",
-  "E.member.documents-drive: FAIL text search; ok: create folder, duplicate refused by name, upload lands in folder, rename, trash then restore to same folder. Untested: move, download button, bulk move, breadcrumbs, filter persistence",
-  "E.member.documents-privacy-and-sharing: pass (default private, dropdown exactly Only me/All site members/Anyone, unlisted+restricted -> 400 mvs_document_privacy_invalid, share to user, appears in Shared with me, opens 200, revoke removes, grantee reshare 403 mvs_document_share_forbidden). Untested: role grant, edit-grantee",
-  "E.member.documents-role-gate: pass (untick subscriber via Settings: documents/folders/me/shared all 403 mvs_documents_unavailable, rail link gone, config.enabled false; re-tick restores, doc intact)",
-  "E.member.documents-single-and-public: pass (guest opens public text doc 200 with server-rendered text, /explore-document/ rows not tiles, refused doc 404 for editor and guest). Untested: PDF/word tiers, missing file message, paging",
-  "E.admin.documents-screen: pass (list, doc_type/privacy filters, search, 3 sortable cols, Edit|View|Download|Trash|Delete, title opens editor, slug not regenerated on rename). Untested: photo-id refusal text",
-  "E.admin.documents-settings: pass (all 7 controls render with real values, anon links off matches config false). Untested: per-setting enforcement changes"
- ],
- "manual_required": [
-  "Human check of chat Send tap target at 390 on Reign (FAB overlap)",
-  "Confirm InnoDB FTS visibility on production-like MySQL"
- ],
- "walked_at": "2026-11-24T03:48:03Z",
- "coverage_note": "Walked on Free 174347d2 / Pro 1a9ae97c (later commits up to the package are release prep, comment-only Plugin Check fixes, and the fixes above, each re-verified in the browser). Sections A, B, D, F: deferred: branch mode; QA covered them in MV33-MV35 and MV36 (no blockers). A fresh install and B upgrade 2.6.4 to 2.7.0 ran separately on a pristine Docker stack (WordPress 7.1.5, PHP 8.5), all green."
+  "failures": [
+    {"id": "C.settings.stored-max-upload-exceeds-server-limit", "origin": "for", "triage_note": "Environment: container PHP upload_max_filesize is 2M while stored mvs_max_upload_size is 100 MB, so the settings field has max=2 and the form cannot submit until lowered. Not touched this pass; value is 104857600.", "expected": "n/a", "actual": "n/a", "url": "http://localhost:8941/wp-admin/admin.php?page=mvs-settings", "screenshot": "none"}
+  ],
+  "debug_log_issues": [],
+  "verdict": "WARN",
+  "top3": [
+    "Final check passed: after uploading a jpg and a .mov the toolbar count and the sidebar 'Media N' badge rose together (12 to 14), stayed equal after reload, and both dropped by 1 on delete (14 to 13).",
+    "A renamed text file (.mp4) is refused with 'This file type is not supported.' and moves neither the toolbar nor the badge (both stay 12).",
+    "No from-origin failures remain; the only listed failure is the environment upload-limit mismatch. Verdict is WARN only because of that environment item and the untested external items (BuddyNext suspension, cloud takedown, album part-way failure)."
+  ],
+  "scope_items": [
+    {"item": "1 upload formats", "result": "pass", "evidence": "Dashboard uploaded .mov and a QuickTime-branded .mp4 earlier and again this pass (g5.mov with g5.jpg: '2 file(s) uploaded!'). /upload-media/ and REST accept them, a renamed text file is refused, and with MP4 removed all are refused with readable messages (earlier pass)."},
+    {"item": "2 collections, albums, notifications", "result": "pass", "evidence": "Carried over: empty-title create and edit refused with 'Collection title is required.' (PUT 400), valid create and rename saved, album create/rename/add photos work, Mark all read clears the bell and REST count to 0."},
+    {"item": "3 album cover picker", "result": "pass", "evidence": "Carried over: a video cover is refused immediately without selecting or adding it; an image cover saves (cover_media_id 27, items unchanged). Part-way failure reload untested."},
+    {"item": "3 instagram follow sync", "result": "pass", "evidence": "Carried over: header and post Follow buttons flip together both ways, and roll back together offline; load-more cards sync on /explore-media/."},
+    {"item": "4 bulk add to album", "result": "pass", "evidence": "Carried over: on a fresh load with 2 photos selected the albums are listed (also after Select all) and Add works."},
+    {"item": "5 library counts after upload and delete", "result": "pass", "evidence": "/my-media/media/ hard reload: toolbar '12 items', rail 'Media 12'. Failed upload (text renamed .mp4): toast 'This file type is not supported.', toolbar 12 and rail 12 unchanged. Upload of g5.jpg + g5.mov: toast '2 file(s) uploaded!', toolbar 14 and rail 14 together. Reload: 14 and 14. Delete one: toolbar 13 and rail 13. Earlier: single and bulk delete and a search-filtered delete kept both in step (rail never replaced by the filtered total)."},
+    {"item": "6 edit tags", "result": "pass", "evidence": "Carried over: commas split into pills, a duplicate is not added, Save stores each tag once."},
+    {"item": "7 Pro-off shortcode wording", "result": "pass", "evidence": "Carried over: owner wording for admin, nothing for visitors, Free-only boot clean."},
+    {"item": "8 env finding", "result": "pass", "evidence": "Kept as origin 'for'; mvs_max_upload_size 104857600, allowed types original, layout grid, Pro active, versions 2.7.1."},
+    {"item": "regression (carried over)", "result": "pass", "evidence": "Tag chips, 1:1 and group chat text and image-only, local takedown and restore, Pinterest dark, Instagram contrast (Follow 5.38:1, borders 3.51:1 light, 7.92:1 dark) and 390 wrap, shortcode notices and leaderboard 6.28:1, focus rings, explore, lightbox, react, comment, favourite: green on the full re-walk, not re-run in this short check."},
+    {"item": "10 debug log and console", "result": "pass", "evidence": "debug.log not created; docker logs 0 lines containing 'PHP '; console showed only the expected 400 from the refused text-file upload."}
+  ]
 }
