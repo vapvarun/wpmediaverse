@@ -980,6 +980,8 @@ const { state, actions } = store( 'mvs/dashboard', {
 				);
 			}
 			if ( uploaded > 0 ) {
+				// The rail's Media badge is server-rendered once: raise it by what was just added, as a delete lowers it.
+				state.railDelta = { ...state.railDelta, media: ( state.railDelta.media || 0 ) + uploaded };
 				// Reset upload form so old data doesn't carry forward.
 				state.upload.title = '';
 				state.upload.description = '';
